@@ -1,0 +1,41 @@
+A.No.	Customer no	Customer Name	Monthly Water Bill (Rs.)	Period	Balance	Oversize 10%	Bill no.	Receipt no.	Date	Amount Paid (Rs.)	Shera	Phone Number
+1	4686	Ambernath Jaihind Co.O.	500									9876500001
+2	1068	Mahendra Kantilal Purohit	125									9876500002
+3	1708	Mahendra Vitthaldas Shah	500									9876500003
+4	4169	Milind Vasant Sane	500									9876500004
+5	378	Sudhir Vasant Sane	250									9876500005
+6	385	Vivek Madhukar Bhadsawale	125	July 23–March 24	800							9876500006
+7	209	Keshav Vaman Bhadsawale	125									9876500007
+8	91	Kamlakar Moreshwar Bhadsawale	100									9876500008
+9	4014	Sooman Tribank Bhadsawale (D.P.)	100	Apr 16–Mar 24	8240							9876500009
+10	4015	Sudhir Govind Bhadsawle (D.P.)	100	Apr 20–Mar 24	4300							9876500010
+11	81	Hari Govind Bhadsawale (DP)	100	Apr 16–Mar 24	8526							9876500011
+12	4016	Milind Yashwant Bhadsawle (DP)		Jun 16–Mar 24	8162							9876500012
+13	320	Madhavi Ramachandra Bhadsawale	100									9876500013
+14	330	Aarti Deepak Bhadsawale (G.P.)	100	Apr 15–Mar 24	9296							9876500014
+15	960	Ujwala Shankar Bhadsawale	100									9876500015
+16	367	Prabhakar Krishna Ratnaparkhi	100	Apr 15–Mar 24	9296							9876500016
+17	466	Vivek Madhukar Bhadsawale	100									9876500017
+18	319	Vivek Madhukar Bhadsawale	125									9876500018
+19	1112	Pramod Sridhar Bhadsawale	100									9876500019
+20	118	Ramilabai Dyalal Shah (B.M.)	125	Back to Mar 24	14575							9876500020
+21	449	Jayantilal Vadilal Shah (D.B.M.)	125	Back to Mar 24	14150							9876500021
+
+
+
+
+
+
+
+
+above is the data you need to import in database 
+|above data is for water tax 
+same schema is followed for property  tax too 
+
+
+create a new table of citizens 
+
+
+also make sure you create a login system for citizen where it will require otp (Firebase OTP for login with phone number)
+
+make sure the citizen can login and see their details and can pay their bill , dashboard should look easy clean and responsive

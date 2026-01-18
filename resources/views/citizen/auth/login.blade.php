@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Citizen Login - Gram Panchayat</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --primary-light: #2d5a8e;
+            --primary-dark: #0f1f33;
+            --secondary: #f97316;
+            --secondary-light: #fb923c;
+            --accent: #10b981;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --error: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-lg: 20px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: slideUp 0.5s ease forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 40px 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-logo i {
+            font-size: 36px;
+            color: white;
+        }
+
+        .login-header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .login-header p {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            position: relative;
+        }
+
+        .login-body {
+            padding: 32px;
+        }
+
+        /* Steps */
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .step-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            padding-left: 50px;
+            font-size: 16px;
+            font-family: inherit;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: var(--text-primary);
+            transition: var(--transition);
+            letter-spacing: 1px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(30, 58, 95, 0.1);
+        }
+
+        .form-input.otp-input {
+            padding-left: 16px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 8px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .alert i {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Change Phone */
+        .change-phone {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .change-phone a {
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .change-phone a:hover {
+            color: var(--secondary);
+        }
+
+        /* Resend OTP */
+        .resend-section {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .resend-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .resend-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .resend-btn:hover {
+            color: var(--secondary);
+        }
+
+        .resend-btn:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Footer */
+        .login-footer {
+            text-align: center;
+            padding: 24px 32px;
+            background: var(--background);
+            border-top: 1px solid var(--border);
+        }
+
+        .login-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .login-footer a:hover {
+            color: var(--secondary);
+        }
+
+        /* Debug OTP */
+        .debug-otp {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .debug-otp strong {
+            font-weight: 600;
+        }
+
+        /* Back to home */
+        .back-home {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        .back-home a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .back-home a:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-home">
+        <a href="{{ route('home') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to Home
+        </a>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">
+                    <i class="fas fa-landmark"></i>
+                </div>
+                <h1>Citizen Portal</h1>
+                <p>Gram Panchayat Tax Payment System</p>
+            </div>
+
+            <div class="login-body">
+                @if(session('error'))
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+                @endif
+
+                @if(session('success'))
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <span>{{ session('success') }}</span>
+                </div>
+                @endif
+
+                <!-- Step 1: Enter Phone -->
+                <div class="step active" id="stepPhone">
+                    <h2 class="step-title">Login with Phone Number</h2>
+                    <p class="step-desc">Enter your registered mobile number to receive OTP</p>
+
+                    <div id="phoneError" class="alert alert-error" style="display: none;"></div>
+
+                    <div class="form-group">
+                        <label class="form-label">Mobile Number</label>
+                        <div class="input-group">
+                            <span class="input-prefix">+91</span>
+                            <input type="tel" id="phoneInput" class="form-input" 
+                                   placeholder="Enter 10 digit number" 
+                                   maxlength="10" 
+                                   pattern="[0-9]{10}"
+                                   autocomplete="tel">
+                        </div>
+                    </div>
+
+                    <button type="button" id="sendOtpBtn" class="btn btn-primary">
+                        <span>Send OTP</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Step 2: Verify OTP -->
+                <div class="step" id="stepOtp">
+                    <h2 class="step-title">Verify OTP</h2>
+                    <p class="step-desc">Enter the 6-digit code sent to <strong id="displayPhone"></strong></p>
+
+                    <div id="otpError" class="alert alert-error" style="display: none;"></div>
+                    <div id="otpSuccess" class="alert alert-success" style="display: none;"></div>
+                    <div id="debugOtp" class="debug-otp" style="display: none;"></div>
+
+                    <div class="form-group">
+                        <label class="form-label">Enter OTP</label>
+                        <input type="text" id="otpInput" class="form-input otp-input" 
+                               placeholder="000000" 
+                               maxlength="6" 
+                               pattern="[0-9]{6}"
+                               autocomplete="one-time-code">
+                    </div>
+
+                    <button type="button" id="verifyOtpBtn" class="btn btn-primary">
+                        <span>Verify & Login</span>
+                        <i class="fas fa-check"></i>
+                    </button>
+
+                    <div class="change-phone">
+                        <a href="#" id="changePhoneBtn">
+                            <i class="fas fa-edit"></i> Change phone number
+                        </a>
+                    </div>
+
+                    <div class="resend-section">
+                        <span class="resend-text">Didn't receive OTP? </span>
+                        <button type="button" id="resendOtpBtn" class="resend-btn" disabled>
+                            Resend in <span id="countdown">30</span>s
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="login-footer">
+                <p>Need help? <a href="{{ route('contact') }}">Contact Gram Panchayat Office</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Add your Firebase config) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase Configuration (from Admin Settings)
+        const firebaseConfig = {
+            apiKey: "{{ \App\Models\SiteSetting::get('firebase_api_key', '') }}",
+            authDomain: "{{ \App\Models\SiteSetting::get('firebase_auth_domain', '') }}",
+            projectId: "{{ \App\Models\SiteSetting::get('firebase_project_id', '') }}",
+            storageBucket: "{{ \App\Models\SiteSetting::get('firebase_storage_bucket', '') }}",
+            messagingSenderId: "{{ \App\Models\SiteSetting::get('firebase_messaging_sender_id', '') }}",
+            appId: "{{ \App\Models\SiteSetting::get('firebase_app_id', '') }}"
+        };
+
+        // Check if Firebase is enabled in settings
+        const firebaseEnabled = "{{ \App\Models\SiteSetting::get('firebase_enabled', '0') }}" === "1";
+
+        // Initialize Firebase only if enabled and config is available
+        let firebaseInitialized = false;
+        let recaptchaVerifier = null;
+        let confirmationResult = null;
+
+        if (firebaseEnabled && firebaseConfig.apiKey && firebaseConfig.projectId) {
+            firebase.initializeApp(firebaseConfig);
+            firebaseInitialized = true;
+        }
+
+        // DOM Elements
+        const stepPhone = document.getElementById('stepPhone');
+        const stepOtp = document.getElementById('stepOtp');
+        const phoneInput = document.getElementById('phoneInput');
+        const otpInput = document.getElementById('otpInput');
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+        const changePhoneBtn = document.getElementById('changePhoneBtn');
+        const resendOtpBtn = document.getElementById('resendOtpBtn');
+        const displayPhone = document.getElementById('displayPhone');
+        const phoneError = document.getElementById('phoneError');
+        const otpError = document.getElementById('otpError');
+        const otpSuccess = document.getElementById('otpSuccess');
+        const debugOtp = document.getElementById('debugOtp');
+        const countdown = document.getElementById('countdown');
+
+        let phoneNumber = '';
+        let countdownTimer = null;
+        let useFirebase = firebaseInitialized;
+
+        // Show/hide loading state
+        function setLoading(button, loading) {
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = '<div class="spinner"></div> Please wait...';
+            } else {
+                button.disabled = false;
+                if (button === sendOtpBtn) {
+                    button.innerHTML = '<span>Send OTP</span><i class="fas fa-arrow-right"></i>';
+                } else if (button === verifyOtpBtn) {
+                    button.innerHTML = '<span>Verify & Login</span><i class="fas fa-check"></i>';
+                }
+            }
+        }
+
+        // Show error
+        function showError(element, message) {
+            element.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>' + message + '</span>';
+            element.style.display = 'flex';
+        }
+
+        // Hide error
+        function hideError(element) {
+            element.style.display = 'none';
+        }
+
+        // Start countdown
+        function startCountdown() {
+            let seconds = 30;
+            resendOtpBtn.disabled = true;
+            
+            countdownTimer = setInterval(() => {
+                seconds--;
+                countdown.textContent = seconds;
+                
+                if (seconds <= 0) {
+                    clearInterval(countdownTimer);
+                    resendOtpBtn.disabled = false;
+                    resendOtpBtn.innerHTML = 'Resend OTP';
+                }
+            }, 1000);
+        }
+
+        // Send OTP
+        sendOtpBtn.addEventListener('click', async () => {
+            hideError(phoneError);
+            
+            phoneNumber = phoneInput.value.trim();
+            
+            if (!/^[0-9]{10}$/.test(phoneNumber)) {
+                showError(phoneError, 'Please enter a valid 10-digit phone number');
+                return;
+            }
+
+            setLoading(sendOtpBtn, true);
+
+            try {
+                // First, check with backend if phone exists
+                const response = await fetch('{{ route("citizen.send-otp") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ phone: phoneNumber })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(phoneError, data.message || 'Failed to send OTP');
+                    setLoading(sendOtpBtn, false);
+                    return;
+                }
+
+                // If Firebase is configured, use it for OTP
+                if (useFirebase) {
+                    try {
+                        if (!recaptchaVerifier) {
+                            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('sendOtpBtn', {
+                                'size': 'invisible',
+                                'callback': () => {}
+                            });
+                        }
+
+                        confirmationResult = await firebase.auth().signInWithPhoneNumber(
+                            '+91' + phoneNumber,
+                            recaptchaVerifier
+                        );
+                        
+                        // Move to OTP step
+                        stepPhone.classList.remove('active');
+                        stepOtp.classList.add('active');
+                        displayPhone.textContent = '+91 ' + phoneNumber;
+                        startCountdown();
+                        
+                    } catch (firebaseError) {
+                        console.log('Firebase error, falling back to backend OTP:', firebaseError);
+                        useFirebase = false;
+                        // Fall through to backend OTP
+                    }
+                }
+
+                if (!useFirebase) {
+                    // Use backend OTP (fallback)
+                    stepPhone.classList.remove('active');
+                    stepOtp.classList.add('active');
+                    displayPhone.textContent = '+91 ' + phoneNumber;
+                    startCountdown();
+
+                    // Show debug OTP in development
+                    if (data.debug_otp) {
+                        debugOtp.innerHTML = '<strong>Debug OTP:</strong> ' + data.debug_otp + ' (Only visible in debug mode)';
+                        debugOtp.style.display = 'block';
+                    }
+                }
+
+            } catch (error) {
+                showError(phoneError, 'An error occurred. Please try again.');
+            }
+
+            setLoading(sendOtpBtn, false);
+        });
+
+        // Verify OTP
+        verifyOtpBtn.addEventListener('click', async () => {
+            hideError(otpError);
+            
+            const otp = otpInput.value.trim();
+            
+            if (!/^[0-9]{6}$/.test(otp)) {
+                showError(otpError, 'Please enter a valid 6-digit OTP');
+                return;
+            }
+
+            setLoading(verifyOtpBtn, true);
+
+            try {
+                let firebaseVerified = false;
+
+                // Verify with Firebase if available
+                if (useFirebase && confirmationResult) {
+                    try {
+                        await confirmationResult.confirm(otp);
+                        firebaseVerified = true;
+                    } catch (firebaseError) {
+                        if (firebaseError.code === 'auth/invalid-verification-code') {
+                            showError(otpError, 'Invalid OTP. Please check and try again.');
+                            setLoading(verifyOtpBtn, false);
+                            return;
+                        }
+                    }
+                }
+
+                // Verify with backend
+                const response = await fetch('{{ route("citizen.verify-otp") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        phone: phoneNumber,
+                        otp: otp,
+                        firebase_verified: firebaseVerified
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(otpError, data.message || 'OTP verification failed');
+                    setLoading(verifyOtpBtn, false);
+                    return;
+                }
+
+                // Success - redirect to dashboard
+                otpSuccess.innerHTML = '<i class="fas fa-check-circle"></i><span>Login successful! Redirecting...</span>';
+                otpSuccess.style.display = 'flex';
+
+                setTimeout(() => {
+                    window.location.href = data.redirect || '{{ route("citizen.dashboard") }}';
+                }, 1000);
+
+            } catch (error) {
+                showError(otpError, 'An error occurred. Please try again.');
+                setLoading(verifyOtpBtn, false);
+            }
+        });
+
+        // Change phone number
+        changePhoneBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            stepOtp.classList.remove('active');
+            stepPhone.classList.add('active');
+            hideError(otpError);
+            otpInput.value = '';
+            debugOtp.style.display = 'none';
+            if (countdownTimer) clearInterval(countdownTimer);
+        });
+
+        // Resend OTP
+        resendOtpBtn.addEventListener('click', () => {
+            resendOtpBtn.innerHTML = 'Resend in <span id="countdown">30</span>s';
+            sendOtpBtn.click();
+        });
+
+        // Auto-Tab for OTP input
+        phoneInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        otpInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        // Auto-submit OTP when 6 digits entered
+        otpInput.addEventListener('input', () => {
+            if (otpInput.value.length === 6) {
+                verifyOtpBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
