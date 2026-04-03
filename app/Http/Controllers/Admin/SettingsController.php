@@ -46,19 +46,19 @@ class SettingsController extends Controller
         'partial_payment_allow_50' => 'payment',
         'partial_payment_allow_75' => 'payment',
         'convenience_fee_percentage' => 'payment',
-        'due_reminder_enabled' => 'payment',
-        'due_reminder_days_before' => 'payment',
+        'due_reminder_enabled' => 'notifications',
+        'due_reminder_days_before' => 'notifications',
 
-        // SMTP Settings
-        'smtp_enabled' => 'smtp',
-        'smtp_host' => 'smtp',
-        'smtp_port' => 'smtp',
-        'smtp_username' => 'smtp',
-        'smtp_password' => 'smtp',
-        'smtp_encryption' => 'smtp',
-        'smtp_from_address' => 'smtp',
-        'smtp_from_name' => 'smtp',
-        'smtp_timeout' => 'smtp',
+        // Notifications Settings
+        'smtp_enabled' => 'notifications',
+        'smtp_host' => 'notifications',
+        'smtp_port' => 'notifications',
+        'smtp_username' => 'notifications',
+        'smtp_password' => 'notifications',
+        'smtp_encryption' => 'notifications',
+        'smtp_from_address' => 'notifications',
+        'smtp_from_name' => 'notifications',
+        'smtp_timeout' => 'notifications',
     ];
 
     public function index()
@@ -163,4 +163,3 @@ class SettingsController extends Controller
         return view('admin.settings.firebase', compact('settings'));
     }
 }
-

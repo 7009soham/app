@@ -25,6 +25,9 @@
                 <li data-tab="payment">
                     <i class="fas fa-credit-card"></i> Payment Gateway
                 </li>
+                <li data-tab="notifications">
+                    <i class="fas fa-bell"></i> Notifications
+                </li>
             </ul>
         </div>
     </div>
@@ -213,7 +216,6 @@
                     </div>
                     <div class="card-body">
                         @php $paymentSettings = $settings->get('payment', collect()); @endphp
-                        @php $smtpSettings = $settings->get('smtp', collect()); @endphp
                         
                         <div class="alert alert-info" style="background: #f3e8ff; border: 1px solid #c4b5fd; color: #5b21b6;">
                             <i class="fas fa-info-circle"></i>
@@ -290,116 +292,6 @@
                             <small style="color: #64748b; margin-top: 6px; display: block;">Set to 0 to disable convenience fee. Example: 2 means 2% will be added to every online payment.</small>
                         </div>
 
-                        <div class="form-group" style="padding: 16px; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 8px; margin-bottom: 20px;">
-                            <label style="color: #0e7490; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">
-                                <i class="fas fa-envelope-open-text"></i> Advance Due Reminder Emails
-                            </label>
-                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
-                                Send reminder email before due date: "Please make your payment before X date to avoid penalty".
-                            </p>
-
-                            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
-                                <label for="due_reminder_enabled" style="display:flex; align-items:center; gap:8px; margin:0; cursor:pointer;">
-                                    <input type="checkbox" id="due_reminder_enabled" name="due_reminder_enabled" value="1"
-                                        @if(($paymentSettings->firstWhere('key', 'due_reminder_enabled')?->value ?? '1') == '1') checked @endif>
-                                    <span>Enable reminders</span>
-                                </label>
-
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <label for="due_reminder_days_before" style="margin:0; color:#0f172a; font-weight:500;">Days before due date</label>
-                                    <input type="number" id="due_reminder_days_before" name="due_reminder_days_before" class="form-control"
-                                           value="{{ $paymentSettings->firstWhere('key', 'due_reminder_days_before')?->value ?? '3' }}"
-                                           min="0" max="30" step="1" style="width:90px;">
-                                </div>
-                            </div>
-                            <small style="color: #64748b; margin-top: 8px; display: block;">
-                                Configure the scheduler to run daily so reminders are sent on time.
-                            </small>
-                        </div>
-
-                        <div class="form-group" style="padding: 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
-                            <label style="color: #0f172a; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">
-                                <i class="fas fa-envelope"></i> SMTP Email Delivery (Invoices, Confirmation, Due Reminders)
-                            </label>
-                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
-                                Configure SMTP so payment confirmation, invoice emails, and due-date reminder emails are sent from this system.
-                            </p>
-
-                            <label for="smtp_enabled" style="display:flex; align-items:center; gap:8px; margin:0 0 14px; cursor:pointer;">
-                                <input type="checkbox" id="smtp_enabled" name="smtp_enabled" value="1"
-                                    @if(($smtpSettings->firstWhere('key', 'smtp_enabled')?->value ?? '0') == '1') checked @endif>
-                                <span>Enable SMTP email sending</span>
-                            </label>
-
-                            <div id="smtp_options" style="display: {{ ($smtpSettings->firstWhere('key', 'smtp_enabled')?->value ?? '0') == '1' ? 'block' : 'none' }};">
-                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_host">SMTP Host</label>
-                                        <input type="text" id="smtp_host" name="smtp_host" class="form-control"
-                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_host')?->value ?? '' }}"
-                                               placeholder="smtp.gmail.com">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_port">Port</label>
-                                        <input type="number" id="smtp_port" name="smtp_port" class="form-control"
-                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_port')?->value ?? '587' }}"
-                                               min="1" max="65535" step="1">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_encryption">Encryption</label>
-                                        @php $smtpEncryption = $smtpSettings->firstWhere('key', 'smtp_encryption')?->value ?? 'tls'; @endphp
-                                        <select id="smtp_encryption" name="smtp_encryption" class="form-control">
-                                            <option value="tls" {{ $smtpEncryption === 'tls' ? 'selected' : '' }}>TLS</option>
-                                            <option value="ssl" {{ $smtpEncryption === 'ssl' ? 'selected' : '' }}>SSL</option>
-                                            <option value="none" {{ $smtpEncryption === 'none' ? 'selected' : '' }}>None</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_username">SMTP Username</label>
-                                        <input type="text" id="smtp_username" name="smtp_username" class="form-control"
-                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_username')?->value ?? '' }}"
-                                               placeholder="sender@example.com">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_password">SMTP Password</label>
-                                        <input type="password" id="smtp_password" name="smtp_password" class="form-control"
-                                               value="" placeholder="Enter password or app password">
-                                        <small style="color: #64748b;">Leave blank to keep existing password.</small>
-                                    </div>
-                                </div>
-
-                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 14px;">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_from_address">From Email Address</label>
-                                        <input type="email" id="smtp_from_address" name="smtp_from_address" class="form-control"
-                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_from_address')?->value ?? '' }}"
-                                               placeholder="sender@example.com">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_from_name">From Name</label>
-                                        <input type="text" id="smtp_from_name" name="smtp_from_name" class="form-control"
-                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_from_name')?->value ?? '' }}"
-                                               placeholder="Neral Gram Panchayat">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="smtp_timeout">Timeout (seconds)</label>
-                                        <input type="number" id="smtp_timeout" name="smtp_timeout" class="form-control"
-                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_timeout')?->value ?? '30' }}"
-                                               min="5" max="300" step="1">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <script>
-                                document.getElementById('smtp_enabled').addEventListener('change', function() {
-                                    document.getElementById('smtp_options').style.display = this.checked ? 'block' : 'none';
-                                });
-                            </script>
-                        </div>
-                        
                         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                             <div class="form-group">
                                 <label for="phonepe_merchant_id">Merchant ID *</label>
@@ -455,6 +347,130 @@
                                     <strong>Production:</strong> https://api.phonepe.com/apis/hermes
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Settings -->
+            <div class="settings-tab" id="notifications">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bell"></i> Notifications Settings</h3>
+                    </div>
+                    <div class="card-body">
+                        @php $notificationSettings = $settings->get('notifications', collect()); @endphp
+                        @php $legacySmtpSettings = $settings->get('smtp', collect()); @endphp
+                        @php $legacyPaymentSettings = $settings->get('payment', collect()); @endphp
+
+                        <div class="form-group" style="padding: 16px; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 8px; margin-bottom: 20px;">
+                            <label style="color: #0e7490; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">
+                                <i class="fas fa-envelope-open-text"></i> Advance Due Reminder Emails
+                            </label>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                                Send reminder email before due date: "Please make your payment before X date to avoid penalty".
+                            </p>
+
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+                                <label for="due_reminder_enabled" style="display:flex; align-items:center; gap:8px; margin:0; cursor:pointer;">
+                                    <input type="checkbox" id="due_reminder_enabled" name="due_reminder_enabled" value="1"
+                                        @if(($notificationSettings->firstWhere('key', 'due_reminder_enabled')?->value ?? $legacyPaymentSettings->firstWhere('key', 'due_reminder_enabled')?->value ?? '1') == '1') checked @endif>
+                                    <span>Enable reminders</span>
+                                </label>
+
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <label for="due_reminder_days_before" style="margin:0; color:#0f172a; font-weight:500;">Days before due date</label>
+                                    <input type="number" id="due_reminder_days_before" name="due_reminder_days_before" class="form-control"
+                                           value="{{ $notificationSettings->firstWhere('key', 'due_reminder_days_before')?->value ?? $legacyPaymentSettings->firstWhere('key', 'due_reminder_days_before')?->value ?? '3' }}"
+                                           min="0" max="30" step="1" style="width:90px;">
+                                </div>
+                            </div>
+                            <small style="color: #64748b; margin-top: 8px; display: block;">
+                                Configure the scheduler to run daily so reminders are sent on time.
+                            </small>
+                        </div>
+
+                        <div class="form-group" style="padding: 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
+                            <label style="color: #0f172a; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">
+                                <i class="fas fa-envelope"></i> SMTP Email Delivery (Invoices, Confirmation, Due Reminders)
+                            </label>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                                Configure SMTP so payment confirmation, invoice emails, and due-date reminder emails are sent from this system.
+                            </p>
+
+                            <label for="smtp_enabled" style="display:flex; align-items:center; gap:8px; margin:0 0 14px; cursor:pointer;">
+                                <input type="checkbox" id="smtp_enabled" name="smtp_enabled" value="1"
+                                    @if(($notificationSettings->firstWhere('key', 'smtp_enabled')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_enabled')?->value ?? '0') == '1') checked @endif>
+                                <span>Enable SMTP email sending</span>
+                            </label>
+
+                            <div id="smtp_options" style="display: {{ ($notificationSettings->firstWhere('key', 'smtp_enabled')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_enabled')?->value ?? '0') == '1' ? 'block' : 'none' }};">
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_host">SMTP Host</label>
+                                        <input type="text" id="smtp_host" name="smtp_host" class="form-control"
+                                               value="{{ $notificationSettings->firstWhere('key', 'smtp_host')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_host')?->value ?? '' }}"
+                                               placeholder="smtp.gmail.com">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_port">Port</label>
+                                        <input type="number" id="smtp_port" name="smtp_port" class="form-control"
+                                               value="{{ $notificationSettings->firstWhere('key', 'smtp_port')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_port')?->value ?? '587' }}"
+                                               min="1" max="65535" step="1">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_encryption">Encryption</label>
+                                        @php $smtpEncryption = $notificationSettings->firstWhere('key', 'smtp_encryption')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_encryption')?->value ?? 'tls'; @endphp
+                                        <select id="smtp_encryption" name="smtp_encryption" class="form-control">
+                                            <option value="tls" {{ $smtpEncryption === 'tls' ? 'selected' : '' }}>TLS</option>
+                                            <option value="ssl" {{ $smtpEncryption === 'ssl' ? 'selected' : '' }}>SSL</option>
+                                            <option value="none" {{ $smtpEncryption === 'none' ? 'selected' : '' }}>None</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_username">SMTP Username</label>
+                                        <input type="text" id="smtp_username" name="smtp_username" class="form-control"
+                                               value="{{ $notificationSettings->firstWhere('key', 'smtp_username')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_username')?->value ?? '' }}"
+                                               placeholder="sender@example.com">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_password">SMTP Password</label>
+                                        <input type="password" id="smtp_password" name="smtp_password" class="form-control"
+                                               value="" placeholder="Enter password or app password">
+                                        <small style="color: #64748b;">Leave blank to keep existing password.</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 14px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_from_address">From Email Address</label>
+                                        <input type="email" id="smtp_from_address" name="smtp_from_address" class="form-control"
+                                               value="{{ $notificationSettings->firstWhere('key', 'smtp_from_address')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_from_address')?->value ?? '' }}"
+                                               placeholder="sender@example.com">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_from_name">From Name</label>
+                                        <input type="text" id="smtp_from_name" name="smtp_from_name" class="form-control"
+                                               value="{{ $notificationSettings->firstWhere('key', 'smtp_from_name')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_from_name')?->value ?? '' }}"
+                                               placeholder="Neral Gram Panchayat">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_timeout">Timeout (seconds)</label>
+                                        <input type="number" id="smtp_timeout" name="smtp_timeout" class="form-control"
+                                               value="{{ $notificationSettings->firstWhere('key', 'smtp_timeout')?->value ?? $legacySmtpSettings->firstWhere('key', 'smtp_timeout')?->value ?? '30' }}"
+                                               min="5" max="300" step="1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                document.getElementById('smtp_enabled').addEventListener('change', function() {
+                                    document.getElementById('smtp_options').style.display = this.checked ? 'block' : 'none';
+                                });
+                            </script>
                         </div>
                     </div>
                 </div>
