@@ -21,12 +21,14 @@ class Citizen extends Authenticatable
         'phone_verified_at',
         'otp',
         'otp_expires_at',
+        'banner_dismissed',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'phone_verified_at' => 'datetime',
         'otp_expires_at' => 'datetime',
+        'banner_dismissed' => 'boolean',
     ];
 
     protected $hidden = [

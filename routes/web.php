@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\WaterTaxController;
 use App\Http\Controllers\Citizen\PaymentHistoryController;
 use App\Http\Controllers\Citizen\AuthController as CitizenAuthController;
 use App\Http\Controllers\Citizen\DashboardController as CitizenDashboardController;
+use App\Http\Controllers\Citizen\GmailController;
 use App\Http\Controllers\GrievanceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LanguageController;
@@ -252,6 +253,12 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
     // Property Assessment (Form No. 8) for Citizens
     Route::get('/property-assessment', [\App\Http\Controllers\Citizen\PropertyAssessmentController::class, 'index'])->name('property-assessment.index');
     Route::get('/property-assessment/{id}/print', [\App\Http\Controllers\Citizen\PropertyAssessmentController::class, 'printAssessment'])->name('property-assessment.print');
+
+    // Gmail Banner Dismiss
+    Route::post('/banner/dismiss', [GmailController::class, 'dismissBanner'])->name('banner.dismiss');
+
+    // Email capture from notification banner
+    Route::post('/banner/save-email', [GmailController::class, 'saveEmail'])->name('banner.save-email');
 });
 
 // Payment Callback (No auth required - S2S callback from PhonePe)

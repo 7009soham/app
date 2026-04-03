@@ -463,6 +463,133 @@
                 </div>
                 @endif
 
+                {{-- Gmail Connection Banner --}}
+                @php
+                    $bannerCitizen = Auth::guard('citizen')->user();
+                    $showEmailBanner = $bannerCitizen
+                        && empty($bannerCitizen->email)
+                        && !$bannerCitizen->banner_dismissed;
+                @endphp
+                @if($showEmailBanner)
+                <div id="email-banner" style="
+                    position: relative;
+                    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #7c3aed 100%);
+                    border-radius: var(--radius-lg);
+                    padding: 20px 24px;
+                    margin-bottom: 24px;
+                    color: white;
+                    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.35);
+                    overflow: hidden;
+                    animation: bannerSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                ">
+                    {{-- Ambient glow --}}
+                    <span aria-hidden="true" style="
+                        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+                        background: radial-gradient(ellipse at 75% 50%, rgba(255,255,255,0.08) 0%, transparent 70%);
+                        pointer-events: none;
+                    "></span>
+
+                    {{-- Top row: icon + message + dismiss --}}
+                    <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px;">
+                        <span style="font-size: 28px; flex-shrink: 0; animation: popBounce 1.2s ease infinite alternate;" aria-hidden="true">🎉</span>
+
+                        <div style="flex: 1; min-width: 0;">
+                            <p style="font-size: 15px; font-weight: 700; margin: 0 0 4px; line-height: 1.4;">
+                                Get invoices &amp; reminders directly in your inbox!
+                            </p>
+                            <p style="font-size: 13px; margin: 0; opacity: 0.85; line-height: 1.5;">
+                                Add your email once — we'll send you invoices, due date reminders, and payment updates automatically.
+                            </p>
+                        </div>
+
+                        <button onclick="dismissEmailBanner(event)"
+                                aria-label="Dismiss banner"
+                                style="background: transparent; border: none; color: rgba(255,255,255,0.65); cursor: pointer; padding: 2px 4px; flex-shrink: 0; font-size: 18px; line-height: 1; transition: color 0.2s;"
+                                onmouseover="this.style.color='white'"
+                                onmouseout="this.style.color='rgba(255,255,255,0.65)'">
+                            ✕
+                        </button>
+                    </div>
+
+                    {{-- Email form row --}}
+                    <form action="{{ route('citizen.banner.save-email') }}" method="POST"
+                          style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        @csrf
+                        <input type="email"
+                               name="email"
+                               placeholder="Enter your email address"
+                               required
+                               autocomplete="email"
+                               style="
+                                   flex: 1;
+                                   min-width: 220px;
+                                   padding: 10px 16px;
+                                   border-radius: var(--radius);
+                                   border: none;
+                                   font-size: 14px;
+                                   color: var(--text-primary);
+                                   background: rgba(255,255,255,0.95);
+                                   outline: none;
+                                   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                               " />
+                        <button type="submit"
+                                style="
+                                    display: inline-flex;
+                                    align-items: center;
+                                    gap: 7px;
+                                    padding: 10px 22px;
+                                    background: white;
+                                    color: #1e3a5f;
+                                    border: none;
+                                    border-radius: var(--radius);
+                                    font-size: 14px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                    white-space: nowrap;
+                                    transition: var(--transition);
+                                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                                "
+                                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'"
+                                onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">
+                            <i class="fas fa-envelope" style="color: #2563eb;"></i>
+                            Save Email
+                        </button>
+                    </form>
+                </div>
+
+                <style>
+                    @keyframes bannerSlideIn {
+                        from { opacity: 0; transform: translateY(-16px); }
+                        to   { opacity: 1; transform: translateY(0); }
+                    }
+                    @keyframes popBounce {
+                        from { transform: scale(1) rotate(-5deg); }
+                        to   { transform: scale(1.15) rotate(5deg); }
+                    }
+                </style>
+
+                <script>
+                    function dismissEmailBanner(e) {
+                        e.preventDefault();
+                        const banner = document.getElementById('email-banner');
+                        if (banner) {
+                            banner.style.transition = 'opacity 0.3s, transform 0.3s';
+                            banner.style.opacity = '0';
+                            banner.style.transform = 'translateY(-8px)';
+                            setTimeout(() => banner.remove(), 320);
+                        }
+                        fetch('{{ route('citizen.banner.dismiss') }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                        }).catch(() => {});
+                    }
+                </script>
+                @endif
+
                 @yield('content')
             </div>
         </main>
