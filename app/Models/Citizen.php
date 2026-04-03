@@ -21,9 +21,6 @@ class Citizen extends Authenticatable
         'phone_verified_at',
         'otp',
         'otp_expires_at',
-        'is_gmail_connected',
-        'gmail_access_token',
-        'gmail_refresh_token',
         'banner_dismissed',
     ];
 
@@ -31,14 +28,11 @@ class Citizen extends Authenticatable
         'is_active' => 'boolean',
         'phone_verified_at' => 'datetime',
         'otp_expires_at' => 'datetime',
-        'is_gmail_connected' => 'boolean',
         'banner_dismissed' => 'boolean',
     ];
 
     protected $hidden = [
         'otp',
-        'gmail_access_token',
-        'gmail_refresh_token',
     ];
 
     /**

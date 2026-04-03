@@ -466,92 +466,95 @@
                 {{-- Gmail Connection Banner --}}
                 @php
                     $bannerCitizen = Auth::guard('citizen')->user();
-                    $showGmailBanner = $bannerCitizen
-                        && !$bannerCitizen->is_gmail_connected
+                    $showEmailBanner = $bannerCitizen
+                        && empty($bannerCitizen->email)
                         && !$bannerCitizen->banner_dismissed;
                 @endphp
-                @if($showGmailBanner)
-                <div id="gmail-banner" style="
+                @if($showEmailBanner)
+                <div id="email-banner" style="
                     position: relative;
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
                     background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #7c3aed 100%);
                     border-radius: var(--radius-lg);
-                    padding: 18px 24px;
+                    padding: 20px 24px;
                     margin-bottom: 24px;
                     color: white;
                     box-shadow: 0 8px 32px rgba(37, 99, 235, 0.35);
                     overflow: hidden;
                     animation: bannerSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
                 ">
-                    {{-- Sparkle background --}}
+                    {{-- Ambient glow --}}
                     <span aria-hidden="true" style="
                         position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                        background: radial-gradient(ellipse at 80% 50%, rgba(255,255,255,0.08) 0%, transparent 70%);
+                        background: radial-gradient(ellipse at 75% 50%, rgba(255,255,255,0.08) 0%, transparent 70%);
                         pointer-events: none;
                     "></span>
 
-                    {{-- Firecracker icon --}}
-                    <span style="font-size: 32px; flex-shrink: 0; animation: popBounce 1.2s ease infinite alternate;">🎉</span>
+                    {{-- Top row: icon + message + dismiss --}}
+                    <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px;">
+                        <span style="font-size: 28px; flex-shrink: 0; animation: popBounce 1.2s ease infinite alternate;" aria-hidden="true">🎉</span>
 
-                    {{-- Message --}}
-                    <div style="flex: 1; min-width: 0;">
-                        <p style="font-size: 15px; font-weight: 600; margin: 0 0 4px;">
-                            Connect your Gmail to receive invoices, due date reminders, and completion updates directly in your inbox.
-                        </p>
-                        <p style="font-size: 13px; margin: 0; opacity: 0.85;">
-                            Link your account once — we'll handle the rest automatically.
-                        </p>
+                        <div style="flex: 1; min-width: 0;">
+                            <p style="font-size: 15px; font-weight: 700; margin: 0 0 4px; line-height: 1.4;">
+                                Get invoices &amp; reminders directly in your inbox!
+                            </p>
+                            <p style="font-size: 13px; margin: 0; opacity: 0.85; line-height: 1.5;">
+                                Add your email once — we'll send you invoices, due date reminders, and payment updates automatically.
+                            </p>
+                        </div>
+
+                        <button onclick="dismissEmailBanner(event)"
+                                aria-label="Dismiss banner"
+                                style="background: transparent; border: none; color: rgba(255,255,255,0.65); cursor: pointer; padding: 2px 4px; flex-shrink: 0; font-size: 18px; line-height: 1; transition: color 0.2s;"
+                                onmouseover="this.style.color='white'"
+                                onmouseout="this.style.color='rgba(255,255,255,0.65)'">
+                            ✕
+                        </button>
                     </div>
 
-                    {{-- CTA button --}}
-                    <a href="{{ route('citizen.auth.google') }}"
-                       style="
-                           display: inline-flex;
-                           align-items: center;
-                           gap: 8px;
-                           padding: 10px 20px;
-                           background: white;
-                           color: #1e3a5f;
-                           border-radius: var(--radius);
-                           font-size: 14px;
-                           font-weight: 700;
-                           text-decoration: none;
-                           white-space: nowrap;
-                           flex-shrink: 0;
-                           transition: var(--transition);
-                           box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                       "
-                       onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'"
-                       onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                        </svg>
-                        Connect Gmail
-                    </a>
-
-                    {{-- Dismiss button --}}
-                    <button onclick="dismissGmailBanner(event)"
-                            aria-label="Dismiss banner"
-                            style="
-                                background: transparent;
-                                border: none;
-                                color: rgba(255,255,255,0.7);
-                                cursor: pointer;
-                                padding: 4px;
-                                flex-shrink: 0;
-                                font-size: 18px;
-                                line-height: 1;
-                                transition: color 0.2s;
-                            "
-                            onmouseover="this.style.color='white'"
-                            onmouseout="this.style.color='rgba(255,255,255,0.7)'">
-                        ✕
-                    </button>
+                    {{-- Email form row --}}
+                    <form action="{{ route('citizen.banner.save-email') }}" method="POST"
+                          style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        @csrf
+                        <input type="email"
+                               name="email"
+                               placeholder="Enter your email address"
+                               required
+                               autocomplete="email"
+                               style="
+                                   flex: 1;
+                                   min-width: 220px;
+                                   padding: 10px 16px;
+                                   border-radius: var(--radius);
+                                   border: none;
+                                   font-size: 14px;
+                                   color: var(--text-primary);
+                                   background: rgba(255,255,255,0.95);
+                                   outline: none;
+                                   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                               " />
+                        <button type="submit"
+                                style="
+                                    display: inline-flex;
+                                    align-items: center;
+                                    gap: 7px;
+                                    padding: 10px 22px;
+                                    background: white;
+                                    color: #1e3a5f;
+                                    border: none;
+                                    border-radius: var(--radius);
+                                    font-size: 14px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                    white-space: nowrap;
+                                    transition: var(--transition);
+                                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                                "
+                                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'"
+                                onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">
+                            <i class="fas fa-envelope" style="color: #2563eb;"></i>
+                            Save Email
+                        </button>
+                    </form>
                 </div>
 
                 <style>
@@ -563,16 +566,12 @@
                         from { transform: scale(1) rotate(-5deg); }
                         to   { transform: scale(1.15) rotate(5deg); }
                     }
-                    @media (max-width: 640px) {
-                        #gmail-banner { flex-wrap: wrap; }
-                        #gmail-banner a { width: 100%; justify-content: center; }
-                    }
                 </style>
 
                 <script>
-                    function dismissGmailBanner(e) {
+                    function dismissEmailBanner(e) {
                         e.preventDefault();
-                        const banner = document.getElementById('gmail-banner');
+                        const banner = document.getElementById('email-banner');
                         if (banner) {
                             banner.style.transition = 'opacity 0.3s, transform 0.3s';
                             banner.style.opacity = '0';

@@ -206,10 +206,6 @@ Route::prefix('citizen')->name('citizen.')->group(function () {
     Route::post('/send-otp', [CitizenAuthController::class, 'sendOtp'])->name('send-otp');
     Route::post('/verify-otp', [CitizenAuthController::class, 'verifyOtp'])->name('verify-otp');
     Route::post('/logout', [CitizenAuthController::class, 'logout'])->name('logout');
-
-    // Gmail OAuth (public callback - Google redirects here before auth check)
-    Route::get('/auth/google', [GmailController::class, 'redirectToGoogle'])->name('auth.google')->middleware('citizen.auth');
-    Route::get('/auth/google/callback', [GmailController::class, 'handleGoogleCallback'])->name('auth.google.callback')->middleware('citizen.auth');
 });
 
 /*
@@ -260,6 +256,9 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
 
     // Gmail Banner Dismiss
     Route::post('/banner/dismiss', [GmailController::class, 'dismissBanner'])->name('banner.dismiss');
+
+    // Email capture from notification banner
+    Route::post('/banner/save-email', [GmailController::class, 'saveEmail'])->name('banner.save-email');
 });
 
 // Payment Callback (No auth required - S2S callback from PhonePe)
