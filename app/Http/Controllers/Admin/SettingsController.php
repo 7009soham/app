@@ -42,6 +42,23 @@ class SettingsController extends Controller
         'phonepe_salt_key' => 'payment',
         'phonepe_salt_index' => 'payment',
         'phonepe_env' => 'payment',
+        'partial_payment_enabled' => 'payment',
+        'partial_payment_allow_50' => 'payment',
+        'partial_payment_allow_75' => 'payment',
+        'convenience_fee_percentage' => 'payment',
+        'due_reminder_enabled' => 'payment',
+        'due_reminder_days_before' => 'payment',
+
+        // SMTP Settings
+        'smtp_enabled' => 'smtp',
+        'smtp_host' => 'smtp',
+        'smtp_port' => 'smtp',
+        'smtp_username' => 'smtp',
+        'smtp_password' => 'smtp',
+        'smtp_encryption' => 'smtp',
+        'smtp_from_address' => 'smtp',
+        'smtp_from_name' => 'smtp',
+        'smtp_timeout' => 'smtp',
     ];
 
     public function index()
@@ -52,12 +69,56 @@ class SettingsController extends Controller
 
     public function update(Request $request)
     {
+        $existingSmtpPassword = SiteSetting::get('smtp_password', '');
+
+        $validationRules = [
+            'convenience_fee_percentage' => 'nullable|numeric|min:0|max:20',
+            'due_reminder_days_before' => 'nullable|integer|min:0|max:30',
+            'smtp_port' => 'nullable|integer|min:1|max:65535',
+            'smtp_timeout' => 'nullable|integer|min:5|max:300',
+            'smtp_encryption' => 'nullable|in:tls,ssl,none',
+            'smtp_from_address' => 'nullable|email|max:255',
+            'smtp_from_name' => 'nullable|string|max:255',
+        ];
+
+        if ($request->has('smtp_enabled')) {
+            $validationRules = array_merge($validationRules, [
+                'smtp_host' => 'required|string|max:255',
+                'smtp_username' => 'required|string|max:255',
+                'smtp_password' => empty($existingSmtpPassword) ? 'required|string|max:255' : 'nullable|string|max:255',
+                'smtp_from_address' => 'required|email|max:255',
+            ]);
+        }
+
+        $request->validate($validationRules);
+
         $settingsData = $request->except('_token', '_method');
+
+        $booleanKeys = [
+            'partial_payment_enabled',
+            'partial_payment_allow_50',
+            'partial_payment_allow_75',
+            'due_reminder_enabled',
+            'smtp_enabled',
+        ];
+
+        foreach ($booleanKeys as $key) {
+            $settingsData[$key] = $request->has($key) ? '1' : '0';
+        }
 
         foreach ($settingsData as $key => $value) {
             // Skip callback URL field (readonly)
             if ($key === 'phonepe_callback_url') {
                 continue;
+            }
+
+            // Keep existing SMTP password when the field is intentionally left blank.
+            if ($key === 'smtp_password' && trim((string) $value) === '') {
+                if (!empty($existingSmtpPassword)) {
+                    $value = $existingSmtpPassword;
+                } else {
+                    continue;
+                }
             }
 
             // Determine the group for this setting

@@ -1,0 +1,4 @@
+﻿Configuration File (php.ini) Path: ""
+Loaded Configuration File:         "C:\Program Files\php-8.5.4\php.ini"
+Scan for additional .ini files in: (none)
+Additional .ini files parsed:      (none)

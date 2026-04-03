@@ -1,0 +1,19 @@
+TaxPayment Details:
+ID: 1
+Citizen ID: 1
+Tax Type: water_tax
+Record ID: 1
+Amount: 515.00
+Status: success
+Payment Status: completed
+Paid At: 2026-03-30 05:30:12
+
+Related Tax Record:
+ID: 1
+Customer No: 23
+Balance: 500.00
+Amount Paid (Total): 500.00
+
+Unified Payment Record:
+Amount: 515.00
+Remarks: Online payment via PhonePe (Tax: ₹500.00, Convenience Fee: ₹15.00)

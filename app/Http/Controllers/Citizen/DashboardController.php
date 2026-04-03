@@ -198,11 +198,13 @@ class DashboardController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255|unique:citizens,email,' . $citizen->id,
             'address' => 'nullable|string|max:500',
         ]);
 
         $citizen->update([
             'name' => $request->name,
+            'email' => $request->email,
             'address' => $request->address,
         ]);
 

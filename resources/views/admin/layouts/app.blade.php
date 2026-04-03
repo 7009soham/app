@@ -14,7 +14,10 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Admin CSS -->
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Admin CSS (loaded after Bootstrap to override) -->
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     
     @stack('styles')
@@ -38,6 +41,20 @@
                             <span>Dashboard</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('admin.analytics.index') }}" class="{{ request()->routeIs('admin.analytics*') ? 'active' : '' }}">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Analytics</span>
+                        </a>
+                    </li>
+                    @if($currentAdmin->isSuperAdmin())
+                    <li>
+                        <a href="{{ route('admin.activity-logs.index') }}" class="{{ request()->routeIs('admin.activity-logs*') ? 'active' : '' }}">
+                            <i class="fas fa-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
+                    </li>
+                    @endif
                     
                     <!-- Tax Collection Section -->
                     @if($currentAdmin->isSuperAdmin() || $currentAdmin->hasPermission('water_tax.view') || $currentAdmin->hasPermission('property_tax.view'))
@@ -77,6 +94,15 @@
                     </li>
                     @endif
                     
+                    @if($currentAdmin->isSuperAdmin() || $currentAdmin->hasPermission('property_tax.view'))
+                    <li>
+                        <a href="{{ route('admin.property-assessments.index') }}" class="{{ request()->routeIs('admin.property-assessments*') ? 'active' : '' }}">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Property Assessment</span>
+                        </a>
+                    </li>
+                    @endif
+                    
                     <!-- Grievances -->
                     @if($currentAdmin->isSuperAdmin() || $currentAdmin->hasPermission('grievances.view'))
                     <li>
@@ -110,10 +136,12 @@
                     </li>
                     @endif
                     
-                    <!-- User Management (Super Admin Only) -->
-                    @if($currentAdmin->isSuperAdmin())
+                    <!-- User Management -->
+                    @if($currentAdmin->isSuperAdmin() || $currentAdmin->hasPermission('citizens.view'))
                     <li class="nav-section">User Management</li>
+                    @endif
                     
+                    @if($currentAdmin->isSuperAdmin())
                     <li>
                         <a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles*') ? 'active' : '' }}">
                             <i class="fas fa-user-tag"></i>
@@ -128,6 +156,21 @@
                         </a>
                     </li>
                     @endif
+
+                    @if($currentAdmin->isSuperAdmin() || $currentAdmin->hasPermission('citizens.view'))
+                    <li>
+                        <a href="{{ route('admin.citizens.index') }}" class="{{ request()->routeIs('admin.citizens*') ? 'active' : '' }}">
+                            <i class="fas fa-users"></i>
+                            <span>Citizens</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.demands.index') }}" class="{{ request()->routeIs('admin.demands*') ? 'active' : '' }}">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <span>Demands</span>
+                        </a>
+                    </li>
+                    @endif
                     
                     <!-- Configuration -->
                     @if($currentAdmin->isSuperAdmin() || $currentAdmin->hasPermission('settings.view'))
@@ -137,6 +180,24 @@
                         <a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}">
                             <i class="fas fa-cog"></i>
                             <span>Settings</span>
+                        </a>
+                    </li>
+                    @endif
+                    
+                    @if($currentAdmin->isSuperAdmin() || $currentAdmin->hasPermission('penalty.manage'))
+                    <li>
+                        <a href="{{ route('admin.penalty-settings.index') }}" class="{{ request()->routeIs('admin.penalty-settings*') ? 'active' : '' }}">
+                            <i class="fas fa-percent"></i>
+                            <span>Penalty Settings</span>
+                        </a>
+                    </li>
+                    @endif
+                    
+                    @if($currentAdmin->isSuperAdmin())
+                    <li>
+                        <a href="{{ route('admin.tax-rate-adjustment.index') }}" class="{{ request()->routeIs('admin.tax-rate-adjustment*') ? 'active' : '' }}">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Tax Rate Adjustment</span>
                         </a>
                     </li>
                     @endif
@@ -253,6 +314,9 @@
             userMenu?.classList.remove('show');
         });
     </script>
+    
+    <!-- Bootstrap 5 JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     @stack('scripts')
 </body>

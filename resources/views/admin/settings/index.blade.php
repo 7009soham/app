@@ -197,9 +197,9 @@
                             <select id="firebase_enabled" name="firebase_enabled" class="form-control">
                                 @php $firebaseEnabled = $firebaseSettings->firstWhere('key', 'firebase_enabled')?->value ?? '0'; @endphp
                                 <option value="1" {{ $firebaseEnabled == '1' ? 'selected' : '' }}>Enabled</option>
-                                <option value="0" {{ $firebaseEnabled == '0' ? 'selected' : '' }}>Disabled (Fallback OTP)</option>
+                                <option value="0" {{ $firebaseEnabled == '0' ? 'selected' : '' }}>Disabled</option>
                             </select>
-                            <small style="color: #64748b;">When disabled, the system will use backend SMS OTP as fallback.</small>
+                            <small style="color: #64748b;">Keep this enabled for real Firebase OTP authentication.</small>
                         </div>
                     </div>
                 </div>
@@ -213,6 +213,7 @@
                     </div>
                     <div class="card-body">
                         @php $paymentSettings = $settings->get('payment', collect()); @endphp
+                        @php $smtpSettings = $settings->get('smtp', collect()); @endphp
                         
                         <div class="alert alert-info" style="background: #f3e8ff; border: 1px solid #c4b5fd; color: #5b21b6;">
                             <i class="fas fa-info-circle"></i>
@@ -234,6 +235,169 @@
                                 <option value="1" {{ $paymentEnabled == '1' ? 'selected' : '' }}>Enabled</option>
                                 <option value="0" {{ $paymentEnabled == '0' ? 'selected' : '' }}>Disabled</option>
                             </select>
+                        </div>
+
+                        <div class="form-group" style="padding: 16px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; margin-bottom: 20px;">
+                            <label style="color: #92400e; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">Partial Payment Options</label>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label for="partial_payment_enabled" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="partial_payment_enabled" name="partial_payment_enabled" value="1" 
+                                        @if(($paymentSettings->firstWhere('key', 'partial_payment_enabled')?->value ?? '0') == '1') checked @endif
+                                        style="width: 18px; height: 18px;">
+                                    <span style="font-weight: 500;">Allow Partial Payments</span>
+                                </label>
+                                <small style="display: block; margin-left: 28px; color: #64748b;">If enabled, citizens can choose to pay a percentage of their bill.</small>
+                            </div>
+
+                            <div id="partial_options" style="margin-left: 28px; display: {{ ($paymentSettings->firstWhere('key', 'partial_payment_enabled')?->value ?? '0') == '1' ? 'block' : 'none' }};">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px;">Allowed Percentages:</label>
+                                <div style="display: flex; gap: 20px;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                        <input type="checkbox" name="partial_payment_allow_50" value="1" 
+                                            @if(($paymentSettings->firstWhere('key', 'partial_payment_allow_50')?->value ?? '0') == '1') checked @endif>
+                                        <span>50% (Half)</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                        <input type="checkbox" name="partial_payment_allow_75" value="1" 
+                                            @if(($paymentSettings->firstWhere('key', 'partial_payment_allow_75')?->value ?? '0') == '1') checked @endif>
+                                        <span>75% (3/4th)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <script>
+                                document.getElementById('partial_payment_enabled').addEventListener('change', function() {
+                                    document.getElementById('partial_options').style.display = this.checked ? 'block' : 'none';
+                                });
+                            </script>
+                        </div>
+
+                        <div class="form-group" style="padding: 16px; background: #faf5ff; border: 1px solid #d8b4fe; border-radius: 8px; margin-bottom: 20px;">
+                            <label style="color: #6b21a8; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">
+                                <i class="fas fa-percentage"></i> Convenience Fee
+                            </label>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                                Add a convenience fee percentage on top of tax payments to cover payment gateway charges (e.g., PhonePe charges ~2%). This fee will be shown as a separate line item to citizens before they pay.
+                            </p>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="number" id="convenience_fee_percentage" name="convenience_fee_percentage" class="form-control" 
+                                       value="{{ $paymentSettings->firstWhere('key', 'convenience_fee_percentage')?->value ?? '0' }}"
+                                       placeholder="2" min="0" max="20" step="0.1"
+                                       style="max-width: 120px;">
+                                <span style="font-size: 16px; font-weight: 600; color: #6b21a8;">%</span>
+                            </div>
+                            <small style="color: #64748b; margin-top: 6px; display: block;">Set to 0 to disable convenience fee. Example: 2 means 2% will be added to every online payment.</small>
+                        </div>
+
+                        <div class="form-group" style="padding: 16px; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 8px; margin-bottom: 20px;">
+                            <label style="color: #0e7490; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">
+                                <i class="fas fa-envelope-open-text"></i> Advance Due Reminder Emails
+                            </label>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                                Send reminder email before due date: "Please make your payment before X date to avoid penalty".
+                            </p>
+
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+                                <label for="due_reminder_enabled" style="display:flex; align-items:center; gap:8px; margin:0; cursor:pointer;">
+                                    <input type="checkbox" id="due_reminder_enabled" name="due_reminder_enabled" value="1"
+                                        @if(($paymentSettings->firstWhere('key', 'due_reminder_enabled')?->value ?? '1') == '1') checked @endif>
+                                    <span>Enable reminders</span>
+                                </label>
+
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <label for="due_reminder_days_before" style="margin:0; color:#0f172a; font-weight:500;">Days before due date</label>
+                                    <input type="number" id="due_reminder_days_before" name="due_reminder_days_before" class="form-control"
+                                           value="{{ $paymentSettings->firstWhere('key', 'due_reminder_days_before')?->value ?? '3' }}"
+                                           min="0" max="30" step="1" style="width:90px;">
+                                </div>
+                            </div>
+                            <small style="color: #64748b; margin-top: 8px; display: block;">
+                                Configure the scheduler to run daily so reminders are sent on time.
+                            </small>
+                        </div>
+
+                        <div class="form-group" style="padding: 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
+                            <label style="color: #0f172a; font-weight: 600; font-size: 15px; margin-bottom: 12px; display: block;">
+                                <i class="fas fa-envelope"></i> SMTP Email Delivery (Invoices, Confirmation, Due Reminders)
+                            </label>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                                Configure SMTP so payment confirmation, invoice emails, and due-date reminder emails are sent from this system.
+                            </p>
+
+                            <label for="smtp_enabled" style="display:flex; align-items:center; gap:8px; margin:0 0 14px; cursor:pointer;">
+                                <input type="checkbox" id="smtp_enabled" name="smtp_enabled" value="1"
+                                    @if(($smtpSettings->firstWhere('key', 'smtp_enabled')?->value ?? '0') == '1') checked @endif>
+                                <span>Enable SMTP email sending</span>
+                            </label>
+
+                            <div id="smtp_options" style="display: {{ ($smtpSettings->firstWhere('key', 'smtp_enabled')?->value ?? '0') == '1' ? 'block' : 'none' }};">
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_host">SMTP Host</label>
+                                        <input type="text" id="smtp_host" name="smtp_host" class="form-control"
+                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_host')?->value ?? '' }}"
+                                               placeholder="smtp.gmail.com">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_port">Port</label>
+                                        <input type="number" id="smtp_port" name="smtp_port" class="form-control"
+                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_port')?->value ?? '587' }}"
+                                               min="1" max="65535" step="1">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_encryption">Encryption</label>
+                                        @php $smtpEncryption = $smtpSettings->firstWhere('key', 'smtp_encryption')?->value ?? 'tls'; @endphp
+                                        <select id="smtp_encryption" name="smtp_encryption" class="form-control">
+                                            <option value="tls" {{ $smtpEncryption === 'tls' ? 'selected' : '' }}>TLS</option>
+                                            <option value="ssl" {{ $smtpEncryption === 'ssl' ? 'selected' : '' }}>SSL</option>
+                                            <option value="none" {{ $smtpEncryption === 'none' ? 'selected' : '' }}>None</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_username">SMTP Username</label>
+                                        <input type="text" id="smtp_username" name="smtp_username" class="form-control"
+                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_username')?->value ?? '' }}"
+                                               placeholder="sender@example.com">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_password">SMTP Password</label>
+                                        <input type="password" id="smtp_password" name="smtp_password" class="form-control"
+                                               value="" placeholder="Enter password or app password">
+                                        <small style="color: #64748b;">Leave blank to keep existing password.</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 14px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_from_address">From Email Address</label>
+                                        <input type="email" id="smtp_from_address" name="smtp_from_address" class="form-control"
+                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_from_address')?->value ?? '' }}"
+                                               placeholder="sender@example.com">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_from_name">From Name</label>
+                                        <input type="text" id="smtp_from_name" name="smtp_from_name" class="form-control"
+                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_from_name')?->value ?? '' }}"
+                                               placeholder="Neral Gram Panchayat">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="smtp_timeout">Timeout (seconds)</label>
+                                        <input type="number" id="smtp_timeout" name="smtp_timeout" class="form-control"
+                                               value="{{ $smtpSettings->firstWhere('key', 'smtp_timeout')?->value ?? '30' }}"
+                                               min="5" max="300" step="1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                document.getElementById('smtp_enabled').addEventListener('change', function() {
+                                    document.getElementById('smtp_options').style.display = this.checked ? 'block' : 'none';
+                                });
+                            </script>
                         </div>
                         
                         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">

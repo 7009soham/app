@@ -8,6 +8,7 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
@@ -20,7 +21,8 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         
-        $currentAdminId = Session::get('admin_id');
+        $currentAdmin = Auth::guard('admin')->user();
+        $currentAdminId = $currentAdmin ? $currentAdmin->id : null;
         $originalAdminId = Session::get('original_admin_id');
         
         return view('admin.admins.index', compact('admins', 'currentAdminId', 'originalAdminId'));
@@ -63,8 +65,13 @@ class AdminController extends Controller
      */
     public function edit(Admin $admin)
     {
+        $currentAdmin = Auth::guard('admin')->user();
+
+        if (!$currentAdmin) {
+            return redirect()->route('admin.login')->with('error', 'Session expired.');
+        }
+
         // Prevent editing super admin unless you're a super admin
-        $currentAdmin = Admin::find(Session::get('admin_id'));
         if ($admin->isSuperAdmin() && !$currentAdmin->isSuperAdmin()) {
             return redirect()->route('admin.admins.index')
                 ->with('error', 'You cannot edit a Super Admin.');
@@ -108,10 +115,14 @@ class AdminController extends Controller
      */
     public function destroy(Admin $admin)
     {
-        $currentAdminId = Session::get('admin_id');
+        $currentAdmin = Auth::guard('admin')->user();
         
+        if (!$currentAdmin) {
+            return redirect()->route('admin.login');
+        }
+
         // Prevent deleting yourself
-        if ($admin->id == $currentAdminId) {
+        if ($admin->id == $currentAdmin->id) {
             return redirect()->route('admin.admins.index')
                 ->with('error', 'You cannot delete your own account.');
         }
@@ -133,8 +144,11 @@ class AdminController extends Controller
      */
     public function impersonate(Admin $admin)
     {
-        $currentAdminId = Session::get('admin_id');
-        $currentAdmin = Admin::find($currentAdminId);
+        $currentAdmin = Auth::guard('admin')->user();
+
+        if (!$currentAdmin) {
+            return redirect()->route('admin.login')->with('error', 'Session expired. Please login again.');
+        }
 
         // Only super admins can impersonate
         if (!$currentAdmin->isSuperAdmin()) {
@@ -143,14 +157,18 @@ class AdminController extends Controller
         }
 
         // Cannot impersonate yourself
-        if ($admin->id == $currentAdminId) {
+        if ($admin->id == $currentAdmin->id) {
             return redirect()->route('admin.admins.index')
                 ->with('error', 'You cannot impersonate yourself.');
         }
 
         // Store original admin ID to allow switching back
-        Session::put('original_admin_id', $currentAdminId);
-        Session::put('admin_id', $admin->id);
+        Session::put('original_admin_id', $currentAdmin->id);
+        
+        \App\Helpers\Logger::log("Impersonated admin {$admin->name}", $admin, 'security');
+        
+        // Login as new admin
+        Auth::guard('admin')->login($admin);
 
         return redirect()->route('admin.dashboard')
             ->with('success', 'You are now logged in as ' . $admin->name);
@@ -170,10 +188,61 @@ class AdminController extends Controller
 
         $originalAdmin = Admin::find($originalAdminId);
 
-        Session::put('admin_id', $originalAdminId);
+        if ($originalAdmin) {
+            Auth::guard('admin')->login($originalAdmin);
+            \App\Helpers\Logger::log("Stopped impersonation", $originalAdmin, 'security');
+        }
+
         Session::forget('original_admin_id');
 
         return redirect()->route('admin.dashboard')
-            ->with('success', 'Welcome back, ' . $originalAdmin->name);
+            ->with('success', 'Welcome back, ' . ($originalAdmin->name ?? 'Admin'));
+    }
+
+    /**
+     * Secret login as citizen by phone number
+     */
+    public function loginAsCitizen(Request $request)
+    {
+        $currentAdmin = Auth::guard('admin')->user();
+        
+        // Security check: Only allow if logged in admin
+        if (!$currentAdmin) {
+            return redirect()->route('admin.login');
+        }
+
+        // Only admins with permission can login as citizen
+        if (!$currentAdmin->hasPermission('citizens.impersonate')) {
+            return back()->with('error', 'You do not have permission to perform this action.');
+        }
+
+        // Validate phone
+        $request->validate([
+            'phone' => 'required|string'
+        ]);
+        
+        $phone = $request->phone;
+        
+        // Find citizen
+        $citizen = \App\Models\Citizen::where('phone', $phone)->first();
+        
+        if (!$citizen) {
+            return back()->with('error', 'Citizen account not found for this phone number.');
+        }
+
+        // Preserve the current CSRF token so existing admin-tab forms remain valid
+        // even though guard login regenerates the session and token.
+        $currentCsrfToken = $request->session()->token();
+        
+        // Login as citizen
+        Auth::guard('citizen')->login($citizen);
+
+        if (is_string($currentCsrfToken) && $currentCsrfToken !== '') {
+            $request->session()->put('_token', $currentCsrfToken);
+        }
+        
+        // Redirect to citizen dashboard
+        return redirect()->route('citizen.dashboard')
+            ->with('success', 'Logged in as citizen ' . $citizen->name);
     }
 }

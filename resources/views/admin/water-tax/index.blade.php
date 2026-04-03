@@ -297,6 +297,13 @@
 <div class="page-header">
     <h1 class="page-title"><i class="fas fa-tint" style="color: #3b82f6;"></i> Water Tax Management</h1>
     <div class="header-actions">
+        <select id="bulkActionSelect" style="padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; background: white;">
+            <option value="">Bulk Actions</option>
+            <option value="mark_paid">Mark as Paid</option>
+            <option value="delete">Delete Selected</option>
+            <option value="export">Export Selected</option>
+        </select>
+        <button type="button" id="applyBulkActionBtn" class="btn btn-outline" style="border-color: #3b82f6; color: #3b82f6;">Apply</button>
         <a href="{{ route('admin.water-tax.export') }}" class="btn btn-outline">
             <i class="fas fa-download"></i> Export CSV
         </a>
@@ -346,6 +353,15 @@
                     <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
                 </select>
             </div>
+            <div class="filter-group" style="max-width: 150px;">
+                <label>Demand No</label>
+                <select name="demand_number">
+                    <option value="">All</option>
+                    @for($i = 1; $i <= 8; $i++)
+                        <option value="{{ $i }}" {{ request('demand_number') == $i ? 'selected' : '' }}>{{ $i }}</option>
+                    @endfor
+                </select>
+            </div>
             <button type="submit" class="filter-btn">
                 <i class="fas fa-filter"></i> Filter
             </button>
@@ -360,6 +376,7 @@
         <table class="data-table">
             <thead>
                 <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
                     <th>A.No</th>
                     <th>Customer</th>
                     <th>Phone</th>
@@ -373,6 +390,7 @@
             <tbody>
                 @forelse($records as $record)
                 <tr>
+                    <td><input type="checkbox" class="row-checkbox" value="{{ $record->id }}"></td>
                     <td>{{ $record->a_no }}</td>
                     <td>
                         <div class="customer-name">{{ $record->customer_name }}</div>
@@ -397,6 +415,15 @@
                     </td>
                     <td>
                         <div class="actions-cell">
+                            @if($record->phone)
+                            <form action="{{ route('admin.login-as-citizen') }}" method="POST" target="_blank" style="display:inline;">
+                                @csrf
+                                <input type="hidden" name="phone" value="{{ $record->phone }}">
+                                <button type="submit" class="btn-action btn-view" title="Login as Citizen">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                </button>
+                            </form>
+                            @endif
                             <a href="{{ route('admin.water-tax.edit', $record) }}" class="btn-action btn-edit">
                                 <i class="fas fa-edit"></i>
                             </a>
@@ -413,7 +440,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+                    <td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">
                         <i class="fas fa-inbox" style="font-size: 40px; margin-bottom: 16px; display: block;"></i>
                         No water tax records found.
                     </td>
@@ -430,3 +457,57 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.getElementById('selectAll')?.addEventListener('change', function() {
+        let checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+    
+    document.getElementById('applyBulkActionBtn')?.addEventListener('click', function() {
+        let action = document.getElementById('bulkActionSelect').value;
+        if (!action) {
+            alert('Please select a bulk action');
+            return;
+        }
+        
+        let selected = [];
+        document.querySelectorAll('.row-checkbox:checked').forEach(cb => selected.push(cb.value));
+        
+        if (selected.length === 0) {
+            alert('Please select at least one record');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to ' + action + ' ' + selected.length + ' records?')) {
+            let form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("admin.water-tax.bulk") }}';
+            
+            let csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+
+            let actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = action;
+            form.appendChild(actionInput);
+
+            selected.forEach(id => {
+                let idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'ids[]';
+                idInput.value = id;
+                form.appendChild(idInput);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+</script>
+@endpush

@@ -3,6 +3,8 @@
 @section('title', 'Add Property Tax Record')
 
 @push('styles')
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
     .page-header {
         margin-bottom: 24px;
@@ -33,7 +35,7 @@
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         overflow: hidden;
-        max-width: 800px;
+        max-width: 900px;
     }
 
     .form-body {
@@ -65,6 +67,11 @@
         margin-bottom: 8px;
     }
 
+    .required::after {
+        content: ' *';
+        color: #dc2626;
+    }
+
     .form-input,
     .form-select {
         width: 100%;
@@ -80,6 +87,46 @@
         outline: none;
         border-color: #16a34a;
         box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+    }
+
+    /* Select2 Styling */
+    .select2-container--default .select2-selection--single {
+        height: 48px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 16px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 32px;
+        font-size: 15px;
+        color: #374151;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 46px;
+    }
+
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #16a34a;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+    }
+
+    .select2-dropdown {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .select2-search--dropdown .select2-search__field {
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 8px 12px;
+    }
+
+    .select2-search--dropdown .select2-search__field:focus {
+        border-color: #16a34a;
+        outline: none;
     }
 
     .form-actions {
@@ -120,6 +167,19 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
     }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 24px 0 16px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .section-title:first-child {
+        margin-top: 0;
+    }
 </style>
 @endpush
 
@@ -136,60 +196,127 @@
     
     <div class="form-card">
         <div class="form-body">
+            <h3 class="section-title">Basic Information</h3>
+            
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">A.No *</label>
+                    <label class="form-label required">A.No</label>
                     <input type="number" name="a_no" class="form-input" value="{{ old('a_no') }}" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Customer No *</label>
+                    <label class="form-label required">Customer No</label>
                     <input type="text" name="customer_no" class="form-input" value="{{ old('customer_no') }}" required>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Customer Name *</label>
+                    <label class="form-label required">Property No</label>
+                    <input type="text" name="property_no" class="form-input" value="{{ old('property_no') }}" placeholder="e.g., 1634, 111/1/2" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Property Type</label>
+                    <input type="text" name="property_type" class="form-input" value="{{ old('property_type', 'RCC') }}" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label required">Customer Name</label>
                     <input type="text" name="customer_name" class="form-input" value="{{ old('customer_name') }}" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Phone</label>
-                    <input type="text" name="phone" class="form-input" value="{{ old('phone') }}" maxlength="10">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Monthly Bill *</label>
-                    <input type="number" name="monthly_bill" class="form-input" value="{{ old('monthly_bill', 0) }}" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Period</label>
-                    <input type="text" name="period" class="form-input" value="{{ old('period') }}" placeholder="e.g., 2025-26">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Balance Due *</label>
-                    <input type="number" name="balance" class="form-input" value="{{ old('balance', 0) }}" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Amount Paid</label>
-                    <input type="number" name="amount_paid" class="form-input" value="{{ old('amount_paid', 0) }}" step="0.01">
+                    <input type="text" name="phone" class="form-input" value="{{ old('phone') }}" maxlength="10" placeholder="10-digit mobile number">
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-label">Link to Citizen (Optional)</label>
-                <select name="citizen_id" class="form-select">
-                    <option value="">-- Not Linked --</option>
-                    @foreach($citizens as $citizen)
-                    <option value="{{ $citizen->id }}" {{ old('citizen_id') == $citizen->id ? 'selected' : '' }}>
-                        {{ $citizen->name }} ({{ $citizen->phone }})
-                    </option>
-                    @endforeach
-                </select>
+                <label class="form-label">Aadhaar Number</label>
+                <input type="text" name="aadhaar_no" class="form-input" value="{{ old('aadhaar_no') }}" maxlength="12" placeholder="12-digit Aadhaar number">
+            </div>
+
+            <h3 class="section-title">Previous Year Tax</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">House Tax</label>
+                    <input type="number" name="previous_house_tax" class="form-input" value="{{ old('previous_house_tax', 0) }}" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Electricity Tax</label>
+                    <input type="number" name="previous_electricity_tax" class="form-input" value="{{ old('previous_electricity_tax', 0) }}" step="0.01">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Health Tax</label>
+                    <input type="number" name="previous_health_tax" class="form-input" value="{{ old('previous_health_tax', 0) }}" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Total</label>
+                    <input type="number" name="previous_total" class="form-input" value="{{ old('previous_total', 0) }}" step="0.01">
+                </div>
+            </div>
+
+            <h3 class="section-title">Current Year Tax</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label required">House Tax</label>
+                    <input type="number" name="current_house_tax" class="form-input" value="{{ old('current_house_tax', 0) }}" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Electricity Tax</label>
+                    <input type="number" name="current_electricity_tax" class="form-input" value="{{ old('current_electricity_tax', 0) }}" step="0.01" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label required">Health Tax</label>
+                    <input type="number" name="current_health_tax" class="form-input" value="{{ old('current_health_tax', 0) }}" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Total</label>
+                    <input type="number" name="current_total" class="form-input" value="{{ old('current_total', 0) }}" step="0.01" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label required">Balance Due</label>
+                <input type="number" name="balance" class="form-input" value="{{ old('balance', 0) }}" step="0.01" required>
+            </div>
+
+            <h3 class="section-title">Citizen & Demand Linking</h3>
+
+            <div class="form-row">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label">Link to Citizen (Optional)</label>
+                    <select name="citizen_id" id="citizen_select" class="form-select" style="width: 100%;">
+                        <option value="">-- Not Linked --</option>
+                        @foreach($citizens as $citizen)
+                        <option value="{{ $citizen->id }}" {{ old('citizen_id') == $citizen->id ? 'selected' : '' }}>
+                            {{ $citizen->name }} ({{ $citizen->phone }})
+                        </option>
+                        @endforeach
+                    </select>
+                    <small style="color: #64748b; font-size: 13px; margin-top: 6px; display: block;">
+                        <i class="fas fa-info-circle"></i> Search by name or phone
+                    </small>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label">Demand (Optional)</label>
+                    <select name="demand_id" class="form-select">
+                        <option value="">-- No Demand --</option>
+                        @foreach($demands as $demand)
+                        <option value="{{ $demand->id }}" {{ old('demand_id') == $demand->id ? 'selected' : '' }}>
+                            {{ $demand->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -202,3 +329,30 @@
     </div>
 </form>
 @endsection
+
+@push('scripts')
+<!-- jQuery is required for Select2 -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 with search
+        $('#citizen_select').select2({
+            placeholder: '-- Search citizens by name or phone --',
+            allowClear: true,
+            width: '100%',
+            theme: 'default',
+            minimumInputLength: 0,
+            language: {
+                noResults: function() {
+                    return "No citizens found";
+                },
+                searching: function() {
+                    return "Searching...";
+                }
+            }
+        });
+    });
+</script>
+@endpush

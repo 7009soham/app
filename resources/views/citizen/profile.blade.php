@@ -1,7 +1,7 @@
 @extends('citizen.layout')
 
-@section('title', 'My Profile')
-@section('page-title', 'My Profile')
+@section('title', __('messages.my_profile'))
+@section('page-title', __('messages.my_profile'))
 
 @push('styles')
 <style>
@@ -277,7 +277,7 @@
             @if($citizen->phone_verified_at)
             <div class="verified-badge">
                 <i class="fas fa-check-circle"></i>
-                Phone Verified
+                {{ __('messages.phone_verified') }}
             </div>
             @endif
         </div>
@@ -291,7 +291,7 @@
             <i class="fas fa-id-card"></i>
         </div>
         <div class="info-card-content">
-            <div class="info-card-label">Customer Number</div>
+            <div class="info-card-label">{{ __('messages.customer_no') }}</div>
             <div class="info-card-value">{{ $citizen->customer_no }}</div>
         </div>
     </div>
@@ -301,7 +301,7 @@
             <i class="fas fa-calendar-alt"></i>
         </div>
         <div class="info-card-content">
-            <div class="info-card-label">Member Since</div>
+            <div class="info-card-label">{{ __('messages.member_since') }}</div>
             <div class="info-card-value">{{ $citizen->created_at->format('d M Y') }}</div>
         </div>
     </div>
@@ -311,7 +311,7 @@
             <i class="fas fa-clock"></i>
         </div>
         <div class="info-card-content">
-            <div class="info-card-label">Last Login</div>
+            <div class="info-card-label">{{ __('messages.last_login') }}</div>
             <div class="info-card-value">{{ $citizen->phone_verified_at ? $citizen->phone_verified_at->format('d M Y, h:i A') : 'N/A' }}</div>
         </div>
     </div>
@@ -326,38 +326,46 @@
         <div class="card-header">
             <h3 class="card-title">
                 <i class="fas fa-edit"></i>
-                Edit Profile
+                {{ __('messages.edit_profile') }}
             </h3>
         </div>
         <div class="card-body">
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" name="name" class="form-input" 
-                           value="{{ old('name', $citizen->name) }}" required>
-                    @error('name')
+                    <label class="form-label">{{ __('messages.full_name') }}</label>
+                    <input type="text" class="form-input" 
+                           value="{{ $citizen->name }}" disabled>
+                    <div class="input-hint">{{ __('messages.name_cannot_change') }}</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ __('messages.mobile_number') }}</label>
+                    <input type="text" class="form-input" 
+                           value="+91 {{ $citizen->phone }}" disabled>
+                    <div class="input-hint">{{ __('messages.phone_cannot_change') }}</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ __('messages.customer_no') }}</label>
+                    <input type="text" class="form-input" 
+                           value="{{ $citizen->customer_no }}" disabled>
+                    <div class="input-hint">{{ __('messages.customer_no_cannot_change') }}</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-input"
+                           value="{{ old('email', $citizen->email) }}"
+                           placeholder="Enter email for invoice and reminder notifications">
+                    @error('email')
                     <div class="input-hint" style="color: #dc2626;">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Phone Number</label>
-                    <input type="text" class="form-input" 
-                           value="+91 {{ $citizen->phone }}" disabled>
-                    <div class="input-hint">Phone number cannot be changed</div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Customer Number</label>
-                    <input type="text" class="form-input" 
-                           value="{{ $citizen->customer_no }}" disabled>
-                    <div class="input-hint">Customer number is assigned by Gram Panchayat</div>
-                </div>
-
                 <div class="form-group" style="grid-column: 1 / -1;">
-                    <label class="form-label">Address</label>
+                    <label class="form-label">{{ __('messages.address') }}</label>
                     <textarea name="address" class="form-input textarea" 
-                              placeholder="Enter your address">{{ old('address', $citizen->address) }}</textarea>
+                              placeholder="{{ __('messages.enter_address') }}">{{ old('address', $citizen->address) }}</textarea>
                     @error('address')
                     <div class="input-hint" style="color: #dc2626;">{{ $message }}</div>
                     @enderror
@@ -367,11 +375,11 @@
         <div class="form-actions">
             <button type="reset" class="btn btn-secondary">
                 <i class="fas fa-undo"></i>
-                Reset
+                {{ __('messages.reset') }}
             </button>
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save"></i>
-                Save Changes
+                {{ __('messages.save_changes') }}
             </button>
         </div>
     </div>

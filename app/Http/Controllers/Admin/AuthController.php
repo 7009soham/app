@@ -41,6 +41,8 @@ class AuthController extends Controller
                 'last_login_ip' => $request->ip(),
             ]);
             
+            \App\Helpers\Logger::log("Admin logged in", $admin, 'auth');
+            
             return redirect()->intended(route('admin.dashboard'));
         }
 
@@ -49,6 +51,10 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        if (Auth::guard('admin')->check()) {
+            \App\Helpers\Logger::log("Admin logged out", Auth::guard('admin')->user(), 'auth');
+        }
+
         Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

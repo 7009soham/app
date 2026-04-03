@@ -42,6 +42,7 @@
         align-items: center;
         justify-content: center;
         font-size: 28px;
+        flex-shrink: 0;
     }
 
     .header-text h2 {
@@ -53,6 +54,20 @@
     .header-text p {
         opacity: 0.9;
         font-size: 15px;
+    }
+
+    @media (max-width: 480px) {
+        .page-header-card {
+            padding: 20px 16px;
+            margin-bottom: 20px;
+        }
+        .header-icon {
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+        }
+        .header-text h2 { font-size: 18px; }
+        .header-text p { font-size: 13px; }
     }
 
     /* Payments Card */
@@ -82,6 +97,7 @@
         padding: 20px 24px;
         border-bottom: 1px solid var(--border);
         transition: var(--transition);
+        gap: 12px;
     }
 
     .payment-item:last-child {
@@ -96,6 +112,8 @@
         display: flex;
         align-items: center;
         gap: 16px;
+        min-width: 0;
+        flex: 1;
     }
 
     .payment-icon {
@@ -123,20 +141,42 @@
         color: #dc2626;
     }
 
+    .payment-info {
+        min-width: 0;
+    }
+
     .payment-info h4 {
         font-size: 15px;
         font-weight: 600;
         color: var(--text-primary);
         margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .payment-info p {
         font-size: 13px;
         color: var(--text-secondary);
+        word-break: break-all;
     }
 
     .payment-right {
         text-align: right;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 480px) {
+        .payment-item {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 16px;
+            gap: 12px;
+        }
+        .payment-left { width: 100%; }
+        .payment-right { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+        .payment-icon { flex-shrink: 0; }
+        .payment-info p { word-break: break-all; }
     }
 
     .payment-amount {
@@ -154,7 +194,8 @@
         font-weight: 600;
     }
 
-    .payment-status.completed {
+    .payment-status.completed,
+    .payment-status.success {
         background: #dcfce7;
         color: #16a34a;
     }
@@ -253,8 +294,8 @@
             <i class="fas fa-history"></i>
         </div>
         <div class="header-text">
-            <h2>Payment History</h2>
-            <p>View all your past tax payments and transactions</p>
+            <h2>{{ __('messages.payment_history') }}</h2>
+            <p>{{ __('messages.view_payment_history') }}</p>
         </div>
     </div>
 </div>
@@ -262,15 +303,15 @@
 <!-- Payments List -->
 <div class="payments-card">
     <div class="payments-header">
-        <h3 class="payments-title">All Transactions</h3>
+        <h3 class="payments-title">{{ __('messages.all_transactions') }}</h3>
     </div>
 
     @if($payments->count() > 0)
         @foreach($payments as $payment)
         <div class="payment-item">
             <div class="payment-left">
-                <div class="payment-icon {{ $payment->payment_status }}">
-                    @if($payment->payment_status === 'completed')
+                <div class="payment-icon {{ in_array($payment->payment_status, ['completed', 'success']) ? 'completed' : $payment->payment_status }}">
+                    @if(in_array($payment->payment_status, ['completed', 'success']))
                         <i class="fas fa-check-circle"></i>
                     @elseif($payment->payment_status === 'pending')
                         <i class="fas fa-clock"></i>
@@ -279,7 +320,7 @@
                     @endif
                 </div>
                 <div class="payment-info">
-                    <h4>{{ $payment->taxType->name ?? 'Tax Payment' }}</h4>
+                    <h4>{{ $payment->taxType->name ?? __('messages.tax_payment') }}</h4>
                     <p>
                         {{ $payment->transaction_id }} • 
                         {{ $payment->created_at->format('d M Y, h:i A') }}
@@ -288,8 +329,12 @@
             </div>
             <div class="payment-right">
                 <div class="payment-amount">₹{{ number_format($payment->amount, 2) }}</div>
-                <span class="payment-status {{ $payment->payment_status }}">
-                    {{ ucfirst($payment->payment_status) }}
+                @php
+                    $statusClass = in_array($payment->payment_status, ['completed', 'success']) ? 'completed' : $payment->payment_status;
+                    $statusText = in_array($payment->payment_status, ['completed', 'success']) ? 'Completed' : ucfirst($payment->payment_status);
+                @endphp
+                <span class="payment-status {{ $statusClass }}">
+                    {{ $statusText }}
                 </span>
             </div>
         </div>
@@ -303,8 +348,8 @@
     @else
     <div class="empty-state">
         <i class="fas fa-receipt"></i>
-        <h3>No Payment History</h3>
-        <p>You haven't made any payments yet. When you make payments, they will appear here.</p>
+        <h3>{{ __('messages.no_payment_history') }}</h3>
+        <p>{{ __('messages.no_payment_history_desc') }}</p>
     </div>
     @endif
 </div>

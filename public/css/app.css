@@ -336,6 +336,9 @@ ul {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.6s ease, visibility 0.6s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .slide.active {
@@ -359,10 +362,20 @@ ul {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
+    /* height: 100%; Remove height 100% to allow dynamic sizing */
+    width: fit-content;
+    max-width: 90%;
     text-align: center;
     color: var(--color-white);
     padding: var(--spacing-8);
+    
+    /* Glassmorphism Effect */
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    border-radius: var(--radius-xl);
 }
 
 .slide-content h1 {
@@ -1217,5 +1230,105 @@ ul {
 
     .content-card {
         padding: var(--spacing-6);
+    }
+}
+
+/* ============================================
+   BOTTOM NAVIGATION BAR
+   ============================================ */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    background-color: var(--color-white);
+    border-top: 1px solid var(--color-gray-200);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    height: 62px;
+    padding: 0;
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--color-gray-500);
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 6px 4px;
+    position: relative;
+    transition: color var(--transition-fast), background-color var(--transition-fast);
+    border-radius: 0;
+}
+
+.bottom-nav-item i {
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.bottom-nav-item span {
+    font-size: 0.65rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+/* Active & hover states */
+.bottom-nav-item.active,
+.bottom-nav-item:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.bottom-nav-item.active i {
+    transform: translateY(-2px);
+}
+
+/* Active indicator dot / bar */
+.bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: var(--color-primary);
+    border-radius: 0 0 4px 4px;
+}
+
+/* Hover ripple for non-touch */
+.bottom-nav-item:hover:not(.active) {
+    background-color: var(--color-gray-50);
+}
+
+/* Add bottom padding to main content to avoid overlap */
+.main-content {
+    padding-bottom: 62px;
+}
+
+/* On desktop, hide bottom nav and remove extra padding */
+@media (min-width: 769px) {
+    .bottom-nav {
+        display: none;
+    }
+
+    .main-content {
+        padding-bottom: 0;
+    }
+}
+
+/* Ensure footer doesn't get cut off on mobile */
+@media (max-width: 768px) {
+    .footer {
+        padding-bottom: calc(var(--spacing-8) + 62px);
     }
 }

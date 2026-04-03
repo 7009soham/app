@@ -10,9 +10,18 @@
         <div class="card">
             <div class="card-body">
                 <form action="{{ route('admin.payments.index') }}" method="GET" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Search</label>
                         <input type="text" name="search" class="form-control" placeholder="TXN ID or Citizen Name" value="{{ request('search') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Demand No</label>
+                        <select name="demand_number" class="form-select">
+                            <option value="">All</option>
+                            @foreach(range(1, 8) as $d)
+                                <option value="{{ $d }}" {{ request('demand_number') == $d ? 'selected' : '' }}>{{ $d }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Method</label>
@@ -32,7 +41,7 @@
                             <option value="property_tax" {{ request('tax_type') == 'property_tax' ? 'selected' : '' }}>Property Tax</option>
                         </select>
                     </div>
-                    <div class="col-md-3 d-flex align-items-end">
+                    <div class="col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary w-100">Filter</button>
                     </div>
                 </form>
@@ -42,10 +51,22 @@
 </div>
 
 <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom">
+        <h5 class="mb-0 text-primary"><i class="fas fa-list"></i> Payments List</h5>
+        <div class="d-flex gap-2">
+            <select id="bulkActionSelect" class="form-select form-select-sm" style="width: auto;">
+                <option value="">Bulk Actions</option>
+                <option value="export">Export Selected</option>
+                <option value="delete">Delete Selected</option>
+            </select>
+            <button type="button" id="applyBulkActionBtn" class="btn btn-sm btn-outline-primary">Apply</button>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
                     <th>TXN ID</th>
                     <th>Citizen</th>
                     <th>Tax Type</th>
@@ -59,6 +80,7 @@
             <tbody>
                 @forelse($payments as $payment)
                     <tr>
+                        <td><input type="checkbox" class="row-checkbox" value="{{ $payment->id }}"></td>
                         <td><span class="text-monospace small">{{ $payment->transaction_id }}</span></td>
                         <td>
                             <div class="fw-bold">{{ $payment->citizen->name ?? 'N/A' }}</div>
@@ -95,7 +117,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">No payments found.</td>
+                        <td colspan="9" class="text-center py-5 text-muted">No payments found.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -108,3 +130,57 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.getElementById('selectAll')?.addEventListener('change', function() {
+        let checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+    
+    document.getElementById('applyBulkActionBtn')?.addEventListener('click', function() {
+        let action = document.getElementById('bulkActionSelect').value;
+        if (!action) {
+            alert('Please select a bulk action');
+            return;
+        }
+        
+        let selected = [];
+        document.querySelectorAll('.row-checkbox:checked').forEach(cb => selected.push(cb.value));
+        
+        if (selected.length === 0) {
+            alert('Please select at least one record');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to ' + action + ' ' + selected.length + ' records?')) {
+            let form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("admin.payments.bulk") }}';
+            
+            let csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+
+            let actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = action;
+            form.appendChild(actionInput);
+
+            selected.forEach(id => {
+                let idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'ids[]';
+                idInput.value = id;
+                form.appendChild(idInput);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+</script>
+@endpush

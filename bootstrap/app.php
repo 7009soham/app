@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Add SetLocale middleware to web group for language switching
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
+        
         $middleware->alias([
             'admin.auth' => \App\Http\Middleware\AdminAuth::class,
             'citizen.auth' => \App\Http\Middleware\CitizenAuth::class,

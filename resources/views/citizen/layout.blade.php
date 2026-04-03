@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Citizen Portal') - Gram Panchayat</title>
+    <title>@yield('title', __('messages.dashboard')) - Gram Panchayat</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -48,7 +48,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--background);
             color: var(--text-primary);
             line-height: 1.6;
@@ -334,44 +334,64 @@
             
             <nav class="sidebar-nav">
                 <div class="nav-section">
-                    <div class="nav-section-title">Main Menu</div>
+                    <div class="nav-section-title">{{ app()->getLocale() == 'hi' ? 'मुख्य मेन्यू' : (app()->getLocale() == 'mr' ? 'मुख्य मेनू' : 'Main Menu') }}</div>
                     <a href="{{ route('citizen.dashboard') }}" class="nav-link {{ request()->routeIs('citizen.dashboard*') ? 'active' : '' }}">
                         <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
+                        <span>{{ __('messages.dashboard') }}</span>
                     </a>
                 </div>
 
                 <div class="nav-section">
-                    <div class="nav-section-title">Tax Records</div>
+                    <div class="nav-section-title">{{ app()->getLocale() == 'hi' ? 'कर रिकॉर्ड' : (app()->getLocale() == 'mr' ? 'कर नोंदी' : 'Tax Records') }}</div>
                     <a href="{{ route('citizen.water-tax') }}" class="nav-link {{ request()->routeIs('citizen.water-tax') ? 'active' : '' }}">
                         <i class="fas fa-tint"></i>
-                        <span>Water Tax</span>
+                        <span>{{ __('messages.water_tax') }}</span>
                     </a>
                     <a href="{{ route('citizen.property-tax') }}" class="nav-link {{ request()->routeIs('citizen.property-tax') ? 'active' : '' }}">
                         <i class="fas fa-home"></i>
-                        <span>Property Tax</span>
+                        <span>{{ __('messages.property_tax') }}</span>
+                    </a>
+                    <a href="{{ route('citizen.property-assessment.index') }}" class="nav-link {{ request()->routeIs('citizen.property-assessment*') ? 'active' : '' }}">
+                        <i class="fas fa-file-alt"></i>
+                        <span>{{ app()->getLocale() == 'hi' ? 'संपत्ति मूल्यांकन' : (app()->getLocale() == 'mr' ? 'मूल्यांकन यादी' : 'Property Assessment') }}</span>
                     </a>
                 </div>
 
                 <div class="nav-section">
-                    <div class="nav-section-title">Record History</div>
+                    <div class="nav-section-title">{{ app()->getLocale() == 'hi' ? 'रिकॉर्ड इतिहास' : (app()->getLocale() == 'mr' ? 'नोंदी इतिहास' : 'Record History') }}</div>
                     <a href="{{ route('citizen.transactions') }}" class="nav-link {{ request()->routeIs('citizen.transactions*') ? 'active' : '' }}">
                         <i class="fas fa-exchange-alt"></i>
-                        <span>Transactions</span>
+                        <span>{{ __('messages.transactions') }}</span>
+                    </a>
+                    <a href="{{ route('citizen.billing.index') }}" class="nav-link {{ request()->routeIs('citizen.billing*') ? 'active' : '' }}">
+                        <i class="fas fa-file-invoice"></i>
+                        <span>{{ app()->getLocale() == 'hi' ? 'बिलिंग' : (app()->getLocale() == 'mr' ? 'बिलिंग' : 'Billing') }}</span>
                     </a>
                 </div>
 
                 <div class="nav-section">
-                    <div class="nav-section-title">Account</div>
+                    <div class="nav-section-title">{{ app()->getLocale() == 'hi' ? 'शिकायत निवारण' : (app()->getLocale() == 'mr' ? 'तक्रार निवारण' : 'Grievance Redressal') }}</div>
+                    <a href="{{ route('citizen.grievances.index') }}" class="nav-link {{ request()->routeIs('citizen.grievances*') ? 'active' : '' }}">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>{{ app()->getLocale() == 'hi' ? 'मेरी शिकायतें' : (app()->getLocale() == 'mr' ? 'माझ्या तक्रारी' : 'My Grievances') }}</span>
+                    </a>
+                    <a href="{{ route('citizen.grievances.create') }}" class="nav-link {{ request()->routeIs('citizen.grievances.create') ? 'active' : '' }}">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>{{ app()->getLocale() == 'hi' ? 'शिकायत दर्ज करें' : (app()->getLocale() == 'mr' ? 'तक्रार नोंदवा' : 'Submit Grievance') }}</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">{{ app()->getLocale() == 'hi' ? 'खाता' : (app()->getLocale() == 'mr' ? 'खाते' : 'Account') }}</div>
                     <a href="{{ route('citizen.profile') }}" class="nav-link {{ request()->routeIs('citizen.profile') ? 'active' : '' }}">
                         <i class="fas fa-user"></i>
-                        <span>My Profile</span>
+                        <span>{{ __('messages.profile') }}</span>
                     </a>
                     <form action="{{ route('citizen.logout') }}" method="POST" style="margin: 0;">
                         @csrf
                         <button type="submit" class="nav-link" style="width: 100%; border: none; background: none; cursor: pointer; text-align: left;">
                             <i class="fas fa-sign-out-alt"></i>
-                            <span>Logout</span>
+                            <span>{{ __('messages.logout') }}</span>
                         </button>
                     </form>
                 </div>
@@ -400,11 +420,30 @@
                         </div>
                     </div>
                     @endif
+                    <!-- Language Switcher -->
+                    <div class="lang-dropdown" style="position: relative;">
+                        <button type="button" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface-secondary); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 14px; color: var(--text-primary);">
+                            <i class="fas fa-globe"></i>
+                            <span>{{ app()->getLocale() == 'hi' ? 'हिंदी' : (app()->getLocale() == 'mr' ? 'मराठी' : 'EN') }}</span>
+                            <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
+                        </button>
+                        <div class="lang-dropdown-menu" style="position: absolute; top: 100%; right: 0; background: white; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 8px; min-width: 120px; opacity: 0; visibility: hidden; transform: translateY(10px); transition: all 0.3s ease; z-index: 1000;">
+                            <a href="#" onclick="event.preventDefault(); switchLanguage('en');" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: #1e293b; text-decoration: none; border-radius: 6px; {{ app()->getLocale() == 'en' ? 'background: #fff7ed; color: #f97316;' : '' }}">
+                                🇮🇳 English
+                            </a>
+                            <a href="#" onclick="event.preventDefault(); switchLanguage('hi');" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: #1e293b; text-decoration: none; border-radius: 6px; {{ app()->getLocale() == 'hi' ? 'background: #fff7ed; color: #f97316;' : '' }}">
+                                🇮🇳 हिंदी
+                            </a>
+                            <a href="#" onclick="event.preventDefault(); switchLanguage('mr');" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: #1e293b; text-decoration: none; border-radius: 6px; {{ app()->getLocale() == 'mr' ? 'background: #fff7ed; color: #f97316;' : '' }}">
+                                🇮🇳 मराठी
+                            </a>
+                        </div>
+                    </div>
                     <form action="{{ route('citizen.logout') }}" method="POST" style="margin: 0;">
                         @csrf
                         <button type="submit" class="logout-btn">
                             <i class="fas fa-sign-out-alt"></i>
-                            <span>Logout</span>
+                            <span>{{ __('messages.logout') }}</span>
                         </button>
                     </form>
                 </div>
@@ -449,6 +488,138 @@
             });
         }
     </script>
+    
+    <script>
+        // Language dropdown toggle
+        const langDropdown = document.querySelector('.lang-dropdown');
+        const langDropdownMenu = document.querySelector('.lang-dropdown-menu');
+        
+        if (langDropdown && langDropdownMenu) {
+            langDropdown.addEventListener('mouseenter', () => {
+                langDropdownMenu.style.opacity = '1';
+                langDropdownMenu.style.visibility = 'visible';
+                langDropdownMenu.style.transform = 'translateY(5px)';
+            });
+            
+            langDropdown.addEventListener('mouseleave', () => {
+                langDropdownMenu.style.opacity = '0';
+                langDropdownMenu.style.visibility = 'hidden';
+                langDropdownMenu.style.transform = 'translateY(10px)';
+            });
+        }
+        
+        // Function to switch language
+        function switchLanguage(locale) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("language.switch") }}';
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = '{{ csrf_token() }}';
+            
+            const localeInput = document.createElement('input');
+            localeInput.type = 'hidden';
+            localeInput.name = 'locale';
+            localeInput.value = locale;
+            
+            form.appendChild(csrfInput);
+            form.appendChild(localeInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
     @stack('scripts')
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav" id="bottomNav" aria-label="Bottom Navigation">
+        <a href="{{ route('home') }}" id="bnav-home"
+           class="bottom-nav-item"
+           aria-label="Home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+
+        <a href="{{ route('citizen.dashboard') }}" id="bnav-taxpay"
+           class="bottom-nav-item {{ request()->routeIs('citizen.dashboard') || request()->routeIs('citizen.water-tax') || request()->routeIs('citizen.property-tax') || request()->routeIs('citizen.pay-bill') ? 'active' : '' }}"
+           aria-label="Tax Pay">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Tax Pay</span>
+        </a>
+
+        <a href="{{ route('digital-services') }}" id="bnav-services"
+           class="bottom-nav-item"
+           aria-label="Services">
+            <i class="fas fa-th-large"></i>
+            <span>Services</span>
+        </a>
+
+        <a href="{{ route('citizen.profile') }}" id="bnav-profile"
+           class="bottom-nav-item {{ request()->routeIs('citizen.profile') ? 'active' : '' }}"
+           aria-label="Profile">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <style>
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            z-index: 9999;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        @media (max-width: 1024px) {
+            .bottom-nav {
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+            }
+
+            .citizen-content {
+                padding-bottom: 80px !important;
+            }
+        }
+
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 10px 0;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 11px;
+            gap: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .bottom-nav-item i {
+            font-size: 20px;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .bottom-nav-item.active {
+            color: #f97316;
+        }
+
+        .bottom-nav-item.active i {
+            transform: translateY(-2px);
+        }
+
+        .bottom-nav-item:hover {
+            color: #f97316;
+        }
+    </style>
 </body>
 </html>

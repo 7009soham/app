@@ -10,6 +10,7 @@ class Grievance extends Model
 {
     protected $fillable = [
         'ticket_no',
+        'citizen_id',
         'name',
         'phone',
         'email',
@@ -56,6 +57,14 @@ class Grievance extends Model
     public function assignedAdmin(): BelongsTo
     {
         return $this->belongsTo(Admin::class, 'assigned_to');
+    }
+
+    /**
+     * Get the citizen who submitted this grievance
+     */
+    public function citizen(): BelongsTo
+    {
+        return $this->belongsTo(Citizen::class, 'citizen_id');
     }
 
     /**

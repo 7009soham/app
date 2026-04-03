@@ -133,4 +133,47 @@ class TaxPaymentController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function bulk(Request $request)
+    {
+        $action = $request->input('action');
+        $ids = $request->input('ids');
+
+        if (empty($ids) || !is_array($ids)) {
+            return back()->with('error', 'No records selected.');
+        }
+
+        if ($action === 'delete') {
+            TaxPayment::whereIn('id', $ids)->delete();
+            return back()->with('success', count($ids) . ' payment records deleted successfully.');
+        }
+
+        if ($action === 'export') {
+            $payments = TaxPayment::with('taxType')->whereIn('id', $ids)->orderBy('paid_at', 'desc')->get();
+            $filename = 'tax_payments_bulk_' . date('Y-m-d_H-i-s') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ];
+            $callback = function () use ($payments) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, [
+                    'Transaction ID', 'Citizen Name', 'Phone', 'Address', 'Tax Type',
+                    'Period Type', 'Amount', 'Payment Status', 'Payment Method', 'Paid At',
+                ]);
+                foreach ($payments as $payment) {
+                    fputcsv($handle, [
+                        $payment->transaction_id, $payment->citizen_name, $payment->citizen_phone,
+                        $payment->citizen_address, $payment->taxType->name ?? '-', ucfirst($payment->period_type ?? '-'),
+                        $payment->amount, ucfirst($payment->payment_status), $payment->payment_method ?? '-',
+                        $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : '-',
+                    ]);
+                }
+                fclose($handle);
+            };
+            return response()->stream($callback, 200, $headers);
+        }
+
+        return back()->with('error', 'Invalid action selected.');
+    }
 }

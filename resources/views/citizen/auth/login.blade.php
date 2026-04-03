@@ -416,14 +416,46 @@
         .back-home a:hover {
             color: white;
         }
+
+        .lang-switcher {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            z-index: 10;
+        }
+        .lang-switcher a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .lang-switcher a:hover, .lang-switcher a.active {
+            background: white;
+            color: var(--primary);
+        }
     </style>
 </head>
 <body>
     <div class="back-home">
         <a href="{{ route('home') }}">
             <i class="fas fa-arrow-left"></i>
-            Back to Home
+            {{ __('messages.back_to_home') }}
         </a>
+    </div>
+
+    <div class="lang-switcher">
+        <a href="{{ route('language.switch-param', 'en') }}" class="{{ app()->getLocale() == 'en' ? 'active' : '' }}">EN</a>
+        <a href="{{ route('language.switch-param', 'hi') }}" class="{{ app()->getLocale() == 'hi' ? 'active' : '' }}">हिंदी</a>
+        <a href="{{ route('language.switch-param', 'mr') }}" class="{{ app()->getLocale() == 'mr' ? 'active' : '' }}">मराठी</a>
     </div>
 
     <div class="login-container">
@@ -432,8 +464,8 @@
                 <div class="login-logo">
                     <i class="fas fa-landmark"></i>
                 </div>
-                <h1>Citizen Portal</h1>
-                <p>Gram Panchayat Tax Payment System</p>
+                <h1>{{ __('messages.citizen_portal') }}</h1>
+                <p>{{ __('messages.tax_payment_system') }}</p>
             </div>
 
             <div class="login-body">
@@ -453,13 +485,13 @@
 
                 <!-- Step 1: Enter Phone -->
                 <div class="step active" id="stepPhone">
-                    <h2 class="step-title">Login with Phone Number</h2>
-                    <p class="step-desc">Enter your registered mobile number to receive OTP</p>
+                    <h2 class="step-title">{{ __('messages.login_with_phone') }}</h2>
+                    <p class="step-desc">{{ __('messages.enter_mobile_otp') }}</p>
 
                     <div id="phoneError" class="alert alert-error" style="display: none;"></div>
 
                     <div class="form-group">
-                        <label class="form-label">Mobile Number</label>
+                        <label class="form-label">{{ __('messages.mobile_number') }}</label>
                         <div class="input-group">
                             <span class="input-prefix">+91</span>
                             <input type="tel" id="phoneInput" class="form-input" 
@@ -471,22 +503,21 @@
                     </div>
 
                     <button type="button" id="sendOtpBtn" class="btn btn-primary">
-                        <span>Send OTP</span>
+                        <span>{{ __('messages.send_otp') }}</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
 
                 <!-- Step 2: Verify OTP -->
                 <div class="step" id="stepOtp">
-                    <h2 class="step-title">Verify OTP</h2>
-                    <p class="step-desc">Enter the 6-digit code sent to <strong id="displayPhone"></strong></p>
+                    <h2 class="step-title">{{ __('messages.verify_otp') }}</h2>
+                    <p class="step-desc">{!! __('messages.enter_otp_code', ['phone' => '<strong id="displayPhone"></strong>']) !!}</p>
 
                     <div id="otpError" class="alert alert-error" style="display: none;"></div>
                     <div id="otpSuccess" class="alert alert-success" style="display: none;"></div>
-                    <div id="debugOtp" class="debug-otp" style="display: none;"></div>
 
                     <div class="form-group">
-                        <label class="form-label">Enter OTP</label>
+                        <label class="form-label">{{ __('messages.enter_otp') }}</label>
                         <input type="text" id="otpInput" class="form-input otp-input" 
                                placeholder="000000" 
                                maxlength="6" 
@@ -495,30 +526,32 @@
                     </div>
 
                     <button type="button" id="verifyOtpBtn" class="btn btn-primary">
-                        <span>Verify & Login</span>
+                        <span>{{ __('messages.verify_login') }}</span>
                         <i class="fas fa-check"></i>
                     </button>
 
                     <div class="change-phone">
                         <a href="#" id="changePhoneBtn">
-                            <i class="fas fa-edit"></i> Change phone number
+                            <i class="fas fa-edit"></i> {{ __('messages.change_phone') }}
                         </a>
                     </div>
 
                     <div class="resend-section">
-                        <span class="resend-text">Didn't receive OTP? </span>
+                        <span class="resend-text">{{ __('messages.didnt_receive_otp') }} </span>
                         <button type="button" id="resendOtpBtn" class="resend-btn" disabled>
-                            Resend in <span id="countdown">30</span>s
+                            {!! __('messages.resend_in', ['seconds' => '<span id="countdown">30</span>']) !!}
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="login-footer">
-                <p>Need help? <a href="{{ route('contact') }}">Contact Gram Panchayat Office</a></p>
+                <p>{!! __('messages.contact_help', ['url' => route('contact')]) !!}</p>
             </div>
         </div>
     </div>
+
+    <div id="recaptcha-container" style="display: none;"></div>
 
     <!-- Firebase SDK (Add your Firebase config) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -527,24 +560,24 @@
     <script>
         // Firebase Configuration (from Admin Settings)
         const firebaseConfig = {
-            apiKey: "{{ \App\Models\SiteSetting::get('firebase_api_key', '') }}",
-            authDomain: "{{ \App\Models\SiteSetting::get('firebase_auth_domain', '') }}",
-            projectId: "{{ \App\Models\SiteSetting::get('firebase_project_id', '') }}",
-            storageBucket: "{{ \App\Models\SiteSetting::get('firebase_storage_bucket', '') }}",
-            messagingSenderId: "{{ \App\Models\SiteSetting::get('firebase_messaging_sender_id', '') }}",
-            appId: "{{ \App\Models\SiteSetting::get('firebase_app_id', '') }}"
+            apiKey: "{{ \App\Models\SiteSetting::get('firebase_api_key', 'AIzaSyDIeHdDdsADHz6C16y7bFrhzLWX9nmfUhs') }}",
+            authDomain: "{{ \App\Models\SiteSetting::get('firebase_auth_domain', 'tanay-gram-panchayat.firebaseapp.com') }}",
+            projectId: "{{ \App\Models\SiteSetting::get('firebase_project_id', 'tanay-gram-panchayat') }}",
+            storageBucket: "{{ \App\Models\SiteSetting::get('firebase_storage_bucket', 'tanay-gram-panchayat.firebasestorage.app') }}",
+            messagingSenderId: "{{ \App\Models\SiteSetting::get('firebase_messaging_sender_id', '568603870082') }}",
+            appId: "{{ \App\Models\SiteSetting::get('firebase_app_id', '1:568603870082:web:c1fac76db1c1c8a1cd059b') }}",
+            measurementId: "G-62RN0ZLRM8"
         };
 
-        // Check if Firebase is enabled in settings
         const firebaseEnabled = "{{ \App\Models\SiteSetting::get('firebase_enabled', '0') }}" === "1";
-
-        // Initialize Firebase only if enabled and config is available
         let firebaseInitialized = false;
         let recaptchaVerifier = null;
         let confirmationResult = null;
 
         if (firebaseEnabled && firebaseConfig.apiKey && firebaseConfig.projectId) {
-            firebase.initializeApp(firebaseConfig);
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
             firebaseInitialized = true;
         }
 
@@ -561,12 +594,46 @@
         const phoneError = document.getElementById('phoneError');
         const otpError = document.getElementById('otpError');
         const otpSuccess = document.getElementById('otpSuccess');
-        const debugOtp = document.getElementById('debugOtp');
         const countdown = document.getElementById('countdown');
 
         let phoneNumber = '';
         let countdownTimer = null;
-        let useFirebase = firebaseInitialized;
+
+        function mapFirebaseError(error, phase = 'send') {
+            const code = error?.code || '';
+            const sendErrors = {
+                'auth/invalid-phone-number': 'Invalid mobile number format. Please enter a valid 10-digit number.',
+                'auth/missing-phone-number': 'Phone number is missing. Please enter your mobile number.',
+                'auth/too-many-requests': 'Too many attempts. Please wait a few minutes and try again.',
+                'auth/quota-exceeded': 'SMS quota exceeded for Firebase project. Please contact support.',
+                'auth/app-not-authorized': 'This domain is not authorized in Firebase. Please contact admin.',
+                'auth/operation-not-allowed': 'Phone authentication is disabled in Firebase settings.',
+                'auth/captcha-check-failed': 'reCAPTCHA verification failed. Please retry.',
+                'auth/network-request-failed': 'Network issue while contacting Firebase. Please check internet and retry.',
+            };
+            const verifyErrors = {
+                'auth/invalid-verification-code': 'Invalid OTP. Please check and enter the correct OTP.',
+                'auth/code-expired': 'OTP has expired. Please request a new OTP.',
+                'auth/session-expired': 'OTP session expired. Please request a new OTP.',
+                'auth/too-many-requests': 'Too many verification attempts. Please wait and try again.',
+                'auth/network-request-failed': 'Network issue while verifying OTP. Please retry.',
+            };
+
+            if (phase === 'verify' && verifyErrors[code]) {
+                return verifyErrors[code];
+            }
+
+            if (sendErrors[code]) {
+                return sendErrors[code];
+            }
+
+            return 'Firebase OTP service error. Please try again.';
+        }
+
+        if (!firebaseInitialized) {
+            showError(phoneError, 'Firebase OTP is not enabled or configured properly. Please contact Gram Panchayat office.');
+            sendOtpBtn.disabled = true;
+        }
 
         // Show/hide loading state
         function setLoading(button, loading) {
@@ -606,7 +673,7 @@
                 if (seconds <= 0) {
                     clearInterval(countdownTimer);
                     resendOtpBtn.disabled = false;
-                    resendOtpBtn.innerHTML = 'Resend OTP';
+                    resendOtpBtn.innerHTML = "{{ __('messages.resend_otp') }}";
                 }
             }, 1000);
         }
@@ -615,7 +682,9 @@
         sendOtpBtn.addEventListener('click', async () => {
             hideError(phoneError);
             
-            phoneNumber = phoneInput.value.trim();
+            const rawPhone = phoneInput.value.replace(/\D/g, '');
+            phoneNumber = rawPhone.length > 10 ? rawPhone.slice(-10) : rawPhone;
+            phoneInput.value = phoneNumber;
             
             if (!/^[0-9]{10}$/.test(phoneNumber)) {
                 showError(phoneError, 'Please enter a valid 10-digit phone number');
@@ -625,6 +694,12 @@
             setLoading(sendOtpBtn, true);
 
             try {
+                if (!firebaseInitialized) {
+                    showError(phoneError, 'Firebase OTP is not available. Please contact Gram Panchayat office.');
+                    setLoading(sendOtpBtn, false);
+                    return;
+                }
+
                 // First, check with backend if phone exists
                 const response = await fetch('{{ route("citizen.send-otp") }}', {
                     method: 'POST',
@@ -643,46 +718,28 @@
                     return;
                 }
 
-                // If Firebase is configured, use it for OTP
-                if (useFirebase) {
-                    try {
-                        if (!recaptchaVerifier) {
-                            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('sendOtpBtn', {
-                                'size': 'invisible',
-                                'callback': () => {}
-                            });
-                        }
-
-                        confirmationResult = await firebase.auth().signInWithPhoneNumber(
-                            '+91' + phoneNumber,
-                            recaptchaVerifier
-                        );
-                        
-                        // Move to OTP step
-                        stepPhone.classList.remove('active');
-                        stepOtp.classList.add('active');
-                        displayPhone.textContent = '+91 ' + phoneNumber;
-                        startCountdown();
-                        
-                    } catch (firebaseError) {
-                        console.log('Firebase error, falling back to backend OTP:', firebaseError);
-                        useFirebase = false;
-                        // Fall through to backend OTP
+                try {
+                    if (!recaptchaVerifier) {
+                        recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                            size: 'invisible',
+                            callback: () => {},
+                        });
+                        await recaptchaVerifier.render();
                     }
-                }
 
-                if (!useFirebase) {
-                    // Use backend OTP (fallback)
+                    confirmationResult = await firebase.auth().signInWithPhoneNumber(
+                        '+91' + phoneNumber,
+                        recaptchaVerifier
+                    );
+
                     stepPhone.classList.remove('active');
                     stepOtp.classList.add('active');
                     displayPhone.textContent = '+91 ' + phoneNumber;
                     startCountdown();
-
-                    // Show debug OTP in development
-                    if (data.debug_otp) {
-                        debugOtp.innerHTML = '<strong>Debug OTP:</strong> ' + data.debug_otp + ' (Only visible in debug mode)';
-                        debugOtp.style.display = 'block';
-                    }
+                } catch (firebaseError) {
+                    showError(phoneError, mapFirebaseError(firebaseError, 'send'));
+                    setLoading(sendOtpBtn, false);
+                    return;
                 }
 
             } catch (error) {
@@ -706,20 +763,21 @@
             setLoading(verifyOtpBtn, true);
 
             try {
-                let firebaseVerified = false;
+                if (!confirmationResult) {
+                    showError(otpError, 'Please request OTP first.');
+                    setLoading(verifyOtpBtn, false);
+                    return;
+                }
 
-                // Verify with Firebase if available
-                if (useFirebase && confirmationResult) {
-                    try {
-                        await confirmationResult.confirm(otp);
-                        firebaseVerified = true;
-                    } catch (firebaseError) {
-                        if (firebaseError.code === 'auth/invalid-verification-code') {
-                            showError(otpError, 'Invalid OTP. Please check and try again.');
-                            setLoading(verifyOtpBtn, false);
-                            return;
-                        }
-                    }
+                let firebaseIdToken = null;
+
+                try {
+                    const firebaseUserCredential = await confirmationResult.confirm(otp);
+                    firebaseIdToken = await firebaseUserCredential.user.getIdToken(true);
+                } catch (firebaseError) {
+                    showError(otpError, mapFirebaseError(firebaseError, 'verify'));
+                    setLoading(verifyOtpBtn, false);
+                    return;
                 }
 
                 // Verify with backend
@@ -731,8 +789,7 @@
                     },
                     body: JSON.stringify({
                         phone: phoneNumber,
-                        otp: otp,
-                        firebase_verified: firebaseVerified
+                        firebase_id_token: firebaseIdToken
                     })
                 });
 
@@ -765,19 +822,23 @@
             stepPhone.classList.add('active');
             hideError(otpError);
             otpInput.value = '';
-            debugOtp.style.display = 'none';
+            confirmationResult = null;
             if (countdownTimer) clearInterval(countdownTimer);
         });
 
         // Resend OTP
         resendOtpBtn.addEventListener('click', () => {
-            resendOtpBtn.innerHTML = 'Resend in <span id="countdown">30</span>s';
+            resendOtpBtn.innerHTML = `{!! __('messages.resend_in', ['seconds' => '<span id="countdown">30</span>']) !!}`;
             sendOtpBtn.click();
         });
 
         // Auto-Tab for OTP input
         phoneInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '');
+            let digits = e.target.value.replace(/\D/g, '');
+            if (digits.length > 10) {
+                digits = digits.slice(-10);
+            }
+            e.target.value = digits;
         });
 
         otpInput.addEventListener('input', (e) => {

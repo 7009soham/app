@@ -35,7 +35,14 @@ class WaterTaxController extends Controller
             }
         }
 
+        // Filter by Demand
+        if ($request->filled('demand_id')) {
+            $query->where('demand_id', $request->demand_id);
+        }
+
         $records = $query->paginate(20);
+
+        $demands = \App\Models\Demand::all();
 
         // Stats
         $stats = [
@@ -45,7 +52,7 @@ class WaterTaxController extends Controller
             'pending_count' => WaterTaxRecord::where('balance', '>', 0)->count(),
         ];
 
-        return view('admin.water-tax.index', compact('records', 'stats'));
+        return view('admin.water-tax.index', compact('records', 'stats', 'demands'));
     }
 
     /**
@@ -63,7 +70,8 @@ class WaterTaxController extends Controller
     public function create()
     {
         $citizens = Citizen::orderBy('name')->get();
-        return view('admin.water-tax.create', compact('citizens'));
+        $demands = \App\Models\Demand::all();
+        return view('admin.water-tax.create', compact('citizens', 'demands'));
     }
 
     /**
@@ -81,6 +89,7 @@ class WaterTaxController extends Controller
             'balance' => 'required|numeric|min:0',
             'amount_paid' => 'nullable|numeric|min:0',
             'citizen_id' => 'nullable|exists:citizens,id',
+            'demand_id' => 'nullable|exists:demands,id',
         ]);
 
         $validated['oversize_charge'] = $validated['balance'] > 0 ? $validated['balance'] * 0.10 : 0;
@@ -97,7 +106,8 @@ class WaterTaxController extends Controller
     public function edit(WaterTaxRecord $waterTaxRecord)
     {
         $citizens = Citizen::orderBy('name')->get();
-        return view('admin.water-tax.edit', compact('waterTaxRecord', 'citizens'));
+        $demands = \App\Models\Demand::all();
+        return view('admin.water-tax.edit', compact('waterTaxRecord', 'citizens', 'demands'));
     }
 
     /**
@@ -115,6 +125,7 @@ class WaterTaxController extends Controller
             'balance' => 'required|numeric|min:0',
             'amount_paid' => 'nullable|numeric|min:0',
             'citizen_id' => 'nullable|exists:citizens,id',
+            'demand_id' => 'nullable|exists:demands,id',
         ]);
 
         $validated['oversize_charge'] = $validated['balance'] > 0 ? $validated['balance'] * 0.10 : 0;
@@ -171,5 +182,57 @@ class WaterTaxController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Bulk actions for water tax records
+     */
+    public function bulk(Request $request)
+    {
+        $action = $request->input('action');
+        $ids = $request->input('ids');
+
+        if (empty($ids) || !is_array($ids)) {
+            return back()->with('error', 'No records selected.');
+        }
+
+        if ($action === 'delete') {
+            WaterTaxRecord::whereIn('id', $ids)->delete();
+            return back()->with('success', count($ids) . ' water tax records deleted successfully.');
+        }
+
+        if ($action === 'mark_paid') {
+            foreach (WaterTaxRecord::whereIn('id', $ids)->get() as $record) {
+                // simple logic to mark as paid
+                $record->amount_paid = $record->amount_paid + $record->balance;
+                $record->balance = 0;
+                $record->save();
+            }
+            return back()->with('success', count($ids) . ' water tax records marked as paid.');
+        }
+
+        if ($action === 'export') {
+            $records = WaterTaxRecord::whereIn('id', $ids)->orderBy('a_no')->get();
+            $filename = 'water_tax_records_bulk_' . date('Y-m-d') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+            $callback = function () use ($records) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['A.No', 'Customer No', 'Customer Name', 'Phone', 'Monthly Bill', 'Period', 'Balance', 'Amount Paid', 'Oversize Charge']);
+                foreach ($records as $record) {
+                    fputcsv($file, [
+                        $record->a_no, $record->customer_no, $record->customer_name,
+                        $record->phone, $record->monthly_bill, $record->period,
+                        $record->balance, $record->amount_paid, $record->oversize_charge,
+                    ]);
+                }
+                fclose($file);
+            };
+            return response()->stream($callback, 200, $headers);
+        }
+
+        return back()->with('error', 'Invalid action selected.');
     }
 }

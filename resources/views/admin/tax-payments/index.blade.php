@@ -125,15 +125,26 @@
 
 <!-- Payments Table -->
 <div class="card">
-    <div class="card-header">
-        <h3><i class="fas fa-list"></i> Payment Records</h3>
-        <span class="badge badge-primary">{{ $payments->total() }} total records</span>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <h3 class="mb-0"><i class="fas fa-list"></i> Payment Records</h3>
+            <span class="badge badge-primary">{{ $payments->total() }} total records</span>
+        </div>
+        <div class="d-flex gap-2">
+            <select id="bulkActionSelect" class="form-control form-control-sm" style="width: auto; display: inline-block;">
+                <option value="">Bulk Actions</option>
+                <option value="export">Export Selected</option>
+                <option value="delete">Delete Selected</option>
+            </select>
+            <button type="button" id="applyBulkActionBtn" class="btn btn-sm btn-outline-primary">Apply</button>
+        </div>
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
+                        <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
                         <th>Transaction ID</th>
                         <th>Citizen</th>
                         <th>Tax Type</th>
@@ -147,6 +158,7 @@
                 <tbody>
                     @forelse($payments as $payment)
                         <tr>
+                            <td><input type="checkbox" class="row-checkbox" value="{{ $payment->id }}"></td>
                             <td>
                                 <code class="transaction-id">{{ $payment->transaction_id }}</code>
                             </td>
@@ -195,7 +207,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
+                            <td colspan="9" class="text-center text-muted py-4">
                                 <i class="fas fa-inbox fa-3x mb-3"></i>
                                 <p>No payment records found</p>
                             </td>
@@ -213,6 +225,60 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.getElementById('selectAll')?.addEventListener('change', function() {
+        let checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+    
+    document.getElementById('applyBulkActionBtn')?.addEventListener('click', function() {
+        let action = document.getElementById('bulkActionSelect').value;
+        if (!action) {
+            alert('Please select a bulk action');
+            return;
+        }
+        
+        let selected = [];
+        document.querySelectorAll('.row-checkbox:checked').forEach(cb => selected.push(cb.value));
+        
+        if (selected.length === 0) {
+            alert('Please select at least one record');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to ' + action + ' ' + selected.length + ' records?')) {
+            let form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("admin.tax-payments.bulk") }}';
+            
+            let csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+
+            let actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = action;
+            form.appendChild(actionInput);
+
+            selected.forEach(id => {
+                let idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'ids[]';
+                idInput.value = id;
+                form.appendChild(idInput);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+</script>
+@endpush
 
 @push('styles')
 <style>

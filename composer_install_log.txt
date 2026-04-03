@@ -1,0 +1,347 @@
+﻿php : Installing 
+dependencies from lock 
+file (including 
+require-dev)
+At line:1 char:1
++ php composer.phar 
+install --ignore-platform-
+req=ext-fileinfo 2>&1 | O 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (I  
+  nstalling depe...ng r   
+ equire-dev):String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+Verifying lock file 
+contents can be installed 
+on current platform.
+Package operations: 13 
+installs, 0 updates, 0 
+removals
+    Failed to download 
+phpunit/php-timer from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phpunit/php-timer (7.0.1) 
+into cache
+    Failed to download 
+phpunit/php-text-template 
+from dist: The zip 
+extension and unzip/7z 
+commands are both 
+missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phpunit/php-text-template 
+(4.0.1) into cache
+    Failed to download 
+phpunit/php-invoker from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phpunit/php-invoker 
+(5.0.1) into cache
+    Failed to download 
+phpunit/php-file-iterator 
+from dist: The zip 
+extension and unzip/7z 
+commands are both 
+missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phpunit/php-file-iterator 
+(5.1.0) into cache
+    Failed to download 
+theseer/tokenizer from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+theseer/tokenizer (1.3.1) 
+into cache
+    Failed to download 
+sebastian/lines-of-code 
+from dist: The zip 
+extension and unzip/7z 
+commands are both 
+missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+sebastian/lines-of-code 
+(3.0.1) into cache
+    Failed to download 
+sebastian/complexity from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+sebastian/complexity 
+(4.0.1) into cache
+    Failed to download seb
+astian/code-unit-reverse-l
+ookup from dist: The zip 
+extension and unzip/7z 
+commands are both 
+missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing sebastian/code
+-unit-reverse-lookup 
+(4.0.1) into cache
+    Failed to download 
+phpunit/php-code-coverage 
+from dist: The zip 
+extension and unzip/7z 
+commands are both 
+missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phpunit/php-code-coverage 
+(11.0.12) into cache
+    Failed to download 
+phar-io/version from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phar-io/version (3.2.1) 
+into cache
+    Failed to download 
+phar-io/manifest from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phar-io/manifest (2.0.4) 
+into cache
+    Failed to download 
+myclabs/deep-copy from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+myclabs/deep-copy 
+(1.13.4) into cache
+    Failed to download 
+phpunit/phpunit from 
+dist: The zip extension 
+and unzip/7z commands are 
+both missing, skipping.
+The php.ini used by your 
+command-line PHP is: 
+C:\Program 
+Files\php-8.5.4\php.ini
+    Now trying to 
+download from source
+  - Syncing 
+phpunit/phpunit (11.5.48) 
+into cache
+    0 
+[>------------------]    
+0 [->-----------------]
+  - Installing 
+phpunit/php-timer 
+(7.0.1): Cloning 
+3b415def83 from cache
+  - Installing 
+phpunit/php-text-template 
+(4.0.1): Cloning 
+3e0404dc6b from cache
+  - Installing 
+phpunit/php-invoker 
+(5.0.1): Cloning 
+c1ca381473 from cache
+  - Installing 
+phpunit/php-file-iterator 
+(5.1.0): Cloning 
+118cfaaa8b from cache
+  - Installing 
+theseer/tokenizer 
+(1.3.1): Cloning 
+b7489ce515 from cache
+  - Installing 
+sebastian/lines-of-code 
+(3.0.1): Cloning 
+d36ad0d782 from cache
+  - Installing 
+sebastian/complexity 
+(4.0.1): Cloning 
+ee41d384ab from cache
+  - Installing sebastian/c
+ode-unit-reverse-lookup 
+(4.0.1): Cloning 
+183a9b2632 from cache
+  - Installing 
+phpunit/php-code-coverage 
+(11.0.12): Cloning 
+2c1ed04922 from cache
+  - Installing 
+phar-io/version (3.2.1): 
+Cloning 4f7fd7836c from 
+cache
+  - Installing 
+phar-io/manifest (2.0.4): 
+Cloning 54750ef60c from 
+cache
+  - Installing 
+myclabs/deep-copy 
+(1.13.4): Cloning 
+07d290f0c4 from cache
+  - Installing 
+phpunit/phpunit 
+(11.5.48): Cloning 
+fe3665c15e from cache
+    0 
+[>------------------]    
+0 [->-----------------]
+Generating optimized 
+autoload files
+Warning: Ambiguous class 
+resolution, "League\Flysys
+tem\Local\FallbackMimeType
+Detector" was found in 
+both "E:/Gram Panchayat/ap
+p/app/vendor/league/flysys
+tem-local\FallbackMimeType
+Detector.php" and 
+"E:/Gram Panchayat/app/app
+/vendor/league/flysystem/s
+rc\Local\FallbackMimeTypeD
+etector.php", the first 
+will be used.
+Warning: Ambiguous class 
+resolution, "League\Flysys
+tem\Local\LocalFilesystemA
+dapter" was found in both 
+"E:/Gram Panchayat/app/app
+/vendor/league/flysystem-l
+ocal\LocalFilesystemAdapte
+r.php" and "E:/Gram Pancha
+yat/app/app/vendor/league/
+flysystem/src\Local\LocalF
+ilesystemAdapter.php", 
+the first will be used.
+Warning: Ambiguous class 
+resolution, "League\Flysys
+tem\Local\LocalFilesystemA
+dapterTest" was found in 
+both "E:/Gram Panchayat/ap
+p/app/vendor/league/flysys
+tem-local\LocalFilesystemA
+dapterTest.php" and 
+"E:/Gram Panchayat/app/app
+/vendor/league/flysystem/s
+rc\Local\LocalFilesystemAd
+apterTest.php", the first 
+will be used.
+Warning: Ambiguous class 
+resolution, "App\Providers
+\AppServiceProvider" was 
+found in both "E:/Gram Pan
+chayat/app/app/app\Provide
+rs\AppServiceProvider.php"
+ and "E:/Gram Panchayat/ap
+p/app/vendor/laravel/pint/
+app\Providers\AppServicePr
+ovider.php", the first 
+will be used.
+To resolve ambiguity in 
+classes not under your 
+control you can ignore 
+them by path using 
+exclude-from-classmap
+> Illuminate\Foundation\Co
+mposerScripts::postAutoloa
+dDump
+> @php artisan 
+package:discover --ansi
+
+  [37;44m INFO [39;49m Discovering packages.  
+
+  laravel/pail [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  laravel/sail [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  laravel/tinker [90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  nesbot/carbon [90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  nunomaduro/collision  [32;1mDONE[39;22m
+  nunomaduro/termwind  [32;1mDONE[39;22m
+
+81 packages you are using 
+are looking for funding.
+Use the `composer fund` 
+command to find out more!

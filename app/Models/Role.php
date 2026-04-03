@@ -60,6 +60,9 @@ class Role extends Model
             'settings.view' => 'View Settings',
             'settings.edit' => 'Edit Settings',
             
+            // Penalty Settings
+            'penalty.manage' => 'Manage Penalty Settings',
+            
             // Roles & Admins
             'roles.view' => 'View Roles',
             'roles.create' => 'Create Roles',
@@ -70,6 +73,13 @@ class Role extends Model
             'admins.edit' => 'Edit Admins',
             'admins.delete' => 'Delete Admins',
             'admins.impersonate' => 'Secret Login as Admin',
+
+            // Citizens
+            'citizens.view' => 'View Citizens',
+            'citizens.create' => 'Create Citizens',
+            'citizens.edit' => 'Edit Citizens',
+            'citizens.delete' => 'Delete Citizens',
+            'citizens.impersonate' => 'Secret Login as Citizen',
         ];
     }
 
@@ -81,6 +91,13 @@ class Role extends Model
         return [
             'Dashboard' => [
                 'dashboard.view' => 'View Dashboard',
+            ],
+            'Citizens' => [
+                'citizens.view' => 'View Citizens',
+                'citizens.create' => 'Create Citizens',
+                'citizens.edit' => 'Edit Citizens',
+                'citizens.delete' => 'Delete Citizens',
+                'citizens.impersonate' => 'Secret Login as Citizen',
             ],
             'Water Tax' => [
                 'water_tax.view' => 'View Water Tax Records',
@@ -109,6 +126,9 @@ class Role extends Model
             'Settings' => [
                 'settings.view' => 'View Settings',
                 'settings.edit' => 'Edit Settings',
+            ],
+            'Penalty Settings' => [
+                'penalty.manage' => 'Manage Penalty Settings',
             ],
             'User Management' => [
                 'roles.view' => 'View Roles',

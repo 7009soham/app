@@ -150,7 +150,7 @@ class DatabaseSeeder extends Seeder
             'subtitle' => 'Access government services from anywhere',
             'image' => 'sliders/services.jpg',
             'button_text' => 'View Services',
-            'link' => '/services',
+            'link' => '/digital-services',
             'order' => 2,
             'is_active' => true,
         ]);

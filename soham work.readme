@@ -1,0 +1,17 @@
+SOHAM WORK README
+
+Primary runbook:
+- Open SOHAM_WORK.README.md in the project root for full step-by-step execution and checklists.
+
+Quick checklist:
+[ ] Firebase phone auth enabled
+[ ] Authorized domains added
+[ ] Firebase web config saved in app settings
+[ ] firebase_enabled set to 1
+[ ] SMTP Gmail app password configured
+[ ] Payment confirmation email implemented
+[ ] Water invoice email implemented
+[ ] Property invoice email implemented
+[ ] Due reminder scheduler implemented
+[ ] Invoice redesign implemented after final templates arrive
+[ ] End-to-end UAT completed

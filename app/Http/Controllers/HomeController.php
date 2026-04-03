@@ -67,4 +67,10 @@ class HomeController extends Controller
         $data = $this->getCommonData();
         return view('pages.refund-policy', $data);
     }
+
+    public function digitalServices()
+    {
+        $data = $this->getCommonData();
+        return view('pages.digital-services', $data);
+    }
 }

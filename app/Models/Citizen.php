@@ -13,7 +13,10 @@ class Citizen extends Authenticatable
         'customer_no',
         'name',
         'phone',
+        'email',
         'address',
+        'aadhar_card',
+        'demand_id',
         'is_active',
         'phone_verified_at',
         'otp',
@@ -44,6 +47,22 @@ class Citizen extends Authenticatable
     public function propertyTaxRecords(): HasMany
     {
         return $this->hasMany(PropertyTaxRecord::class);
+    }
+
+    /**
+     * Get the demand for this citizen
+     */
+    public function demand()
+    {
+        return $this->belongsTo(Demand::class);
+    }
+
+    /**
+     * Get all grievances submitted by this citizen
+     */
+    public function grievances(): HasMany
+    {
+        return $this->hasMany(Grievance::class);
     }
 
     /**

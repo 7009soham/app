@@ -24,9 +24,9 @@
             @empty
                 <div class="slide active" style="background: linear-gradient(135deg, #1a365d 0%, #2d5a87 100%);">
                     <div class="slide-content">
-                        <h1>Welcome to {{ $settings['site_name'] ?? 'Gram Panchayat' }}</h1>
-                        <p>{{ $settings['site_tagline'] ?? 'Serving Our Community' }}</p>
-                        <a href="{{ route('citizen.login') }}" class="btn btn-primary btn-lg">Login to Pay Tax</a>
+                        <h1>{{ __('messages.welcome_to') }} {{ $settings['site_name'] ?? 'Gram Panchayat' }}</h1>
+                        <p>{{ $settings['site_tagline'] ?? __('messages.serving_community') }}</p>
+                        <a href="{{ route('citizen.login') }}" class="btn btn-primary btn-lg">{{ __('messages.login_to_pay_tax') }}</a>
                     </div>
                 </div>
             @endforelse
@@ -53,28 +53,28 @@
                     <i class="fas fa-users"></i>
                     <div class="stat-content">
                         <span class="stat-number" data-target="5000">0</span>
-                        <span class="stat-label">Citizens Served</span>
+                        <span class="stat-label">{{ __('messages.citizens_served') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-file-invoice-dollar"></i>
                     <div class="stat-content">
                         <span class="stat-number" data-target="10000">0</span>
-                        <span class="stat-label">Payments Processed</span>
+                        <span class="stat-label">{{ __('messages.payments_processed') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-check-circle"></i>
                     <div class="stat-content">
                         <span class="stat-number" data-target="100">0</span>
-                        <span class="stat-label">% Secure</span>
+                        <span class="stat-label">% {{ __('messages.secure') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-headset"></i>
                     <div class="stat-content">
                         <span class="stat-number">24/7</span>
-                        <span class="stat-label">Support Available</span>
+                        <span class="stat-label">{{ __('messages.support_available') }}</span>
                     </div>
                 </div>
             </div>
@@ -85,19 +85,22 @@
     <section class="services-section" id="services">
         <div class="container">
             <div class="section-header">
-                <h2>Our Services</h2>
-                <p>Pay your taxes conveniently and access various government services online</p>
+                <h2>{{ __('messages.our_services') }}</h2>
+                <p>{{ __('messages.services_description') }}</p>
             </div>
             
             <div class="services-grid">
                 @foreach($taxTypes as $taxType)
+                    @if(strtolower(trim($taxType->name)) === 'house tax')
+                        @continue
+                    @endif
                     <div class="service-card">
                         <div class="service-icon">
                             <i class="fas {{ $taxType->icon ?? 'fa-receipt' }}"></i>
                         </div>
                         <h3>{{ $taxType->name }}</h3>
                         <p>{{ $taxType->description }}</p>
-                        <a href="{{ route('citizen.login') }}" class="btn btn-outline">Login to Pay</a>
+                        <a href="{{ route('citizen.login') }}" class="btn btn-outline">{{ __('messages.login_to_pay') }}</a>
                     </div>
                 @endforeach
 
@@ -106,9 +109,9 @@
                     <div class="service-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">
                         <i class="fas fa-bullhorn"></i>
                     </div>
-                    <h3>Grievance Redressal</h3>
-                    <p>Report issues like water leakage, road damage, or other problems. We'll address your concerns promptly.</p>
-                    <a href="{{ route('grievance.create') }}" class="btn btn-outline">Report Issue</a>
+                    <h3>{{ __('messages.grievance_redressal') }}</h3>
+                    <p>{{ __('messages.grievance_description') }}</p>
+                    <a href="{{ route('grievance.create') }}" class="btn btn-outline">{{ __('messages.report_issue') }}</a>
                 </div>
             </div>
         </div>
@@ -118,7 +121,7 @@
     <section class="why-us-section">
         <div class="container">
             <div class="section-header">
-                <h2>Experience seamless and secure tax payment services</h2>
+                <h2>{{ __('messages.seamless_experience') }}</h2>
             </div>
             
             <div class="features-grid">
@@ -126,29 +129,29 @@
                     <div class="feature-icon">
                         <i class="fas fa-bolt"></i>
                     </div>
-                    <h3>Quick & Easy</h3>
-                    <p>Pay your taxes in just a few clicks from anywhere, anytime</p>
+                    <h3>{{ __('messages.quick_easy') }}</h3>
+                    <p>{{ __('messages.quick_easy_desc') }}</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-shield-alt"></i>
                     </div>
-                    <h3>100% Secure</h3>
-                    <p>Your transactions are protected with industry-standard encryption</p>
+                    <h3>{{ __('messages.secure_100') }}</h3>
+                    <p>{{ __('messages.secure_100_desc') }}</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-receipt"></i>
                     </div>
-                    <h3>Instant Receipt</h3>
-                    <p>Get digital receipts instantly after successful payment</p>
+                    <h3>{{ __('messages.instant_receipt') }}</h3>
+                    <p>{{ __('messages.instant_receipt_desc') }}</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-history"></i>
                     </div>
-                    <h3>Payment History</h3>
-                    <p>Track all your past payments and download receipts anytime</p>
+                    <h3>{{ __('messages.payment_history') }}</h3>
+                    <p>{{ __('messages.payment_history_desc') }}</p>
                 </div>
             </div>
         </div>
@@ -158,14 +161,14 @@
     <section class="cta-section">
         <div class="container">
             <div class="cta-content">
-                <h2>Need Help?</h2>
-                <p>Our support team is available to assist you with any queries</p>
+                <h2>{{ __('messages.need_help') }}</h2>
+                <p>{{ __('messages.support_team') }}</p>
                 <div class="cta-buttons">
                     <a href="tel:{{ $settings['contact_phone'] ?? '' }}" class="btn btn-white">
-                        <i class="fas fa-phone"></i> Call Us
+                        <i class="fas fa-phone"></i> {{ __('messages.call_us') }}
                     </a>
                     <a href="mailto:{{ $settings['contact_email'] ?? '' }}" class="btn btn-outline-white">
-                        <i class="fas fa-envelope"></i> Email Us
+                        <i class="fas fa-envelope"></i> {{ __('messages.email_us') }}
                     </a>
                 </div>
             </div>

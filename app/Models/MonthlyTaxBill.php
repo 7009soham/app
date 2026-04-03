@@ -24,6 +24,7 @@ class MonthlyTaxBill extends Model
         'status',
         'payment_method',
         'due_date',
+        'due_reminder_sent_at',
         'paid_date',
         'marked_by',
         'remarks',
@@ -32,6 +33,7 @@ class MonthlyTaxBill extends Model
     protected $casts = [
         'bill_date' => 'date',
         'due_date' => 'date',
+        'due_reminder_sent_at' => 'datetime',
         'paid_date' => 'date',
         'bill_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',

@@ -18,6 +18,7 @@ use App\Http\Controllers\Citizen\AuthController as CitizenAuthController;
 use App\Http\Controllers\Citizen\DashboardController as CitizenDashboardController;
 use App\Http\Controllers\GrievanceController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LanguageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,6 +33,17 @@ Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/privacy-policy', [HomeController::class, 'privacyPolicy'])->name('privacy-policy');
 Route::get('/terms-conditions', [HomeController::class, 'termsConditions'])->name('terms-conditions');
 Route::get('/refund-policy', [HomeController::class, 'refundPolicy'])->name('refund-policy');
+Route::get('/digital-services', [HomeController::class, 'digitalServices'])->name('digital-services');
+
+/*
+|--------------------------------------------------------------------------
+| Language Switch Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/language/switch', [LanguageController::class, 'switch'])->name('language.switch');
+Route::get('/language/check', [LanguageController::class, 'check'])->name('language.check');
+Route::get('/language/{locale}', [LanguageController::class, 'switchParam'])->name('language.switch-param');
 
 /*
 |--------------------------------------------------------------------------
@@ -69,8 +81,18 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    
+    // Demand Analytics
+    Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
+
+    // Activity Logs
+    Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+
+    // Penalty Settings
+    Route::resource('penalty-settings', \App\Http\Controllers\Admin\PenaltySettingController::class)->except(['show']);
 
     // Water Tax Management (Separate Dashboard)
+    Route::post('/water-tax/bulk', [WaterTaxController::class, 'bulk'])->name('water-tax.bulk');
     Route::get('/water-tax', [WaterTaxController::class, 'index'])->name('water-tax.index');
     Route::get('/water-tax/create', [WaterTaxController::class, 'create'])->name('water-tax.create');
     Route::post('/water-tax', [WaterTaxController::class, 'store'])->name('water-tax.store');
@@ -81,6 +103,7 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::delete('/water-tax/{waterTaxRecord}', [WaterTaxController::class, 'destroy'])->name('water-tax.destroy');
 
     // Property Tax Management (Separate Dashboard)
+    Route::post('/property-tax/bulk', [PropertyTaxController::class, 'bulk'])->name('property-tax.bulk');
     Route::get('/property-tax', [PropertyTaxController::class, 'index'])->name('property-tax.index');
     Route::get('/property-tax/create', [PropertyTaxController::class, 'create'])->name('property-tax.create');
     Route::post('/property-tax', [PropertyTaxController::class, 'store'])->name('property-tax.store');
@@ -91,18 +114,36 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::delete('/property-tax/{propertyTaxRecord}', [PropertyTaxController::class, 'destroy'])->name('property-tax.destroy');
 
     // Tax Payments (Legacy)
+    Route::post('/tax-payments/bulk', [TaxPaymentController::class, 'bulk'])->name('tax-payments.bulk');
     Route::get('/tax-payments', [TaxPaymentController::class, 'index'])->name('tax-payments.index');
     Route::get('/tax-payments/export', [TaxPaymentController::class, 'export'])->name('tax-payments.export');
     Route::get('/tax-payments/{taxPayment}', [TaxPaymentController::class, 'show'])->name('tax-payments.show');
 
     // Monthly Tax Collection (New System)
     Route::get('/tax-collection', [TaxCollectionController::class, 'index'])->name('tax-collection.index');
+    Route::post('/tax-collection/bulk-water', [TaxCollectionController::class, 'bulkWater'])->name('tax-collection.bulk-water');
+    Route::post('/tax-collection/bulk-property', [TaxCollectionController::class, 'bulkProperty'])->name('tax-collection.bulk-property');
     Route::get('/tax-collection/generate', [TaxCollectionController::class, 'generateMonthlyBills'])->name('tax-collection.generate');
+    Route::post('/tax-collection/fast-forward', [TaxCollectionController::class, 'debugFastForward'])->name('tax-collection.fast-forward');
+    // Water Tax (monthly)
     Route::post('/tax-collection/generate', [TaxCollectionController::class, 'storeMonthlyBills'])->name('tax-collection.store-bills');
     Route::post('/tax-collection/{bill}/pay', [TaxCollectionController::class, 'markAsPaid'])->name('tax-collection.pay');
     Route::put('/tax-collection/{bill}/status', [TaxCollectionController::class, 'updateStatus'])->name('tax-collection.update-status');
+    // Property Tax (annual)
+    Route::post('/tax-collection/generate-annual-property', [TaxCollectionController::class, 'generateAnnualPropertyBills'])->name('tax-collection.generate-annual-property');
+    Route::post('/tax-collection/property-annual/{bill}/pay', [TaxCollectionController::class, 'markAnnualPropertyBillAsPaid'])->name('tax-collection.property-annual.pay');
+
+    // Property Assessments (Form No. 8)
+    Route::post('property-assessments/import', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'importExcel'])->name('property-assessments.import');
+    Route::get('property-assessments/download-template', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'downloadTemplate'])->name('property-assessments.download-template');
+    Route::get('property-assessments/{id}/print', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'print'])->name('property-assessments.print');
+    Route::resource('property-assessments', \App\Http\Controllers\Admin\PropertyAssessmentController::class);
+
+    // Demands
+    Route::resource('demands', \App\Http\Controllers\Admin\DemandController::class);
 
     // Payments Panel
+    Route::post('/payments/bulk', [PaymentManagementController::class, 'bulk'])->name('payments.bulk');
     Route::get('/payments', [PaymentManagementController::class, 'index'])->name('payments.index');
     Route::get('/payments/{payment}', [PaymentManagementController::class, 'show'])->name('payments.show');
 
@@ -126,8 +167,15 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::get('/admins/{admin}/edit', [AdminController::class, 'edit'])->name('admins.edit');
     Route::put('/admins/{admin}', [AdminController::class, 'update'])->name('admins.update');
     Route::delete('/admins/{admin}', [AdminController::class, 'destroy'])->name('admins.destroy');
+    Route::post('/citizens/bulk', [\App\Http\Controllers\Admin\CitizenController::class, 'bulk'])->name('citizens.bulk');
+    Route::get('/citizens', [\App\Http\Controllers\Admin\CitizenController::class, 'index'])->name('citizens.index');
+    Route::get('/citizens/create', [\App\Http\Controllers\Admin\CitizenController::class, 'create'])->name('citizens.create');
+    Route::post('/citizens', [\App\Http\Controllers\Admin\CitizenController::class, 'store'])->name('citizens.store');
+    Route::get('/citizens/{citizen}/edit', [\App\Http\Controllers\Admin\CitizenController::class, 'edit'])->name('citizens.edit');
+    Route::put('/citizens/{citizen}', [\App\Http\Controllers\Admin\CitizenController::class, 'update'])->name('citizens.update');
     Route::post('/admins/{admin}/impersonate', [AdminController::class, 'impersonate'])->name('admins.impersonate');
     Route::post('/admins/stop-impersonate', [AdminController::class, 'stopImpersonate'])->name('admins.stop-impersonate');
+    Route::post('/login-as-citizen', [AdminController::class, 'loginAsCitizen'])->name('login-as-citizen');
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
@@ -135,6 +183,14 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::get('/settings/general', [SettingsController::class, 'general'])->name('settings.general');
     Route::get('/settings/social', [SettingsController::class, 'social'])->name('settings.social');
     Route::get('/settings/payment', [SettingsController::class, 'payment'])->name('settings.payment');
+
+    // Tax Rate Adjustment (Super Admin Only)
+    Route::get('/tax-rate-adjustment', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'index'])->name('tax-rate-adjustment.index');
+    Route::post('/tax-rate-adjustment/apply', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'apply'])->name('tax-rate-adjustment.apply');
+    Route::post('/tax-rate-adjustment/preview', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'preview'])->name('tax-rate-adjustment.preview');
+    Route::get('/tax-rate-adjustment/citizens', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'getCitizensByDemand'])->name('tax-rate-adjustment.citizens');
+    Route::post('/tax-rate-adjustment/{adjustment}/undo', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'undo'])->name('tax-rate-adjustment.undo');
+    Route::post('/tax-rate-adjustment/check-customer', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'checkCustomer'])->name('tax-rate-adjustment.check-customer');
 });
 
 /*
@@ -180,6 +236,22 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
     // Profile
     Route::get('/profile', [CitizenDashboardController::class, 'profile'])->name('profile');
     Route::put('/profile', [CitizenDashboardController::class, 'updateProfile'])->name('profile.update');
+
+    // Grievances
+    Route::get('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'index'])->name('grievances.index');
+    Route::get('/grievances/create', [\App\Http\Controllers\Citizen\GrievanceController::class, 'create'])->name('grievances.create');
+    Route::post('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'store'])->name('grievances.store');
+    Route::get('/grievances/{id}', [\App\Http\Controllers\Citizen\GrievanceController::class, 'show'])->name('grievances.show');
+
+    // Billing Routes
+    Route::get('/billing', [\App\Http\Controllers\Citizen\BillingController::class, 'index'])->name('billing.index');
+    Route::get('/billing/{id}/invoice', [\App\Http\Controllers\Citizen\BillingController::class, 'show'])->name('billing.invoice');
+    // Property Tax Invoice
+    Route::get('/billing/property/{id}/invoice', [\App\Http\Controllers\Citizen\BillingController::class, 'showPropertyInvoice'])->name('billing.property-invoice');
+
+    // Property Assessment (Form No. 8) for Citizens
+    Route::get('/property-assessment', [\App\Http\Controllers\Citizen\PropertyAssessmentController::class, 'index'])->name('property-assessment.index');
+    Route::get('/property-assessment/{id}/print', [\App\Http\Controllers\Citizen\PropertyAssessmentController::class, 'printAssessment'])->name('property-assessment.print');
 });
 
 // Payment Callback (No auth required - S2S callback from PhonePe)

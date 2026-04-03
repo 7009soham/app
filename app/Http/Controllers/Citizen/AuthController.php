@@ -4,14 +4,30 @@ namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
 use App\Models\Citizen;
+use App\Models\SiteSetting;
 use App\Models\WaterTaxRecord;
 use App\Models\PropertyTaxRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
+    /**
+     * Normalize phone to plain 10-digit Indian mobile format.
+     */
+    private function normalizePhone(?string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+
+        if (strlen($digits) === 12 && str_starts_with($digits, '91')) {
+            $digits = substr($digits, 2);
+        }
+
+        return $digits;
+    }
+
     /**
      * Show the citizen login form
      */
@@ -29,51 +45,85 @@ class AuthController extends Controller
      */
     public function sendOtp(Request $request)
     {
-        $request->validate([
-            'phone' => 'required|string|size:10',
-        ]);
+        $phone = $this->normalizePhone($request->input('phone'));
 
-        $phone = $request->phone;
+        if (!preg_match('/^\d{10}$/', $phone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enter a valid 10-digit phone number.',
+            ], 422);
+        }
 
-        // Check if citizen exists (by phone in water or property tax records)
-        $waterRecord = WaterTaxRecord::where('phone', $phone)->first();
-        $propertyRecord = PropertyTaxRecord::where('phone', $phone)->first();
+        $citizen = Citizen::where('phone', $phone)->first();
 
-        if (!$waterRecord && !$propertyRecord) {
+        $waterRecordQuery = WaterTaxRecord::where('phone', $phone)
+            ->orWhere('phone', '+91' . $phone)
+            ->orWhereRaw("REPLACE(REPLACE(phone, '+91', ''), ' ', '') = ?", [$phone]);
+
+        if ($citizen) {
+            $waterRecordQuery->orWhere('citizen_id', $citizen->id);
+        }
+
+        $propertyRecordQuery = PropertyTaxRecord::where('phone', $phone)
+            ->orWhere('phone', '+91' . $phone)
+            ->orWhereRaw("REPLACE(REPLACE(phone, '+91', ''), ' ', '') = ?", [$phone]);
+
+        if ($citizen) {
+            $propertyRecordQuery->orWhere('citizen_id', $citizen->id);
+        }
+
+        $waterRecord = $waterRecordQuery->first();
+        $propertyRecord = $propertyRecordQuery->first();
+
+        $firebaseEnabled = SiteSetting::get('firebase_enabled', '0') === '1';
+
+        if (!$firebaseEnabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP service is temporarily unavailable. Please contact Gram Panchayat office.',
+            ], 503);
+        }
+
+        if (!$citizen && !$waterRecord && !$propertyRecord) {
             return response()->json([
                 'success' => false,
                 'message' => 'No records found for this phone number. Please contact Gram Panchayat office.',
             ], 404);
         }
 
-        // Get or create citizen
-        $citizen = Citizen::firstOrCreate(
-            ['phone' => $phone],
-            [
-                'customer_no' => $waterRecord->customer_no ?? $propertyRecord->customer_no,
-                'name' => $waterRecord->customer_name ?? $propertyRecord->customer_name,
-            ]
-        );
-
-        // Link citizen to their records
-        if ($waterRecord && !$waterRecord->citizen_id) {
-            WaterTaxRecord::where('phone', $phone)->update(['citizen_id' => $citizen->id]);
-        }
-        if ($propertyRecord && !$propertyRecord->citizen_id) {
-            PropertyTaxRecord::where('phone', $phone)->update(['citizen_id' => $citizen->id]);
+        if (!$citizen) {
+            $citizen = Citizen::firstOrCreate(
+                ['phone' => $phone],
+                [
+                    'customer_no' => $waterRecord->customer_no ?? $propertyRecord->customer_no,
+                    'name' => $waterRecord->customer_name ?? $propertyRecord->customer_name,
+                ]
+            );
         }
 
-        // Generate OTP (for Firebase fallback)
-        $otp = $citizen->generateOtp();
+        // Keep citizen-linked records synchronized with the verified login phone.
+        if ($waterRecord) {
+            WaterTaxRecord::where('id', $waterRecord->id)->update([
+                'citizen_id' => $citizen->id,
+                'phone' => $phone,
+            ]);
+            WaterTaxRecord::where('citizen_id', $citizen->id)->update(['phone' => $phone]);
+        }
+        if ($propertyRecord) {
+            PropertyTaxRecord::where('id', $propertyRecord->id)->update([
+                'citizen_id' => $citizen->id,
+                'phone' => $phone,
+            ]);
+            PropertyTaxRecord::where('citizen_id', $citizen->id)->update(['phone' => $phone]);
+        }
 
         // Store citizen_phone in session for OTP verification
         Session::put('citizen_phone_pending', $phone);
 
         return response()->json([
             'success' => true,
-            'message' => 'OTP sent successfully. Please verify using Firebase.',
-            // In development, return OTP for testing (remove in production)
-            'debug_otp' => config('app.debug') ? $otp : null,
+            'message' => 'Please verify your phone number using the OTP sent to your device.',
+            'firebase_enabled' => $firebaseEnabled,
         ]);
     }
 
@@ -84,11 +134,18 @@ class AuthController extends Controller
     {
         $request->validate([
             'phone' => 'required|string|size:10',
-            'firebase_verified' => 'sometimes|boolean',
-            'otp' => 'required_without:firebase_verified|string|size:6',
+            'firebase_id_token' => 'required|string',
         ]);
 
-        $phone = $request->phone;
+        $phone = $this->normalizePhone($request->phone);
+
+        if (!preg_match('/^\d{10}$/', $phone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid phone number.',
+            ], 422);
+        }
+
         $citizen = Citizen::where('phone', $phone)->first();
 
         if (!$citizen) {
@@ -98,25 +155,44 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // If Firebase verified the OTP
-        if ($request->firebase_verified) {
-            $citizen->markPhoneAsVerified();
-            Auth::guard('citizen')->login($citizen);
-            Session::forget('citizen_phone_pending');
+        $firebaseEnabled = SiteSetting::get('firebase_enabled', '0') === '1';
+        $firebaseApiKey = SiteSetting::get('firebase_api_key');
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Login successful!',
-                'redirect' => route('citizen.dashboard'),
-            ]);
-        }
-
-        // Fallback OTP verification (if Firebase fails)
-        if (!$citizen->verifyOtp($request->otp)) {
+        if (!$firebaseEnabled || empty($firebaseApiKey)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or expired OTP.',
-            ], 400);
+                'message' => 'Firebase OTP is not configured. Please contact Gram Panchayat office.',
+            ], 503);
+        }
+
+        try {
+            $verifyResponse = Http::timeout(15)->post(
+                'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' . $firebaseApiKey,
+                ['idToken' => $request->firebase_id_token]
+            );
+
+            if (!$verifyResponse->ok()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to verify OTP. Please try again.',
+                ], 400);
+            }
+
+            $users = $verifyResponse->json('users', []);
+            $firebasePhone = data_get($users, '0.phoneNumber');
+            $normalizedFirebasePhone = $this->normalizePhone($firebasePhone);
+
+            if (empty($normalizedFirebasePhone) || $normalizedFirebasePhone !== $phone) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'OTP phone verification mismatch. Please try again.',
+                ], 400);
+            }
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP verification service is currently unavailable. Please try again.',
+            ], 503);
         }
 
         $citizen->markPhoneAsVerified();

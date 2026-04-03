@@ -9,8 +9,8 @@
     .welcome-section {
         background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         border-radius: var(--radius-lg);
-        padding: 32px;
-        margin-bottom: 32px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
         color: white;
         position: relative;
         overflow: hidden;
@@ -161,6 +161,44 @@
 
     .stat-change.success {
         color: #16a34a;
+    }
+
+    /* Mobile Improvements for Stats */
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            padding: 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 18px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+        
+        .stat-change {
+            font-size: 11px;
+            margin-top: 4px;
+        }
     }
 
     /* Content Grid */
@@ -398,19 +436,14 @@
 @section('content')
 <!-- Welcome Section -->
 <div class="welcome-section">
-    <div class="welcome-content">
+    <div class="welcome-content" style="align-items: center;">
         <div class="welcome-text">
-            <h2>Welcome, {{ $citizen->name }}!</h2>
-            <p>Manage your water and property tax payments easily</p>
-            <div class="customer-no">
-                <i class="fas fa-id-card"></i>
-                Customer No: {{ $citizen->customer_no }}
-            </div>
+            <h2 style="font-size: 22px; margin: 0;">{{ __('messages.welcome_user', ['name' => $citizen->name]) }}</h2>
         </div>
         @if($totalBalance > 0)
-        <a href="{{ route('citizen.water-tax') }}" class="pay-now-btn">
+        <a href="{{ route('citizen.water-tax') }}" class="pay-now-btn" style="padding: 10px 24px; margin-top: 0;">
             <i class="fas fa-credit-card"></i>
-            Pay ₹{{ number_format($totalBalance, 2) }}
+            {{ __('messages.pay_amount', ['amount' => number_format($totalBalance, 2)]) }}
         </a>
         @endif
     </div>
@@ -423,15 +456,15 @@
             <i class="fas fa-tint"></i>
         </div>
         <div class="stat-content">
-            <div class="stat-label">Water Tax Balance</div>
+            <div class="stat-label">{{ __('messages.water_tax_balance') }}</div>
             <div class="stat-value">₹{{ number_format($totalWaterTaxBalance, 2) }}</div>
             @if($totalWaterTaxBalance > 0)
             <div class="stat-change pending">
-                <i class="fas fa-exclamation-circle"></i> Pending payment
+                <i class="fas fa-exclamation-circle"></i> {{ __('messages.pending_payment') }}
             </div>
             @else
             <div class="stat-change success">
-                <i class="fas fa-check-circle"></i> All paid
+                <i class="fas fa-check-circle"></i> {{ __('messages.all_paid') }}
             </div>
             @endif
         </div>
@@ -442,15 +475,15 @@
             <i class="fas fa-home"></i>
         </div>
         <div class="stat-content">
-            <div class="stat-label">Property Tax Balance</div>
+            <div class="stat-label">{{ __('messages.property_tax_balance') }}</div>
             <div class="stat-value">₹{{ number_format($totalPropertyTaxBalance, 2) }}</div>
             @if($totalPropertyTaxBalance > 0)
             <div class="stat-change pending">
-                <i class="fas fa-exclamation-circle"></i> Pending payment
+                <i class="fas fa-exclamation-circle"></i> {{ __('messages.pending_payment') }}
             </div>
             @else
             <div class="stat-change success">
-                <i class="fas fa-check-circle"></i> All paid
+                <i class="fas fa-check-circle"></i> {{ __('messages.all_paid') }}
             </div>
             @endif
         </div>
@@ -461,13 +494,13 @@
             <i class="fas fa-wallet"></i>
         </div>
         <div class="stat-content">
-            <div class="stat-label">Total Outstanding</div>
+            <div class="stat-label">{{ __('messages.total_outstanding') }}</div>
             <div class="stat-value">₹{{ number_format($totalBalance, 2) }}</div>
             <div class="stat-change pending">
                 @if($totalBalance > 0)
-                <i class="fas fa-clock"></i> Payment due
+                <i class="fas fa-clock"></i> {{ __('messages.payment_due') }}
                 @else
-                <i class="fas fa-check-circle"></i> Clear!
+                <i class="fas fa-check-circle"></i> {{ __('messages.clear') }}
                 @endif
             </div>
         </div>
@@ -478,12 +511,40 @@
             <i class="fas fa-receipt"></i>
         </div>
         <div class="stat-content">
-            <div class="stat-label">Total Payments Made</div>
+            <div class="stat-label">{{ __('messages.total_payments_made') }}</div>
             <div class="stat-value">{{ $paymentHistory->count() }}</div>
             <div class="stat-change success">
-                <i class="fas fa-history"></i> Recent transactions
+                <i class="fas fa-history"></i> {{ __('messages.recent_transactions') }}
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="section-card" style="margin-bottom: 24px;">
+    <div class="section-header">
+        <h3 class="section-title">
+            <i class="fas fa-bolt"></i>
+            {{ __('messages.quick_actions') }}
+        </h3>
+    </div>
+    <div class="quick-actions">
+        <a href="{{ route('citizen.water-tax') }}" class="action-card">
+            <i class="fas fa-tint"></i>
+            <span>{{ __('messages.water_tax') }}</span>
+        </a>
+        <a href="{{ route('citizen.property-tax') }}" class="action-card">
+            <i class="fas fa-home"></i>
+            <span>{{ __('messages.property_tax') }}</span>
+        </a>
+        <a href="{{ route('citizen.transactions') }}" class="action-card">
+            <i class="fas fa-exchange-alt"></i>
+            <span>{{ __('messages.transactions') }}</span>
+        </a>
+        <a href="{{ route('citizen.profile') }}" class="action-card">
+            <i class="fas fa-user-cog"></i>
+            <span>{{ __('messages.my_profile') }}</span>
+        </a>
     </div>
 </div>
 
@@ -494,10 +555,10 @@
         <div class="section-header">
             <h3 class="section-title">
                 <i class="fas fa-tint"></i>
-                Water Tax Records
+                {{ __('messages.water_tax_records') }}
             </h3>
             <a href="{{ route('citizen.water-tax') }}" class="view-all">
-                View All <i class="fas fa-arrow-right"></i>
+                {{ __('messages.view_all') }} <i class="fas fa-arrow-right"></i>
             </a>
         </div>
         <div class="section-body">
@@ -509,25 +570,25 @@
                     </div>
                     <div class="tax-details">
                         <h4>{{ $record->customer_name }}</h4>
-                        <p>Bill: ₹{{ number_format($record->monthly_bill, 2) }}/month 
+                        <p>{{ __('messages.bill_per_month', ['amount' => number_format($record->monthly_bill, 2)]) }} 
                            @if($record->period) | {{ $record->period }} @endif</p>
                     </div>
                 </div>
                 <div class="tax-amount">
                     @if($record->balance > 0)
                     <div class="amount">₹{{ number_format($record->balance, 2) }}</div>
-                    <span class="status pending">Pending</span>
+                    <span class="status pending">{{ __('messages.pending') }}</span>
                     @else
                     <div class="amount">₹0.00</div>
-                    <span class="status paid">Paid</span>
+                    <span class="status paid">{{ __('messages.paid') }}</span>
                     @endif
                 </div>
             </div>
             @empty
             <div class="empty-state">
                 <i class="fas fa-tint-slash"></i>
-                <h4>No Water Tax Records</h4>
-                <p>No water tax records found for your account.</p>
+                <h4>{{ __('messages.no_water_tax_records') }}</h4>
+                <p>{{ __('messages.no_records_desc') }}</p>
             </div>
             @endforelse
         </div>
@@ -538,10 +599,10 @@
         <div class="section-header">
             <h3 class="section-title">
                 <i class="fas fa-home"></i>
-                Property Tax Records
+                {{ __('messages.property_tax_records') }}
             </h3>
             <a href="{{ route('citizen.property-tax') }}" class="view-all">
-                View All <i class="fas fa-arrow-right"></i>
+                {{ __('messages.view_all') }} <i class="fas fa-arrow-right"></i>
             </a>
         </div>
         <div class="section-body">
@@ -553,56 +614,30 @@
                     </div>
                     <div class="tax-details">
                         <h4>{{ $record->customer_name }}</h4>
-                        <p>Bill: ₹{{ number_format($record->monthly_bill, 2) }}/month 
+                        <p>{{ __('messages.bill_per_month', ['amount' => number_format($record->monthly_bill, 2)]) }} 
                            @if($record->period) | {{ $record->period }} @endif</p>
                     </div>
                 </div>
                 <div class="tax-amount">
                     @if($record->balance > 0)
                     <div class="amount">₹{{ number_format($record->balance, 2) }}</div>
-                    <span class="status pending">Pending</span>
+                    <span class="status pending">{{ __('messages.pending') }}</span>
                     @else
                     <div class="amount">₹0.00</div>
-                    <span class="status paid">Paid</span>
+                    <span class="status paid">{{ __('messages.paid') }}</span>
                     @endif
                 </div>
             </div>
             @empty
             <div class="empty-state">
                 <i class="fas fa-home"></i>
-                <h4>No Property Tax Records</h4>
-                <p>No property tax records found for your account.</p>
+                <h4>{{ __('messages.no_property_tax_records') }}</h4>
+                <p>{{ __('messages.no_records_desc') }}</p>
             </div>
             @endforelse
         </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="section-card" style="margin-top: 24px;">
-    <div class="section-header">
-        <h3 class="section-title">
-            <i class="fas fa-bolt"></i>
-            Quick Actions
-        </h3>
-    </div>
-    <div class="quick-actions">
-        <a href="{{ route('citizen.water-tax') }}" class="action-card">
-            <i class="fas fa-tint"></i>
-            <span>Water Tax</span>
-        </a>
-        <a href="{{ route('citizen.property-tax') }}" class="action-card">
-            <i class="fas fa-home"></i>
-            <span>Property Tax</span>
-        </a>
-        <a href="{{ route('citizen.transactions') }}" class="action-card">
-            <i class="fas fa-exchange-alt"></i>
-            <span>Transactions</span>
-        </a>
-        <a href="{{ route('citizen.profile') }}" class="action-card">
-            <i class="fas fa-user-cog"></i>
-            <span>My Profile</span>
-        </a>
-    </div>
-</div>
+
 @endsection

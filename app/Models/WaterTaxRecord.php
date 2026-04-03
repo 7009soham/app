@@ -22,6 +22,7 @@ class WaterTaxRecord extends Model
         'shera',
         'phone',
         'citizen_id',
+        'demand_id',
     ];
 
     protected $casts = [

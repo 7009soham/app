@@ -1,0 +1,11 @@
+Total Records: 1
+
+ID: 1
+Customer No: 23
+Period: 30
+Monthly Bill: 1000.00
+Balance: 500.00
+Other: 100.00
+Paid: 500.00
+Citizen ID: 1
+------------------------

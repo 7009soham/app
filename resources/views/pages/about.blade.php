@@ -6,7 +6,7 @@
 <section class="page-hero">
     <div class="container">
         <h1>About Us</h1>
-        <p>Serving our community with dedication and transparency</p>
+        <p>Neral Gram Panchayat</p>
     </div>
 </section>
 

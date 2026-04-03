@@ -315,7 +315,7 @@
 <div class="pay-bill-container">
     <a href="{{ $taxType === 'water' ? route('citizen.water-tax') : route('citizen.property-tax') }}" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        Back to {{ $taxType === 'water' ? 'Water' : 'Property' }} Tax
+        {{ $taxType === 'water' ? __('messages.back_to_water_tax') : __('messages.back_to_property_tax') }}
     </a>
 
     <div class="payment-card">
@@ -324,8 +324,8 @@
                 <div class="payment-icon">
                     <i class="fas fa-{{ $taxType === 'water' ? 'tint' : 'home' }}"></i>
                 </div>
-                <h2>Pay {{ ucfirst($taxType) }} Tax</h2>
-                <p>Secure online payment via PhonePe</p>
+                <h2>{{ __('messages.pay_tax_title', ['type' => __('messages.' . $taxType . '_tax')]) }}</h2>
+                <p>{{ __('messages.secure_payment_desc') }}</p>
             </div>
         </div>
 
@@ -338,29 +338,41 @@
                     <span class="bill-value">{{ $record->customer_name }}</span>
                 </div>
                 <div class="bill-row">
-                    <span class="bill-label">Customer No</span>
+                    <span class="bill-label">{{ __('messages.customer_no') }}</span>
                     <span class="bill-value">{{ $record->customer_no }}</span>
                 </div>
                 <div class="bill-row">
-                    <span class="bill-label">Monthly Bill</span>
+                    <span class="bill-label">{{ __('messages.bill_per_month', ['amount' => '']) }}</span>
                     <span class="bill-value">₹{{ number_format($record->monthly_bill, 2) }}</span>
                 </div>
                 @if($record->period)
                 <div class="bill-row">
-                    <span class="bill-label">Period</span>
+                    <span class="bill-label">{{ __('messages.period') ?? 'Period' }}</span>
                     <span class="bill-value">{{ $record->period }}</span>
                 </div>
                 @endif
                 <div class="bill-row">
-                    <span class="bill-label">Outstanding Balance</span>
+                    <span class="bill-label">{{ __('messages.outstanding_amount') }}</span>
                     <span class="bill-value" style="color: #dc2626;">₹{{ number_format($record->balance, 2) }}</span>
                 </div>
                 @php
-                    $totalAmount = $record->balance;
+                    $taxAmount = $record->balance;
+                    $convenienceFeePercent = floatval(\App\Models\SiteSetting::get('convenience_fee_percentage', '0'));
+                    $convenienceFee = round($taxAmount * $convenienceFeePercent / 100, 2);
+                    $totalAmount = $taxAmount + $convenienceFee;
                 @endphp
+                @if($convenienceFeePercent > 0)
+                <div class="bill-row">
+                    <span class="bill-label">
+                        <i class="fas fa-info-circle" style="color: #7c3aed;"></i>
+                        Convenience Fee ({{ $convenienceFeePercent }}%)
+                    </span>
+                    <span class="bill-value" style="color: #7c3aed;" id="convenienceFeeDisplay">₹{{ number_format($convenienceFee, 2) }}</span>
+                </div>
+                @endif
                 <div class="bill-row total">
-                    <span class="bill-label">Total Amount Due</span>
-                    <span class="bill-value">₹{{ number_format($totalAmount, 2) }}</span>
+                    <span class="bill-label">{{ __('messages.total_amount_due') }}</span>
+                    <span class="bill-value" id="totalAmountDisplay">₹{{ number_format($totalAmount, 2) }}</span>
                 </div>
             </div>
 
@@ -375,8 +387,8 @@
             <div class="info-notice success">
                 <i class="fas fa-check-circle"></i>
                 <div>
-                    <strong>Online Payment Available</strong><br>
-                    Pay securely using UPI, Cards, or Wallets via PhonePe.
+                    <strong>{{ __('messages.online_payment_available') }}</strong><br>
+                    {{ __('messages.online_payment_desc') }}
                 </div>
             </div>
 
@@ -385,11 +397,118 @@
                 @csrf
                 <input type="hidden" name="tax_type" value="{{ $taxType }}">
                 <input type="hidden" name="record_id" value="{{ $record->id }}">
-                <input type="hidden" name="amount" value="{{ $totalAmount }}">
+                <input type="hidden" name="amount" id="paymentAmount" value="{{ $totalAmount }}">
+                <input type="hidden" name="convenience_fee" id="convenienceFeeInput" value="{{ $convenienceFee }}">
+
+                @php
+                    $partialEnabled = \App\Models\SiteSetting::get('partial_payment_enabled', '0') === '1';
+                    $allow50 = \App\Models\SiteSetting::get('partial_payment_allow_50', '0') === '1';
+                    $allow75 = \App\Models\SiteSetting::get('partial_payment_allow_75', '0') === '1';
+                @endphp
+
+                @if($partialEnabled && ($allow50 || $allow75))
+                <!-- Payment Amount Selection -->
+                <div class="payment-methods" style="margin-bottom: 24px;">
+                    <div class="method-title">{{ __('messages.select_payment_amount') }}</div>
+                    <div class="method-options" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+                        
+                        <!-- Full Amount -->
+                        <label class="method-option selected amount-option" onclick="selectAmount({{ $taxAmount }}, this)">
+                            <div class="method-icon" style="background: #dcfce7; color: #16a34a; border-radius: 50%;">
+                                <i class="fas fa-check-circle" style="font-size: 18px;"></i>
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <span class="method-name">{{ __('messages.full_amount') }}</span>
+                                <span style="font-size: 13px; font-weight: 700; color: #16a34a;">₹{{ number_format($totalAmount, 2) }}</span>
+                                @if($convenienceFeePercent > 0)
+                                <span style="font-size: 10px; color: #94a3b8;">Tax: ₹{{ number_format($taxAmount, 2) }} + Fee: ₹{{ number_format($convenienceFee, 2) }}</span>
+                                @endif
+                            </div>
+                        </label>
+
+                        @if($allow75)
+                        <!-- 75% Amount -->
+                        @php 
+                            $taxAmount75 = round($taxAmount * 0.75, 2);
+                            $fee75 = round($taxAmount75 * $convenienceFeePercent / 100, 2);
+                            $total75 = $taxAmount75 + $fee75;
+                        @endphp
+                        <label class="method-option amount-option" onclick="selectAmount({{ $taxAmount75 }}, this)">
+                            <div class="method-icon" style="background: #fff7ed; color: #ea580c; border-radius: 50%;">
+                                <i class="fas fa-chart-pie" style="font-size: 18px;"></i>
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <span class="method-name">{{ __('messages.amount_75') }}</span>
+                                <span style="font-size: 13px; font-weight: 700; color: #ea580c;">₹{{ number_format($total75, 2) }}</span>
+                                @if($convenienceFeePercent > 0)
+                                <span style="font-size: 10px; color: #94a3b8;">Tax: ₹{{ number_format($taxAmount75, 2) }} + Fee: ₹{{ number_format($fee75, 2) }}</span>
+                                @endif
+                            </div>
+                        </label>
+                        @endif
+
+                        @if($allow50)
+                        <!-- 50% Amount -->
+                        @php 
+                            $taxAmount50 = round($taxAmount * 0.50, 2);
+                            $fee50 = round($taxAmount50 * $convenienceFeePercent / 100, 2);
+                            $total50 = $taxAmount50 + $fee50;
+                        @endphp
+                        <label class="method-option amount-option" onclick="selectAmount({{ $taxAmount50 }}, this)">
+                            <div class="method-icon" style="background: #eff6ff; color: #3b82f6; border-radius: 50%;">
+                                <i class="fas fa-adjust" style="font-size: 18px;"></i>
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <span class="method-name">{{ __('messages.amount_50') }}</span>
+                                <span style="font-size: 13px; font-weight: 700; color: #3b82f6;">₹{{ number_format($total50, 2) }}</span>
+                                @if($convenienceFeePercent > 0)
+                                <span style="font-size: 10px; color: #94a3b8;">Tax: ₹{{ number_format($taxAmount50, 2) }} + Fee: ₹{{ number_format($fee50, 2) }}</span>
+                                @endif
+                            </div>
+                        </label>
+                        @endif
+
+                    </div>
+                </div>
+
+                <script>
+                    var convenienceFeePercent = {{ $convenienceFeePercent }};
+
+                    function selectAmount(baseTaxAmount, element) {
+                        // Calculate convenience fee on the selected tax amount
+                        var fee = Math.round(baseTaxAmount * convenienceFeePercent / 100 * 100) / 100;
+                        var totalWithFee = Math.round((baseTaxAmount + fee) * 100) / 100;
+
+                        // Update hidden inputs
+                        document.getElementById('paymentAmount').value = totalWithFee;
+                        document.getElementById('convenienceFeeInput').value = fee;
+                        
+                        // Update UI displays
+                        var feeDisplay = document.getElementById('convenienceFeeDisplay');
+                        if (feeDisplay) {
+                            feeDisplay.textContent = '₹' + fee.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        }
+                        var totalDisplay = document.getElementById('totalAmountDisplay');
+                        if (totalDisplay) {
+                            totalDisplay.textContent = '₹' + totalWithFee.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        }
+
+                        // Update selection highlight
+                        document.querySelectorAll('.amount-option').forEach(opt => opt.classList.remove('selected'));
+                        element.classList.add('selected');
+
+                        // Update Pay Button Text
+                        var btn = document.getElementById('payBtn');
+                        var template = '{{ __('messages.pay_securely', ['amount' => ':amount']) }}';
+                        var newText = template.replace(':amount', totalWithFee.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                        btn.innerHTML = '<i class="fas fa-shield-alt"></i> ' + newText;
+                    }
+                </script>
+                @endif
 
                 <!-- Payment Methods -->
                 <div class="payment-methods">
-                    <div class="method-title">Payment Gateway</div>
+                    <div class="method-title">{{ __('messages.payment_gateway') }}</div>
                     <div class="method-options">
                         <label class="method-option selected">
                             <input type="radio" name="payment_method" value="phonepe" checked>
@@ -411,7 +530,7 @@
                 <!-- Pay Button -->
                 <button type="submit" class="pay-btn" id="payBtn">
                     <i class="fas fa-shield-alt"></i>
-                    Pay ₹{{ number_format($totalAmount, 2) }} Securely
+                    {{ __('messages.pay_securely', ['amount' => number_format($totalAmount, 2)]) }}
                 </button>
             </form>
             @else
@@ -419,14 +538,14 @@
             <div class="info-notice warning">
                 <i class="fas fa-exclamation-triangle"></i>
                 <div>
-                    <strong>Online Payment Coming Soon</strong><br>
-                    Online payment is being set up. Please visit Gram Panchayat office for payment or contact the helpline.
+                    <strong>{{ __('messages.online_payment_soon') }}</strong><br>
+                    {{ __('messages.online_payment_soon_desc') }}
                 </div>
             </div>
 
             <!-- Disabled Payment Methods -->
             <div class="payment-methods">
-                <div class="method-title">Select Payment Method</div>
+                <div class="method-title">{{ __('messages.select_payment_method') }}</div>
                 <div class="method-options" style="opacity: 0.5;">
                     <label class="method-option selected" style="cursor: not-allowed;">
                         <div class="method-icon">
@@ -446,22 +565,22 @@
             <!-- Disabled Pay Button -->
             <button type="button" class="pay-btn" disabled>
                 <i class="fas fa-lock"></i>
-                Pay ₹{{ number_format($totalAmount, 2) }}
+                {{ __('messages.pay_amount_simple', ['amount' => number_format($totalAmount, 2)]) }}
             </button>
             @endif
 
             <div class="secure-badge">
                 <i class="fas fa-shield-alt"></i>
-                Secured by 256-bit SSL encryption
+                {{ __('messages.secured_by') }}
             </div>
             @else
             <div style="text-align: center; padding: 40px 0;">
                 <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
-                <h3 style="margin-bottom: 8px;">Record Not Found</h3>
-                <p style="color: var(--text-secondary);">The tax record you're trying to pay for was not found.</p>
+                <h3 style="margin-bottom: 8px;">{{ __('messages.record_not_found') }}</h3>
+                <p style="color: var(--text-secondary);">{{ __('messages.record_not_found_desc') }}</p>
                 <a href="{{ route('citizen.dashboard') }}" class="back-link" style="margin-top: 20px; display: inline-flex;">
                     <i class="fas fa-arrow-left"></i>
-                    Back to Dashboard
+                    {{ __('messages.back_to_dashboard') }}
                 </a>
             </div>
             @endif
@@ -473,9 +592,19 @@
 <script>
     // Payment method selection
     document.querySelectorAll('.method-option').forEach(option => {
-        option.addEventListener('click', () => {
-            document.querySelectorAll('.method-option').forEach(o => o.classList.remove('selected'));
-            option.classList.add('selected');
+        option.addEventListener('click', function() {
+            // Find parent container to scope selection
+            const container = this.closest('.method-options');
+            if (container) {
+                container.querySelectorAll('.method-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+            }
+            
+            // Check radio input if present
+            const radio = this.querySelector('input[type="radio"]');
+            if(radio) {
+                radio.checked = true;
+            }
         });
     });
 

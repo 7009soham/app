@@ -3,6 +3,8 @@
 @section('title', 'Edit Water Tax Record')
 
 @push('styles')
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
     .page-header {
         margin-bottom: 24px;
@@ -80,6 +82,46 @@
         outline: none;
         border-color: #1e3a5f;
         box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+    }
+
+    /* Select2 Styling */
+    .select2-container--default .select2-selection--single {
+        height: 48px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 16px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 32px;
+        font-size: 15px;
+        color: #374151;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 46px;
+    }
+
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #1e3a5f;
+        box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+    }
+
+    .select2-dropdown {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .select2-search--dropdown .select2-search__field {
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 8px 12px;
+    }
+
+    .select2-search--dropdown .select2-search__field:focus {
+        border-color: #1e3a5f;
+        outline: none;
     }
 
     .form-actions {
@@ -181,16 +223,29 @@
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-label">Link to Citizen (Optional)</label>
-                <select name="citizen_id" class="form-select">
-                    <option value="">-- Not Linked --</option>
-                    @foreach($citizens as $citizen)
-                    <option value="{{ $citizen->id }}" {{ old('citizen_id', $waterTaxRecord->citizen_id) == $citizen->id ? 'selected' : '' }}>
-                        {{ $citizen->name }} ({{ $citizen->phone }})
-                    </option>
-                    @endforeach
-                </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Link to Citizen (Optional)</label>
+                    <select name="citizen_id" id="citizen_select" class="form-select">
+                        <option value="">-- Not Linked --</option>
+                        @foreach($citizens as $citizen)
+                        <option value="{{ $citizen->id }}" {{ old('citizen_id', $waterTaxRecord->citizen_id) == $citizen->id ? 'selected' : '' }}>
+                            {{ $citizen->name }} ({{ $citizen->phone }})
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Demand (Optional)</label>
+                    <select name="demand_id" class="form-select">
+                        <option value="">-- No Demand --</option>
+                        @foreach($demands as $demand)
+                        <option value="{{ $demand->id }}" {{ old('demand_id', $waterTaxRecord->demand_id) == $demand->id ? 'selected' : '' }}>
+                            {{ $demand->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -203,3 +258,30 @@
     </div>
 </form>
 @endsection
+
+@push('scripts')
+<!-- jQuery is required for Select2 -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 with search
+        $('#citizen_select').select2({
+            placeholder: '-- Search citizens by name or phone --',
+            allowClear: true,
+            width: '100%',
+            theme: 'default',
+            minimumInputLength: 0,
+            language: {
+                noResults: function() {
+                    return "No citizens found";
+                },
+                searching: function() {
+                    return "Searching...";
+                }
+            }
+        });
+    });
+</script>
+@endpush
