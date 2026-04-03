@@ -54,4 +54,10 @@ return [
         'app_id' => env('FIREBASE_APP_ID', ''),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID', ''),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET', ''),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/citizen/auth/google/callback'),
+    ],
+
 ];
