@@ -96,6 +96,28 @@
         color: #4f46e5;
     }
 
+    .badge-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .failure-reason {
+        color: #b91c1c;
+        font-size: 12px;
+        line-height: 1.4;
+        max-width: 280px;
+    }
+
     /* Mobile Card View */
     @media (max-width: 768px) {
         .desktop-table {
@@ -231,24 +253,35 @@
                             <th>Tax Type</th>
                             <th>Period</th>
                             <th>Amount</th>
+                            <th>Status</th>
+                            <th>Failure Reason</th>
                             <th>Method</th>
                             <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($payments as $payment)
+                            @php
+                                $rawStatus = strtolower($payment->status ?? $payment->payment_status ?? 'pending');
+                                $statusKey = in_array($rawStatus, ['success', 'completed'])
+                                    ? 'success'
+                                    : ($rawStatus === 'failed' ? 'failed' : 'pending');
+                                $statusBadgeClass = $statusKey === 'success' ? 'badge-success' : ($statusKey === 'failed' ? 'badge-danger' : 'badge-warning');
+                                $statusLabel = strtoupper($statusKey);
+                                $displayDate = \Carbon\Carbon::parse($payment->paid_at ?? $payment->created_at);
+                            @endphp
                             <tr>
                                 <td>
                                     <span style="font-family: monospace; font-size: 13px;">{{ $payment->transaction_id }}</span>
                                 </td>
                                 <td>
                                     <span class="badge {{ $payment->tax_type == 'water_tax' ? 'badge-info' : 'badge-primary' }}">
-                                        {{ $payment->tax_type == 'water_tax' ? 'Water Tax' : 'Property Tax' }}
+                                        {{ $payment->taxType?->name ?? ($payment->tax_type == 'water_tax' ? 'Water Tax' : 'Property Tax') }}
                                     </span>
                                 </td>
                                 <td>
-                                    @if($payment->bill)
-                                        {{ $payment->bill->month_name }} {{ $payment->bill->bill_year }}
+                                    @if($payment->period_start && $payment->period_end)
+                                        {{ \Carbon\Carbon::parse($payment->period_start)->format('d M Y') }} - {{ \Carbon\Carbon::parse($payment->period_end)->format('d M Y') }}
                                     @else
                                         <span style="color: var(--text-muted);">N/A</span>
                                     @endif
@@ -257,15 +290,25 @@
                                     <strong style="color: #16a34a;">₹{{ number_format($payment->amount, 2) }}</strong>
                                 </td>
                                 <td>
+                                    <span class="badge {{ $statusBadgeClass }}">{{ $statusLabel }}</span>
+                                </td>
+                                <td>
+                                    @if($statusKey === 'failed' && $payment->failure_reason)
+                                        <div class="failure-reason" title="{{ $payment->failure_reason }}">{{ $payment->failure_reason }}</div>
+                                    @else
+                                        <span style="color: var(--text-muted);">-</span>
+                                    @endif
+                                </td>
+                                <td>
                                     <span style="text-transform: capitalize; font-size: 13px;">{{ str_replace('_', ' ', $payment->payment_method) }}</span>
                                 </td>
                                 <td style="font-size: 13px; color: var(--text-secondary);">
-                                    {{ $payment->paid_at->format('d M Y, h:i A') }}
+                                    {{ $displayDate->format('d M Y, h:i A') }}
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" style="padding: 48px 24px; text-align: center; color: var(--text-secondary);">
+                                <td colspan="8" style="padding: 48px 24px; text-align: center; color: var(--text-secondary);">
                                     <i class="fas fa-receipt" style="font-size: 40px; margin-bottom: 16px; display: block; opacity: 0.3;"></i>
                                     <p>{{ app()->getLocale() == 'hi' ? 'आपने अभी तक कोई भुगतान नहीं किया है।' : (app()->getLocale() == 'mr' ? 'तुम्ही अद्याप कोणतीही देयके केली नाही.' : 'You haven\'t made any payments yet.') }}</p>
                                 </td>
@@ -280,6 +323,15 @@
     <!-- Mobile Card View -->
     <div class="mobile-cards">
         @forelse($payments as $payment)
+            @php
+                $rawStatus = strtolower($payment->status ?? $payment->payment_status ?? 'pending');
+                $statusKey = in_array($rawStatus, ['success', 'completed'])
+                    ? 'success'
+                    : ($rawStatus === 'failed' ? 'failed' : 'pending');
+                $statusBadgeClass = $statusKey === 'success' ? 'badge-success' : ($statusKey === 'failed' ? 'badge-danger' : 'badge-warning');
+                $statusLabel = strtoupper($statusKey);
+                $displayDate = \Carbon\Carbon::parse($payment->paid_at ?? $payment->created_at);
+            @endphp
             <div class="transaction-card">
                 <div class="transaction-header">
                     <div class="transaction-id">#{{ $payment->transaction_id }}</div>
@@ -292,7 +344,7 @@
                     </div>
                     <div class="transaction-value">
                         <span class="badge {{ $payment->tax_type == 'water_tax' ? 'badge-info' : 'badge-primary' }}">
-                            {{ $payment->tax_type == 'water_tax' ? 'Water Tax' : 'Property Tax' }}
+                            {{ $payment->taxType?->name ?? ($payment->tax_type == 'water_tax' ? 'Water Tax' : 'Property Tax') }}
                         </span>
                     </div>
                 </div>
@@ -302,13 +354,33 @@
                         {{ app()->getLocale() == 'hi' ? 'अवधि' : (app()->getLocale() == 'mr' ? 'कालावधी' : 'Period') }}
                     </div>
                     <div class="transaction-value">
-                        @if($payment->bill)
-                            {{ $payment->bill->month_name }} {{ $payment->bill->bill_year }}
+                        @if($payment->period_start && $payment->period_end)
+                            {{ \Carbon\Carbon::parse($payment->period_start)->format('d M Y') }} - {{ \Carbon\Carbon::parse($payment->period_end)->format('d M Y') }}
                         @else
                             <span style="color: var(--text-muted);">N/A</span>
                         @endif
                     </div>
                 </div>
+
+                <div class="transaction-row">
+                    <div class="transaction-label">
+                        {{ app()->getLocale() == 'hi' ? 'स्थिति' : (app()->getLocale() == 'mr' ? 'स्थिती' : 'Status') }}
+                    </div>
+                    <div class="transaction-value">
+                        <span class="badge {{ $statusBadgeClass }}">{{ $statusLabel }}</span>
+                    </div>
+                </div>
+
+                @if($statusKey === 'failed' && $payment->failure_reason)
+                    <div class="transaction-row">
+                        <div class="transaction-label">
+                            {{ app()->getLocale() == 'hi' ? 'विफलता कारण' : (app()->getLocale() == 'mr' ? 'अपयशाचे कारण' : 'Failure Reason') }}
+                        </div>
+                        <div class="transaction-value failure-reason">
+                            {{ $payment->failure_reason }}
+                        </div>
+                    </div>
+                @endif
 
                 <div class="transaction-row">
                     <div class="transaction-label">
@@ -324,8 +396,8 @@
                         {{ app()->getLocale() == 'hi' ? 'तारीख' : (app()->getLocale() == 'mr' ? 'तारीख' : 'Date') }}
                     </div>
                     <div class="transaction-value">
-                        {{ $payment->paid_at->format('d M Y') }}<br>
-                        <small style="color: var(--text-secondary);">{{ $payment->paid_at->format('h:i A') }}</small>
+                        {{ $displayDate->format('d M Y') }}<br>
+                        <small style="color: var(--text-secondary);">{{ $displayDate->format('h:i A') }}</small>
                     </div>
                 </div>
             </div>

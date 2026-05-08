@@ -189,7 +189,7 @@ class PhonePeService
                     'payment_status' => $paymentState,
                     'is_completed' => $paymentState === 'COMPLETED',
                     'is_pending' => $paymentState === 'PENDING',
-                    'is_failed' => in_array($paymentState, ['FAILED', 'DECLINED']),
+                    'is_failed' => in_array($paymentState, ['FAILED', 'DECLINED', 'CANCELLED', 'PAYMENT_ERROR'], true),
                     'transaction_id' => $responseData['data']['merchantTransactionId'] ?? $transactionId,
                     'provider_transaction_id' => $responseData['data']['transactionId'] ?? null,
                     'amount' => ($responseData['data']['amount'] ?? 0) / 100, // Convert from paise

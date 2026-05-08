@@ -273,9 +273,9 @@
                             </div>
                             <div class="customer-info">
                                 <h4>{{ $record->customer_name }}</h4>
-                                <p>{{ __('messages.customer_id') }}: {{ $record->customer_no }}
-                                    @if($record->property_no) | Prop: {{ $record->property_no }} @endif
-                                </p>
+                                @if($record->property_no)
+                                    <p>Prop: {{ $record->property_no }}</p>
+                                @endif
                             </div>
                         </div>
                     </td>
@@ -337,7 +337,9 @@
                 </div>
                 <div style="min-width:0;">
                     <div style="font-weight:600;font-size:14px;color:var(--text-primary);">{{ $record->customer_name }}</div>
-                    <div style="font-size:12px;color:var(--text-secondary);">{{ __('messages.customer_id') }}: {{ $record->customer_no }}{{ $record->property_no ? ' | Prop: '.$record->property_no : '' }}</div>
+                    @if($record->property_no)
+                        <div style="font-size:12px;color:var(--text-secondary);">Prop: {{ $record->property_no }}</div>
+                    @endif
                 </div>
             </div>
             <div class="pt-row">

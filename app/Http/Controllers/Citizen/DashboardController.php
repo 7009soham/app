@@ -44,11 +44,10 @@ class DashboardController extends Controller
             ->orderBy('a_no')
             ->get();
 
-        // Get payment history
-        $paymentHistory = TaxPayment::where('citizen_phone', $citizen->phone)
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
+        // Count only confirmed successful payments (do not count cancelled/failed/back attempts)
+        $totalPaymentsMade = TaxPayment::where('citizen_phone', $citizen->phone)
+            ->completed()
+            ->count();
 
         // Calculate totals
         $totalWaterTaxBalance = $waterTaxRecords->sum('balance');
@@ -59,7 +58,7 @@ class DashboardController extends Controller
             'citizen',
             'waterTaxRecords',
             'propertyTaxRecords',
-            'paymentHistory',
+            'totalPaymentsMade',
             'totalWaterTaxBalance',
             'totalPropertyTaxBalance',
             'totalBalance'
@@ -197,16 +196,72 @@ class DashboardController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255|unique:citizens,email,' . $citizen->id,
+            'name' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:500',
+            'email' => 'nullable|email|max:255',
+            'remove_email' => 'nullable|in:0,1',
         ]);
 
+        $name = trim((string) $request->input('name', $citizen->name));
+        if ($name === '') {
+            $name = $citizen->name;
+        }
+
+        $address = trim((string) $request->input('address', ''));
+        $address = $address !== '' ? $address : null;
+
         $citizen->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'address' => $request->address,
+            'name' => $name,
+            'address' => $address,
         ]);
+
+        $currentEmail = $citizen->email !== null ? strtolower(trim((string) $citizen->email)) : '';
+        $requestedEmail = strtolower(trim((string) $request->input('email', '')));
+        $shouldRemoveEmail = (string) $request->input('remove_email', '0') === '1';
+
+        if ($shouldRemoveEmail && $currentEmail !== '') {
+            $citizen->update([
+                'email' => null,
+                'email_verified_at' => null,
+                'otp' => null,
+                'otp_expires_at' => null,
+                'otp_sent_at' => null,
+            ]);
+
+            Session::forget('profile_email_change_request');
+            Session::forget('profile_email_otp_operation');
+            Session::forget('show_profile_email_otp');
+            Session::forget('profile_pending_email');
+
+            return redirect()->route('citizen.profile')
+                ->with('success', 'Email removed successfully.');
+        }
+
+        $emailOperation = null;
+        $targetEmail = null;
+
+        if ($requestedEmail !== '' && $requestedEmail !== $currentEmail) {
+            $emailOperation = 'set';
+            $targetEmail = $requestedEmail;
+        }
+
+        if ($emailOperation !== null && $targetEmail !== null) {
+            Session::put('profile_email_change_request', [
+                'citizen_id' => (int) $citizen->id,
+                'operation' => $emailOperation,
+                'email' => $targetEmail,
+            ]);
+
+            $message = 'Please verify OTP sent to your new email before saving it.';
+
+            return redirect()->route('citizen.profile')
+                ->with('warning', $message)
+                ->with('show_profile_email_otp', true)
+                ->with('profile_pending_email', $targetEmail)
+                ->with('profile_email_otp_operation', $emailOperation);
+        }
+
+        Session::forget('profile_email_change_request');
 
         return redirect()->route('citizen.profile')
             ->with('success', 'Profile updated successfully.');

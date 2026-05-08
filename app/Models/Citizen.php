@@ -2,18 +2,49 @@
 
 namespace App\Models;
 
+use App\Mail\CitizenEmailLinkedMail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class Citizen extends Authenticatable
 {
     use Notifiable;
+
+    protected static function booted(): void
+    {
+        static::created(function (self $citizen): void {
+            if (!empty($citizen->email)) {
+                $citizen->sendEmailLinkedNotification();
+            }
+        });
+
+        static::updated(function (self $citizen): void {
+            if (!$citizen->wasChanged('email') || empty($citizen->email)) {
+                return;
+            }
+
+            $previousEmail = trim((string) $citizen->getOriginal('email'));
+            $currentEmail = trim((string) $citizen->email);
+
+            // If this is effectively the same email (e.g., whitespace/casing changes), do not resend.
+            if (strcasecmp($previousEmail, $currentEmail) === 0) {
+                return;
+            }
+
+            $citizen->sendEmailLinkedNotification();
+        });
+    }
+
     protected $fillable = [
         'customer_no',
         'name',
         'phone',
         'email',
+        'email_verified_at',
         'address',
         'aadhar_card',
         'demand_id',
@@ -21,13 +52,16 @@ class Citizen extends Authenticatable
         'phone_verified_at',
         'otp',
         'otp_expires_at',
+        'otp_sent_at',
         'banner_dismissed',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'email_verified_at' => 'datetime',
         'phone_verified_at' => 'datetime',
         'otp_expires_at' => 'datetime',
+        'otp_sent_at' => 'datetime',
         'banner_dismissed' => 'boolean',
     ];
 
@@ -95,7 +129,7 @@ class Citizen extends Authenticatable
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         
         $this->update([
-            'otp' => $otp,
+            'otp' => Hash::make($otp),
             'otp_expires_at' => now()->addMinutes(10),
         ]);
 
@@ -107,7 +141,15 @@ class Citizen extends Authenticatable
      */
     public function verifyOtp(string $otp): bool
     {
-        if ($this->otp !== $otp) {
+        if (empty($this->otp)) {
+            return false;
+        }
+
+        $storedOtp = (string) $this->otp;
+        $isHashedOtp = str_starts_with($storedOtp, '$2y$') || str_starts_with($storedOtp, '$argon2');
+
+        $isValid = $isHashedOtp ? Hash::check($otp, $storedOtp) : hash_equals($storedOtp, $otp);
+        if (!$isValid) {
             return false;
         }
 
@@ -156,5 +198,26 @@ class Citizen extends Authenticatable
     public function scopeVerified($query)
     {
         return $query->whereNotNull('phone_verified_at');
+    }
+
+    /**
+     * Send confirmation email when citizen email is linked/updated.
+     */
+    private function sendEmailLinkedNotification(): void
+    {
+        try {
+            Mail::to($this->email)->send(new CitizenEmailLinkedMail([
+                'citizen_name' => $this->name,
+                'citizen_phone' => $this->phone,
+                'customer_no' => $this->customer_no,
+                'linked_at' => now(),
+            ]));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send citizen email linking confirmation.', [
+                'citizen_id' => $this->id,
+                'email' => $this->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

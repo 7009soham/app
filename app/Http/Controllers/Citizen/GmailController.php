@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 class GmailController extends Controller
 {
     /**
-     * Save the citizen's email and dismiss the notification banner.
+    * Save the citizen's email and mark Gmail as linked.
      */
     public function saveEmail(Request $request)
     {
@@ -19,17 +19,8 @@ class GmailController extends Controller
             return redirect()->route('citizen.login');
         }
 
-        $request->validate([
-            'email' => 'required|email|max:255|unique:citizens,email,' . $citizen->id,
-        ]);
-
-        $citizen->update([
-            'email'            => $request->email,
-            'banner_dismissed' => true,
-        ]);
-
-        return redirect()->route('citizen.dashboard')
-            ->with('success', 'Your email has been saved. You will now receive invoices, due date reminders, and updates in your inbox.');
+        return redirect()->route('citizen.profile')
+            ->with('error', 'Direct email linking is disabled. Please verify your email using OTP on the profile page.');
     }
 
     /**

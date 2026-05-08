@@ -35,7 +35,8 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            if (SiteSetting::get('smtp_enabled', '0') !== '1') {
+            $smtpEnabled = strtolower(trim((string) SiteSetting::get('smtp_enabled', '0')));
+            if (!in_array($smtpEnabled, ['1', 'true', 'yes', 'on'], true)) {
                 return;
             }
 
@@ -53,16 +54,17 @@ class AppServiceProvider extends ServiceProvider
             $fromName = (string) SiteSetting::get('smtp_from_name', config('app.name'));
             $timeout = (int) SiteSetting::get('smtp_timeout', '30');
 
-            $scheme = in_array($encryption, ['tls', 'ssl'], true) ? $encryption : null;
+            // Symfony mailer supports only smtp / smtps as scheme values.
+            $scheme = $encryption === 'ssl' ? 'smtps' : 'smtp';
+            $resolvedPort = $port > 0 ? $port : ($encryption === 'ssl' ? 465 : 587);
 
             Config::set('mail.default', 'smtp');
             Config::set('mail.mailers.smtp.transport', 'smtp');
+            Config::set('mail.mailers.smtp.url', null);
             Config::set('mail.mailers.smtp.host', $host);
-            Config::set('mail.mailers.smtp.port', $port > 0 ? $port : 587);
+            Config::set('mail.mailers.smtp.port', $resolvedPort);
             Config::set('mail.mailers.smtp.username', $username);
-            if ($password !== '') {
-                Config::set('mail.mailers.smtp.password', $password);
-            }
+            Config::set('mail.mailers.smtp.password', $password);
             Config::set('mail.mailers.smtp.scheme', $scheme);
             Config::set('mail.mailers.smtp.timeout', $timeout > 0 ? $timeout : 30);
 

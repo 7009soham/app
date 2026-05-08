@@ -337,10 +337,17 @@
                     <span class="bill-label">Customer Name</span>
                     <span class="bill-value">{{ $record->customer_name }}</span>
                 </div>
+                @if($taxType === 'water')
                 <div class="bill-row">
                     <span class="bill-label">{{ __('messages.customer_no') }}</span>
                     <span class="bill-value">{{ $record->customer_no }}</span>
                 </div>
+                @elseif($taxType === 'property' && !empty($record->property_no))
+                <div class="bill-row">
+                    <span class="bill-label">Property No</span>
+                    <span class="bill-value">{{ $record->property_no }}</span>
+                </div>
+                @endif
                 <div class="bill-row">
                     <span class="bill-label">{{ __('messages.bill_per_month', ['amount' => '']) }}</span>
                     <span class="bill-value">₹{{ number_format($record->monthly_bill, 2) }}</span>

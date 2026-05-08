@@ -28,12 +28,8 @@ class TaxRateAdjustmentController extends Controller
             'property_tax_total_monthly' => PropertyTaxRecord::sum('monthly_bill') ?? 0,
         ];
 
-        // Get list of all demand numbers for filtering
-        $demandNumbers = Citizen::whereNotNull('demand_number')
-            ->distinct()
-            ->pluck('demand_number')
-            ->sort()
-            ->values();
+        // Schema uses demand_id; populate the UI from the demands table
+        $demands = \App\Models\Demand::orderBy('name')->get();
 
         // Get adjustment history
         $adjustments = TaxAdjustment::with(['performer', 'reverter'])
@@ -41,7 +37,7 @@ class TaxRateAdjustmentController extends Controller
             ->take(10)
             ->get();
 
-        return view('admin.tax-rate-adjustment.index', compact('stats', 'demandNumbers', 'adjustments'));
+        return view('admin.tax-rate-adjustment.index', compact('stats', 'demands', 'adjustments'));
     }
 
     /**
@@ -122,7 +118,7 @@ class TaxRateAdjustmentController extends Controller
         // Common filter logic
         $applyFilters = function($query) use ($applyTo, $filters) {
             if ($applyTo === 'selected' && !empty($filters['demand_numbers'])) {
-                $citizenIds = Citizen::whereIn('demand_number', $filters['demand_numbers'])->pluck('id');
+                $citizenIds = Citizen::whereIn('demand_id', $filters['demand_numbers'])->pluck('id');
                 $query->whereIn('citizen_id', $citizenIds);
             } elseif ($applyTo === 'customer' && !empty($filters['customer_no'])) {
                  $citizen = Citizen::where('customer_no', $filters['customer_no'])->first();
@@ -211,9 +207,12 @@ class TaxRateAdjustmentController extends Controller
      */
     public function getCitizensByDemand(Request $request)
     {
-        $demandNumber = $request->demand_number;
+        $demandId = $request->input('demand_id') ?? $request->input('demand_number');
+        if (empty($demandId)) {
+            return response()->json([]);
+        }
         
-        $citizens = Citizen::where('demand_number', $demandNumber)
+        $citizens = Citizen::where('demand_id', $demandId)
             ->select('id', 'name', 'phone')
             ->withCount('waterTaxRecords')
             ->get();
@@ -273,7 +272,7 @@ class TaxRateAdjustmentController extends Controller
         // Common filter logic
         $applyPreviewFilters = function($query) use ($applyTo, $selectedDemandNumbers, $customerNo) {
             if ($applyTo === 'selected' && !empty($selectedDemandNumbers)) {
-                $citizenIds = Citizen::whereIn('demand_number', $selectedDemandNumbers)->pluck('id');
+                $citizenIds = Citizen::whereIn('demand_id', $selectedDemandNumbers)->pluck('id');
                 $query->whereIn('citizen_id', $citizenIds);
             } elseif ($applyTo === 'customer' && !empty($customerNo)) {
                  $citizen = Citizen::where('customer_no', $customerNo)->first();

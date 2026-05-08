@@ -204,36 +204,30 @@
                     <input type="number" name="a_no" class="form-input" value="{{ old('a_no') }}" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label required">Customer No</label>
-                    <input type="text" name="customer_no" class="form-input" value="{{ old('customer_no') }}" required>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
                     <label class="form-label required">Property No</label>
                     <input type="text" name="property_no" class="form-input" value="{{ old('property_no') }}" placeholder="e.g., 1634, 111/1/2" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label required">Property Type</label>
-                    <input type="text" name="property_type" class="form-input" value="{{ old('property_type', 'RCC') }}" required>
-                </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label required">Customer Name</label>
-                    <input type="text" name="customer_name" class="form-input" value="{{ old('customer_name') }}" required>
+                    <label class="form-label">Property Type</label>
+                    <input type="text" name="property_type" class="form-input" value="{{ old('property_type', 'Default') }}">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Phone</label>
-                    <input type="text" name="phone" class="form-input" value="{{ old('phone') }}" maxlength="10" placeholder="10-digit mobile number">
+                    <label class="form-label required">Customer Name</label>
+                    <input type="text" name="customer_name" class="form-input" value="{{ old('customer_name') }}" required>
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 20px;">
                 <label class="form-label">Aadhaar Number</label>
                 <input type="text" name="aadhaar_no" class="form-input" value="{{ old('aadhaar_no') }}" maxlength="12" placeholder="12-digit Aadhaar number">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label">Phone Number (Optional)</label>
+                <input type="text" name="phone" class="form-input" value="{{ old('phone') }}" maxlength="20" placeholder="Enter phone number">
             </div>
 
             <h3 class="section-title">Previous Year Tax</h3>
@@ -298,12 +292,12 @@
                         <option value="">-- Not Linked --</option>
                         @foreach($citizens as $citizen)
                         <option value="{{ $citizen->id }}" {{ old('citizen_id') == $citizen->id ? 'selected' : '' }}>
-                            {{ $citizen->name }} ({{ $citizen->phone }})
+                            {{ $citizen->name }}
                         </option>
                         @endforeach
                     </select>
                     <small style="color: #64748b; font-size: 13px; margin-top: 6px; display: block;">
-                        <i class="fas fa-info-circle"></i> Search by name or phone
+                        <i class="fas fa-info-circle"></i> Search by name
                     </small>
                 </div>
                 <div class="form-group" style="margin-bottom: 20px;">
@@ -339,7 +333,7 @@
     $(document).ready(function() {
         // Initialize Select2 with search
         $('#citizen_select').select2({
-            placeholder: '-- Search citizens by name or phone --',
+            placeholder: '-- Search citizens by name --',
             allowClear: true,
             width: '100%',
             theme: 'default',
@@ -353,6 +347,52 @@
                 }
             }
         });
+
+        const toNumber = (value) => {
+            const parsed = parseFloat(value);
+            return Number.isNaN(parsed) ? 0 : parsed;
+        };
+
+        const updatePreviousTotal = () => {
+            const total =
+                toNumber($('input[name="previous_house_tax"]').val()) +
+                toNumber($('input[name="previous_electricity_tax"]').val()) +
+                toNumber($('input[name="previous_health_tax"]').val());
+
+            $('input[name="previous_total"]').val(total.toFixed(2));
+            updateBalanceDue();
+        };
+
+        const updateCurrentTotal = () => {
+            const total =
+                toNumber($('input[name="current_house_tax"]').val()) +
+                toNumber($('input[name="current_electricity_tax"]').val()) +
+                toNumber($('input[name="current_health_tax"]').val());
+
+            $('input[name="current_total"]').val(total.toFixed(2));
+            updateBalanceDue();
+        };
+
+        const updateBalanceDue = () => {
+            const balanceDue =
+                toNumber($('input[name="previous_total"]').val()) +
+                toNumber($('input[name="current_total"]').val());
+
+            $('input[name="balance"]').val(balanceDue.toFixed(2));
+        };
+
+        $('input[name="previous_house_tax"], input[name="previous_electricity_tax"], input[name="previous_health_tax"]')
+            .on('input', updatePreviousTotal);
+
+        $('input[name="current_house_tax"], input[name="current_electricity_tax"], input[name="current_health_tax"]')
+            .on('input', updateCurrentTotal);
+
+        $('input[name="previous_total"], input[name="current_total"]')
+            .on('input', updateBalanceDue);
+
+        updatePreviousTotal();
+        updateCurrentTotal();
+        updateBalanceDue();
     });
 </script>
 @endpush

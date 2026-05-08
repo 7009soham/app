@@ -33,7 +33,13 @@ class AdminController extends Controller
      */
     public function create()
     {
-        $roles = Role::where('type', '!=', 'superadmin')->get();
+        $roles = Role::query()
+            ->whereIn('type', ['admin', 'superadmin'])
+            ->where('is_active', true)
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get();
+
         return view('admin.admins.create', compact('roles'));
     }
 
@@ -42,6 +48,8 @@ class AdminController extends Controller
      */
     public function store(Request $request)
     {
+        $currentAdmin = Auth::guard('admin')->user();
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:admins,email',
@@ -50,6 +58,15 @@ class AdminController extends Controller
             'role_id' => 'required|exists:roles,id',
             'is_active' => 'boolean',
         ]);
+
+        $role = Role::find($validated['role_id']);
+        if (!$role || !in_array($role->type, ['admin', 'superadmin'], true)) {
+            return redirect()->back()->withInput()->with('error', 'Please select a valid Admin or Super Admin role.');
+        }
+
+        if ($role->type === 'superadmin' && (!$currentAdmin || !$currentAdmin->isSuperAdmin())) {
+            return redirect()->back()->withInput()->with('error', 'Only Super Admin can create another Super Admin.');
+        }
 
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -77,7 +94,13 @@ class AdminController extends Controller
                 ->with('error', 'You cannot edit a Super Admin.');
         }
 
-        $roles = Role::all();
+        $roles = Role::query()
+            ->whereIn('type', ['admin', 'superadmin'])
+            ->where('is_active', true)
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get();
+
         return view('admin.admins.edit', compact('admin', 'roles'));
     }
 
@@ -86,6 +109,17 @@ class AdminController extends Controller
      */
     public function update(Request $request, Admin $admin)
     {
+        $currentAdmin = Auth::guard('admin')->user();
+
+        if (!$currentAdmin) {
+            return redirect()->route('admin.login')->with('error', 'Session expired.');
+        }
+
+        if ($admin->isSuperAdmin() && !$currentAdmin->isSuperAdmin()) {
+            return redirect()->route('admin.admins.index')
+                ->with('error', 'You cannot edit a Super Admin.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:admins,email,' . $admin->id,
@@ -94,6 +128,15 @@ class AdminController extends Controller
             'role_id' => 'required|exists:roles,id',
             'is_active' => 'boolean',
         ]);
+
+        $role = Role::find($validated['role_id']);
+        if (!$role || !in_array($role->type, ['admin', 'superadmin'], true)) {
+            return redirect()->back()->withInput()->with('error', 'Please select a valid Admin or Super Admin role.');
+        }
+
+        if ($role->type === 'superadmin' && !$currentAdmin->isSuperAdmin()) {
+            return redirect()->back()->withInput()->with('error', 'Only Super Admin can assign Super Admin role.');
+        }
 
         // Only update password if provided
         if ($request->filled('password')) {
@@ -109,6 +152,7 @@ class AdminController extends Controller
         return redirect()->route('admin.admins.index')
             ->with('success', 'Admin updated successfully.');
     }
+
 
     /**
      * Remove the specified admin

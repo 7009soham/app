@@ -192,7 +192,7 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">Role *</label>
+                <label class="form-label">Account Type (Admin / Super Admin) *</label>
                 <select name="role_id" class="form-select" required>
                     <option value="">Select a role</option>
                     @foreach($roles as $role)
@@ -201,6 +201,9 @@
                     </option>
                     @endforeach
                 </select>
+                @if($roles->isEmpty())
+                <p class="password-hint">No assignable admin roles found. Please create an active Admin role first.</p>
+                @endif
             </div>
 
             <div class="form-group">

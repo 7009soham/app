@@ -235,6 +235,20 @@
                 </button>
                 
                 <div class="header-right">
+                    @php
+                        $headerSwitchableAdmins = collect();
+                        if ($currentAdmin && $currentAdmin->isSuperAdmin()) {
+                            $headerSwitchableAdmins = \App\Models\Admin::with('role')
+                                ->where('is_active', true)
+                                ->where('id', '!=', $currentAdmin->id)
+                                ->whereHas('role', function ($query) {
+                                    $query->whereIn('type', ['admin', 'superadmin']);
+                                })
+                                ->orderBy('name')
+                                ->get();
+                        }
+                    @endphp
+
                     <a href="{{ route('home') }}" class="btn btn-outline btn-sm" target="_blank">
                         <i class="fas fa-external-link-alt"></i> View Site
                     </a>
@@ -248,6 +262,34 @@
                             <a href="#" class="dropdown-item">
                                 <i class="fas fa-user"></i> Profile
                             </a>
+
+                            @if($currentAdmin && $currentAdmin->isSuperAdmin())
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-item" style="font-size: 12px; color: #64748b; cursor: default;">
+                                    <i class="fas fa-user-shield"></i> Switch Account
+                                </div>
+
+                                @foreach($headerSwitchableAdmins as $switchAdmin)
+                                    <form action="{{ route('admin.admins.impersonate', $switchAdmin) }}" method="POST" class="dropdown-form">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item text-start">
+                                            <i class="fas fa-user-secret"></i>
+                                            {{ $switchAdmin->name }}
+                                            <span style="font-size: 11px; color: #64748b;">({{ ucfirst($switchAdmin->role->type ?? 'admin') }})</span>
+                                        </button>
+                                    </form>
+                                @endforeach
+
+                                @if(session('original_admin_id'))
+                                    <form action="{{ route('admin.admins.stop-impersonate') }}" method="POST" class="dropdown-form">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item text-warning text-start">
+                                            <i class="fas fa-undo"></i> Return to Original Account
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
+
                             <div class="dropdown-divider"></div>
                             <form action="{{ route('admin.logout') }}" method="POST">
                                 @csrf

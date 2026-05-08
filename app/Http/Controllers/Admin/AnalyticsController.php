@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Demand;
 use App\Models\Citizen;
 use App\Models\Payment;
 use App\Models\WaterTaxRecord;
@@ -46,9 +47,10 @@ class AnalyticsController extends Controller
         // 2. Demand-wise Analytics (Existing Logic)
         // ---------------------------------------------------------
         $demandData = [];
-        for ($i = 1; $i <= 8; $i++) {
-            $demandData[$i] = [
-                'demand_number' => $i,
+        foreach (Demand::orderBy('id')->get() as $demand) {
+            $demandData[$demand->id] = [
+                'demand_id' => $demand->id,
+                'demand_name' => $demand->name,
                 'total_citizens' => 0,
                 'water_tax_paid' => 0,
                 'property_tax_paid' => 0,
@@ -66,7 +68,7 @@ class AnalyticsController extends Controller
             ->pluck('count', 'demand_id');
 
         foreach ($citizenCounts as $demand => $count) {
-             if (isset($demandData[$demand])) {
+               if (isset($demandData[$demand])) {
                 $demandData[$demand]['total_citizens'] = $count;
              }
         }

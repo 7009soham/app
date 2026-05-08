@@ -14,8 +14,10 @@ use App\Models\PropertyTaxRecord;
 use App\Models\PropertyTaxAnnualBill;
 use App\Models\TaxType;
 use App\Services\PhonePeService;
+use App\Services\RazorpayService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -24,10 +26,18 @@ use Illuminate\Support\Facades\Session;
 class PaymentController extends Controller
 {
     protected $phonePeService;
+    protected $razorpayService;
+    protected static array $taxPaymentsColumnCache = [];
 
-    public function __construct(PhonePeService $phonePeService)
+    public function __construct(PhonePeService $phonePeService, RazorpayService $razorpayService)
     {
         $this->phonePeService = $phonePeService;
+        $this->razorpayService = $razorpayService;
+    }
+
+    protected function activeGateway(): string
+    {
+        return SiteSetting::get('active_payment_gateway', 'phonepe');
     }
 
     /**
@@ -86,13 +96,19 @@ class PaymentController extends Controller
              return back()->with('error', 'Tax Type configuration not found. Please contact admin.');
         }
 
-        // Check if PhonePe is enabled
-        if (!$this->phonePeService->isEnabled()) {
-            return back()->with('error', 'Payment gateway is currently not available. Please try again later.');
+        // Determine active gateway and check it is ready
+        $gateway = $this->activeGateway();
+        if ($gateway === 'razorpay') {
+            if (!$this->razorpayService->isEnabled()) {
+                return back()->with('error', 'Payment gateway is currently not available. Please try again later.');
+            }
+            $transactionId = $this->razorpayService->generateTransactionId();
+        } else {
+            if (!$this->phonePeService->isEnabled()) {
+                return back()->with('error', 'Payment gateway is currently not available. Please try again later.');
+            }
+            $transactionId = $this->phonePeService->generateTransactionId();
         }
-
-        // Generate transaction ID
-        $transactionId = $this->phonePeService->generateTransactionId();
 
         // Determine period dates based on tax type
         if ($validated['tax_type'] === 'property') {
@@ -110,7 +126,7 @@ class PaymentController extends Controller
         }
 
         // Create pending payment record
-        $payment = TaxPayment::create([
+        $paymentCreateData = [
             'citizen_id'      => $citizenId,
             'citizen_name'    => $citizen->name,
             'citizen_phone'   => $citizen->phone,
@@ -123,8 +139,7 @@ class PaymentController extends Controller
             'period_type'     => $periodType,
             'period_start'    => $periodStart,
             'period_end'      => $periodEnd,
-            'payment_method'  => 'phonepe',
-            'status'          => 'pending',
+            'payment_method'  => $gateway,
             'payment_status'  => 'pending',
             'payment_data'    => [
                 'customer_name'        => $record->customer_name,
@@ -135,34 +150,60 @@ class PaymentController extends Controller
                 'convenience_fee_pct'  => $convenienceFeePercent,
                 'total_amount'         => $totalAmount,
             ],
-        ]);
+        ];
 
-        // Initiate PhonePe payment (total = tax + convenience fee)
+        if ($this->hasTaxPaymentsColumn('status')) {
+            $paymentCreateData['status'] = 'pending';
+        }
+
+        if ($this->hasTaxPaymentsColumn('failure_reason')) {
+            $paymentCreateData['failure_reason'] = null;
+        }
+
+        $payment = TaxPayment::create($paymentCreateData);
+
+        // --- Razorpay flow ---
+        if ($gateway === 'razorpay') {
+            $result = $this->razorpayService->createOrder([
+                'transaction_id' => $transactionId,
+                'amount'         => $totalAmount,
+                'user_id'        => 'CITIZEN' . $citizenId,
+            ]);
+
+            if ($result['success']) {
+                Session::put('pending_payment_id', $payment->id);
+                Session::put('razorpay_order_id', $result['order_id']);
+
+                $payment->update([
+                    'payment_data' => array_merge($payment->payment_data ?? [], [
+                        'razorpay_order_id' => $result['order_id'],
+                    ]),
+                ]);
+
+                return redirect()->route('citizen.payment.razorpay-checkout');
+            }
+
+            $this->markPaymentFailed($payment, $result['message'] ?? 'Payment initiation failed');
+            return back()->with('error', $this->mapFailureReason('UNKNOWN'));
+        }
+
+        // --- PhonePe flow (default) ---
         $result = $this->phonePeService->initiatePayment([
             'transaction_id' => $transactionId,
-            'amount' => $totalAmount,
-            'callback_url' => route('citizen.payment.callback'),
-            'redirect_url' => route('citizen.payment.redirect'),
-            'mobile' => $citizen->phone,
-            'user_id' => 'CITIZEN' . $citizenId,
+            'amount'         => $totalAmount,
+            'callback_url'   => route('citizen.payment.callback'),
+            'redirect_url'   => route('citizen.payment.redirect'),
+            'mobile'         => $citizen->phone,
+            'user_id'        => 'CITIZEN' . $citizenId,
         ]);
 
         if ($result['success'] && isset($result['redirect_url'])) {
-            // Store payment ID in session for verification
             Session::put('pending_payment_id', $payment->id);
-            
             return redirect()->away($result['redirect_url']);
         }
 
-        // Payment initiation failed
-        $payment->update([
-            'status' => 'failed',
-            'payment_data' => array_merge($payment->payment_data ?? [], [
-                'error' => $result['message'] ?? 'Payment initiation failed',
-            ]),
-        ]);
-
-        return back()->with('error', $result['message'] ?? 'Unable to initiate payment. Please try again.');
+        $this->markPaymentFailed($payment, $result['message'] ?? 'Payment initiation failed');
+        return back()->with('error', $this->mapFailureReason('UNKNOWN'));
     }
 
     /**
@@ -207,7 +248,25 @@ class PaymentController extends Controller
             return response()->json(['status' => 'PAYMENT_NOT_FOUND'], 404);
         }
 
-        $this->updatePaymentStatus($payment, $paymentState, $decodedResponse);
+        // Confirm callback result with PhonePe status API before marking success.
+        $statusResult = $this->phonePeService->checkPaymentStatus($transactionId);
+
+        if ($statusResult['success'] ?? false) {
+            $this->updatePaymentStatus(
+                $payment,
+                $statusResult['payment_status'] ?? $paymentState,
+                $statusResult['data'] ?? $decodedResponse,
+                true
+            );
+        } else {
+            Log::warning('PhonePe Callback - Status API verification failed, deferring success confirmation', [
+                'transaction_id' => $transactionId,
+                'callback_state' => $paymentState,
+                'status_result' => $statusResult,
+            ]);
+
+            $this->updatePaymentStatus($payment, $paymentState, $decodedResponse, false);
+        }
 
         return response()->json(['status' => 'OK']);
     }
@@ -236,7 +295,8 @@ class PaymentController extends Controller
         $statusResult = $this->phonePeService->checkPaymentStatus($payment->transaction_id);
 
         if ($statusResult['success']) {
-            $this->updatePaymentStatus($payment, $statusResult['payment_status'], $statusResult['data'] ?? []);
+            $this->updatePaymentStatus($payment, $statusResult['payment_status'], $statusResult['data'] ?? [], true);
+            $payment->refresh();
 
             if ($statusResult['is_completed']) {
                 return redirect()->route('citizen.payment-history')
@@ -245,6 +305,19 @@ class PaymentController extends Controller
                 return redirect()->route('citizen.payment-history')
                     ->with('warning', 'Payment is being processed. Please check back in a few minutes.');
             }
+
+            $latestStatus = $payment->status ?? $payment->payment_status;
+            if ($latestStatus === 'failed') {
+                return redirect()->route('citizen.payment-history')
+                    ->with('error', $payment->failure_reason ?? 'Payment failed. Please try again.');
+            }
+        }
+
+        $payment->refresh();
+        $latestStatus = $payment->status ?? $payment->payment_status;
+        if ($latestStatus === 'failed') {
+            return redirect()->route('citizen.payment-history')
+                ->with('error', $payment->failure_reason ?? 'Payment failed or was cancelled. Please try again.');
         }
 
         return redirect()->route('citizen.payment-history')
@@ -252,33 +325,200 @@ class PaymentController extends Controller
     }
 
     /**
+     * Show the Razorpay checkout page
+     */
+    public function razorpayCheckout()
+    {
+        $paymentId = Session::get('pending_payment_id');
+        $orderId   = Session::get('razorpay_order_id');
+
+        if (!$paymentId || !$orderId) {
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment session expired.');
+        }
+
+        $payment = TaxPayment::find($paymentId);
+        if (!$payment) {
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment not found.');
+        }
+
+        $citizen = Citizen::find($payment->citizen_id);
+
+        return view('citizen.payment.razorpay-checkout', [
+            'keyId'       => $this->razorpayService->getKeyId(),
+            'orderId'     => $orderId,
+            'amount'      => (int) round($payment->amount * 100),
+            'description' => ucfirst(str_replace('_', ' ', $payment->tax_type)) . ' Payment',
+            'citizenName' => $citizen?->name ?? '',
+            'citizenEmail' => $citizen?->email ?? '',
+            'citizenPhone' => $citizen?->phone ?? '',
+        ]);
+    }
+
+    /**
+     * Handle the POST return from Razorpay after payment
+     */
+    public function razorpayReturn(Request $request)
+    {
+        $paymentId = Session::get('pending_payment_id');
+        Session::forget(['pending_payment_id', 'razorpay_order_id']);
+
+        $rzpPaymentId  = $request->input('razorpay_payment_id', '');
+        $rzpOrderId    = $request->input('razorpay_order_id', '');
+        $rzpSignature  = $request->input('razorpay_signature', '');
+
+        if (!$paymentId) {
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment session expired.');
+        }
+
+        $payment = TaxPayment::find($paymentId);
+        if (!$payment) {
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment not found.');
+        }
+
+        // If signature is missing, payment failed or was dismissed
+        if (empty($rzpSignature) || empty($rzpPaymentId)) {
+            $this->updatePaymentStatus($payment, 'FAILED', [], true);
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment failed or was cancelled. Please try again.');
+        }
+
+        // Verify HMAC signature
+        $isValid = $this->razorpayService->verifyPaymentSignature($rzpOrderId, $rzpPaymentId, $rzpSignature);
+
+        if (!$isValid) {
+            Log::warning('Razorpay signature verification failed', [
+                'payment_id' => $payment->id,
+                'rzp_order_id' => $rzpOrderId,
+                'rzp_payment_id' => $rzpPaymentId,
+            ]);
+
+            $this->updatePaymentStatus($payment, 'FAILED', [], true);
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment verification failed. Please contact support.');
+        }
+
+        // Fetch payment from Razorpay to confirm captured status
+        $fetchResult = $this->razorpayService->fetchPayment($rzpPaymentId);
+
+        $payment->update([
+            'payment_data' => array_merge($payment->payment_data ?? [], [
+                'razorpay_payment_id' => $rzpPaymentId,
+                'razorpay_order_id'   => $rzpOrderId,
+                'razorpay_signature'  => $rzpSignature,
+            ]),
+        ]);
+
+        $isCompleted = $fetchResult['success'] && ($fetchResult['is_completed'] ?? false);
+        $providerStatus = $isCompleted ? 'COMPLETED' : (($fetchResult['status'] ?? 'UNKNOWN'));
+
+        $this->updatePaymentStatus($payment, $providerStatus, $fetchResult['data'] ?? [], true);
+        $payment->refresh();
+
+        $latestStatus = $payment->status ?? $payment->payment_status;
+
+        if ($latestStatus === 'success' || $latestStatus === 'completed') {
+            return redirect()->route('citizen.payment-history')
+                ->with('success', 'Payment successful! Transaction ID: ' . $payment->transaction_id);
+        }
+
+        return redirect()->route('citizen.payment-history')
+            ->with('error', $payment->failure_reason ?? 'Payment failed. Please try again.');
+    }
+
+    protected function markPaymentFailed(TaxPayment $payment, string $message): void
+    {
+        $failureReason = $this->mapFailureReason('UNKNOWN');
+        $updateData = [
+            'payment_status' => 'failed',
+            'payment_data'   => array_merge($payment->payment_data ?? [], [
+                'error'          => $message,
+                'failure_code'   => 'UNKNOWN',
+                'failure_reason' => $failureReason,
+            ]),
+        ];
+
+        if ($this->hasTaxPaymentsColumn('status')) {
+            $updateData['status'] = 'failed';
+        }
+        if ($this->hasTaxPaymentsColumn('failure_reason')) {
+            $updateData['failure_reason'] = $failureReason;
+        }
+
+        $payment->update($updateData);
+    }
+
+    /**
      * Update payment status and related records
      */
-    protected function updatePaymentStatus(TaxPayment $payment, string $status, array $responseData = [])
+    protected function updatePaymentStatus(
+        TaxPayment $payment,
+        string $status,
+        array $responseData = [],
+        bool $isApiConfirmed = false
+    ): void
     {
-        $newStatus = match ($status) {
-            'COMPLETED', 'SUCCESS', 'PAYMENT_SUCCESS' => 'success',
-            'PENDING' => 'pending',
-            'FAILED', 'DECLINED', 'CANCELLED' => 'failed',
-            default => 'pending',
-        };
+        $newStatus = $this->normalizeProviderStatus($status);
 
-        $providerTransactionId = $responseData['data']['transactionId'] ?? null;
+        // Never downgrade a finalized successful payment because of delayed callbacks.
+        if ($payment->status === 'success' && $payment->payment_status === 'completed' && $newStatus !== 'success') {
+            Log::info('Skipping non-success update for completed payment', [
+                'payment_id' => $payment->id,
+                'transaction_id' => $payment->transaction_id,
+                'incoming_status' => $status,
+            ]);
+            return;
+        }
+
+        // Success must be API-confirmed; otherwise keep payment pending.
+        if ($newStatus === 'success' && !$isApiConfirmed && !$this->isConfirmedProviderSuccessPayload($responseData)) {
+            Log::warning('Unconfirmed success ignored; keeping payment pending until API confirmation', [
+                'payment_id' => $payment->id,
+                'transaction_id' => $payment->transaction_id,
+                'incoming_status' => $status,
+            ]);
+            $newStatus = 'pending';
+        }
+
+        $providerTransactionId = $responseData['data']['transactionId'] ?? $payment->provider_transaction_id;
+        $failureCode = null;
+        $failureReason = null;
+
+        if ($newStatus === 'failed') {
+            $failureCode = $this->resolveFailureCode($status, $responseData);
+            $failureReason = $this->mapFailureReason($failureCode);
+        }
+
+        $resolvedPaymentStatus = $newStatus === 'success' ? 'completed' : $newStatus;
 
         $updateData = [
-            'status' => $newStatus,
-            'payment_status' => $newStatus === 'success' ? 'completed' : $newStatus,
+            'payment_status' => $resolvedPaymentStatus,
             'provider_transaction_id' => $providerTransactionId,
             'phonepe_transaction_id' => $providerTransactionId,
             'payment_data' => array_merge($payment->payment_data ?? [], [
                 'status_response' => $responseData,
                 'status_updated_at' => now()->toDateTimeString(),
+                'failure_code' => $failureCode,
+                'failure_reason' => $failureReason,
             ]),
         ];
 
-        // Set paid_at timestamp when payment is successful
+        if ($this->hasTaxPaymentsColumn('status')) {
+            $updateData['status'] = $newStatus;
+        }
+
+        if ($this->hasTaxPaymentsColumn('failure_reason')) {
+            $updateData['failure_reason'] = $newStatus === 'failed' ? $failureReason : null;
+        }
+
+        // Set paid_at only for confirmed successful payments.
         if ($newStatus === 'success') {
-            $updateData['paid_at'] = now();
+            $updateData['paid_at'] = $payment->paid_at ?? now();
+        } else {
+            $updateData['paid_at'] = null;
         }
 
         $payment->update($updateData);
@@ -294,6 +534,74 @@ class PaymentController extends Controller
         if ($newStatus === 'success') {
             $this->updateTaxRecord($payment);
         }
+    }
+
+    protected function normalizeProviderStatus(string $status): string
+    {
+        return match (strtoupper($status)) {
+            'COMPLETED', 'SUCCESS', 'PAYMENT_SUCCESS', 'CAPTURED' => 'success',
+            'FAILED', 'DECLINED', 'CANCELLED', 'PAYMENT_ERROR', 'REJECTED' => 'failed',
+            default => 'pending',
+        };
+    }
+
+    protected function resolveFailureCode(string $status, array $responseData = []): string
+    {
+        $statusText = strtoupper($status);
+        $responseCode = strtoupper((string) ($responseData['code'] ?? ''));
+        $responseMessage = strtoupper((string) ($responseData['message'] ?? ''));
+        $state = strtoupper((string) ($responseData['data']['state'] ?? ''));
+        $haystack = $statusText . ' ' . $responseCode . ' ' . $responseMessage . ' ' . $state;
+
+        if (str_contains($haystack, 'CANCEL')) {
+            return 'USER_CANCELLED';
+        }
+
+        if (str_contains($haystack, 'TIMEOUT') || str_contains($haystack, 'TIMED OUT')) {
+            return 'TIMEOUT';
+        }
+
+        if (
+            str_contains($haystack, 'NETWORK')
+            || str_contains($haystack, 'CONNECTION')
+            || str_contains($haystack, 'UNAVAILABLE')
+        ) {
+            return 'NETWORK';
+        }
+
+        if (
+            str_contains($haystack, 'CHECKSUM')
+            || str_contains($haystack, 'INVALID')
+            || str_contains($haystack, 'DECODE')
+            || str_contains($haystack, 'MISMATCH')
+        ) {
+            return 'VERIFY_FAIL';
+        }
+
+        return 'UNKNOWN';
+    }
+
+    protected function mapFailureReason(string $failureCode): string
+    {
+        return match ($failureCode) {
+            'USER_CANCELLED' => 'Payment cancelled by user',
+            'TIMEOUT' => 'Payment gateway timeout',
+            'NETWORK' => 'Network issue, please retry',
+            'VERIFY_FAIL' => 'Payment verification failed',
+            default => 'Technical issue, please try again',
+        };
+    }
+
+    protected function isConfirmedProviderSuccessPayload(array $responseData): bool
+    {
+        if (($responseData['success'] ?? false) !== true) {
+            return false;
+        }
+
+        $state = strtoupper((string) ($responseData['data']['state'] ?? ''));
+        $code = strtoupper((string) ($responseData['code'] ?? ''));
+
+        return $state === 'COMPLETED' || $code === 'PAYMENT_SUCCESS';
     }
 
     /**
@@ -371,20 +679,22 @@ class PaymentController extends Controller
             }
         }
 
-        // Create unified payment record (full amount including convenience fee)
-        Payment::create([
-            'citizen_id'     => $payment->citizen_id,
-            'tax_type'       => $payment->tax_type,
-            'bill_id'        => $monthlyBill?->id,
-            'amount'         => $payment->amount,
-            'payment_method' => 'online',
-            'transaction_id' => $payment->transaction_id,
-            'status'         => 'completed',
-            'paid_at'        => now(),
-            'remarks'        => $convenienceFee > 0 
-                ? 'Online payment via PhonePe (Tax: ₹' . number_format($taxAmount, 2) . ', Convenience Fee: ₹' . number_format($convenienceFee, 2) . ')' 
-                : 'Online payment via PhonePe',
-        ]);
+        // Create a single unified payment record (full amount including convenience fee).
+        Payment::firstOrCreate(
+            ['transaction_id' => $payment->transaction_id],
+            [
+                'citizen_id'     => $payment->citizen_id,
+                'tax_type'       => $payment->tax_type,
+                'bill_id'        => $monthlyBill?->id,
+                'amount'         => $payment->amount,
+                'payment_method' => 'online',
+                'status'         => 'completed',
+                'paid_at'        => now(),
+                'remarks'        => $convenienceFee > 0
+                    ? 'Online payment via PhonePe (Tax: ₹' . number_format($taxAmount, 2) . ', Convenience Fee: ₹' . number_format($convenienceFee, 2) . ')'
+                    : 'Online payment via PhonePe',
+            ]
+        );
 
         $payment->update([
             'payment_data' => array_merge($existingPaymentData, [
@@ -496,21 +806,43 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Payment not found']);
         }
 
-        // If still pending, check with PhonePe
-        if ($payment->status === 'pending') {
-            $statusResult = $this->phonePeService->checkPaymentStatus($transactionId);
-            
-            if ($statusResult['success']) {
-                $this->updatePaymentStatus($payment, $statusResult['payment_status'], $statusResult['data'] ?? []);
-                $payment->refresh();
+        $currentStatus = $payment->status ?? $payment->payment_status;
+
+        if ($currentStatus === 'pending') {
+            if ($payment->payment_method === 'razorpay') {
+                $rzpPaymentId = $payment->payment_data['razorpay_payment_id'] ?? null;
+                if ($rzpPaymentId) {
+                    $statusResult = $this->razorpayService->fetchPayment($rzpPaymentId);
+                    if ($statusResult['success']) {
+                        $providerStatus = $statusResult['is_completed'] ? 'COMPLETED' : strtoupper($statusResult['status'] ?? 'PENDING');
+                        $this->updatePaymentStatus($payment, $providerStatus, $statusResult['data'] ?? [], true);
+                        $payment->refresh();
+                    }
+                }
+            } else {
+                $statusResult = $this->phonePeService->checkPaymentStatus($transactionId);
+                if ($statusResult['success']) {
+                    $this->updatePaymentStatus($payment, $statusResult['payment_status'], $statusResult['data'] ?? [], true);
+                    $payment->refresh();
+                }
             }
         }
 
         return response()->json([
             'success' => true,
-            'status' => $payment->status,
+            'status' => $payment->status ?? $payment->payment_status,
+            'failure_reason' => $payment->failure_reason,
             'transaction_id' => $payment->transaction_id,
             'amount' => $payment->amount,
         ]);
+    }
+
+    private function hasTaxPaymentsColumn(string $column): bool
+    {
+        if (!array_key_exists($column, self::$taxPaymentsColumnCache)) {
+            self::$taxPaymentsColumnCache[$column] = Schema::hasColumn('tax_payments', $column);
+        }
+
+        return self::$taxPaymentsColumnCache[$column];
     }
 }

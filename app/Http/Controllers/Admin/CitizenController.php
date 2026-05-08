@@ -48,7 +48,7 @@ class CitizenController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:15|unique:citizens,phone',
+            'phone' => 'nullable|string|max:15|unique:citizens,phone',
             'email' => 'nullable|email|max:255|unique:citizens,email',
             'address' => 'nullable|string',
             'customer_no' => 'required|string|unique:citizens,customer_no',
@@ -80,7 +80,7 @@ class CitizenController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:15|unique:citizens,phone,' . $citizen->id,
+            'phone' => 'nullable|string|max:15|unique:citizens,phone,' . $citizen->id,
             'email' => 'nullable|email|max:255|unique:citizens,email,' . $citizen->id,
             'address' => 'nullable|string',
             'customer_no' => 'required|string|unique:citizens,customer_no,' . $citizen->id,

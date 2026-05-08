@@ -234,6 +234,12 @@ body {
     transition: all var(--transition);
 }
 
+/* Bootstrap adds a default caret via ::after for .dropdown-toggle.
+   We already render a FontAwesome chevron in markup, so hide the default one. */
+.admin-header .dropdown-toggle::after {
+    display: none;
+}
+
 .dropdown-toggle:hover {
     background: var(--color-gray-50);
 }

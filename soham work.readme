@@ -1,10 +1,24 @@
 SOHAM WORK README
 
+Last updated: 2026-04-16
+
 Primary runbook:
 - Open SOHAM_WORK.README.md in the project root for full step-by-step execution and checklists.
 
+Recent fixes summary:
+- See the "Recent Fixes (from this chat)" section inside SOHAM_WORK.README.md.
+
+Bugfixes:
+- See "Bugfixes (Already Applied in Code)" inside SOHAM_WORK.README.md.
+
+Latest update (2026-04-16):
+- Property Tax module updated to remove customer number and phone fields/displays from admin and citizen property flows.
+- Property Tax save/update now auto-sets customer_no from property_no for DB compatibility.
+- Citizen profile email add/change is OTP-enforced (no direct save bypass).
+- Citizen profile email removal is direct (no OTP), per latest requirement.
+
 Quick checklist:
-[ ] Firebase phone auth enabled
+[ ] Firebase phone auth enabled(But blaze plan required)
 [ ] Authorized domains added
 [ ] Firebase web config saved in app settings
 [ ] firebase_enabled set to 1
@@ -13,5 +27,7 @@ Quick checklist:
 [ ] Water invoice email implemented
 [ ] Property invoice email implemented
 [ ] Due reminder scheduler implemented
-[ ] Invoice redesign implemented after final templates arrive
+[x] Admin system email simulation executed for Soham (5/5 sent, 0 failed)
+[x] Email previews generated under storage/app/public/mail-previews
+[ ] Invoice redesign implemented after final template still yet to arrive
 [ ] End-to-end UAT completed

@@ -43,7 +43,7 @@
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Demand No.</th>
+                                <th>Demand</th>
                                 <th>Citizens</th>
                                 <th>Water Paid</th>
                                 <th>Property Paid</th>
@@ -58,7 +58,7 @@
                             <tr>
                                 <td>
                                     <span class="badge rounded-pill bg-primary px-3 py-2">
-                                        {{ $data['demand_number'] }}
+                                        {{ $data['demand_name'] ?? ($data['demand_id'] ?? '-') }}
                                     </span>
                                 </td>
                                 <td class="fw-medium">{{ number_format($data['total_citizens']) }}</td>

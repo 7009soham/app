@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
-use App\Models\Payment;
+use App\Models\TaxPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,17 +13,17 @@ class PaymentHistoryController extends Controller
     {
         $citizen = Auth::guard('citizen')->user();
         
-        $payments = Payment::where('citizen_id', $citizen->id)
-            ->with(['bill'])
-            ->latest('paid_at')
+        $payments = TaxPayment::where('citizen_id', $citizen->id)
+            ->with(['taxType'])
+            ->latest()
             ->paginate(15);
 
         return view('citizen.payments.index', compact('payments'));
     }
 
-    public function show(Payment $payment)
+    public function show(TaxPayment $payment)
     {
-        if ($payment->citizen_id !== Auth::guard('citizen')->id()) {
+        if ((string) $payment->citizen_id !== (string) Auth::guard('citizen')->id()) {
             abort(403);
         }
         return view('citizen.payments.show', compact('payment'));

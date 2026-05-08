@@ -94,7 +94,7 @@ class DashboardController extends Controller
 
         // Tax types
         $taxTypes = TaxType::withCount(['payments' => function ($query) {
-            $query->where('payment_status', 'completed');
+            $query->completed();
         }])->get();
 
         return view('admin.dashboard', compact(

@@ -354,12 +354,14 @@
                 </select>
             </div>
             <div class="filter-group" style="max-width: 150px;">
-                <label>Demand No</label>
-                <select name="demand_number">
+                <label>Demand</label>
+                <select name="demand_id">
                     <option value="">All</option>
-                    @for($i = 1; $i <= 8; $i++)
-                        <option value="{{ $i }}" {{ request('demand_number') == $i ? 'selected' : '' }}>{{ $i }}</option>
-                    @endfor
+                    @foreach($demands as $demand)
+                        <option value="{{ $demand->id }}" {{ (string) request('demand_id') === (string) $demand->id ? 'selected' : '' }}>
+                            {{ $demand->name }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
             <button type="submit" class="filter-btn">
@@ -401,7 +403,7 @@
                     <td class="amount {{ $record->balance > 0 ? 'pending' : 'paid' }}">
                         ₹{{ number_format($record->balance) }}
                     </td>
-                    <td class="amount paid">₹{{ number_format($record->amount_paid) }}</td>
+                    <td class="amount paid">₹{{ number_format($record->amount_paid ?? 0) }}</td>
                     <td>
                         @if($record->balance > 0)
                         <span class="status-badge pending">

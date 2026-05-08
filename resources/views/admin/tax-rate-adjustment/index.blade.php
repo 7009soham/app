@@ -145,26 +145,26 @@
                         </div>
                     </div>
 
-                    <!-- Demand Number Selection (for "Selected Only") -->
+                    <!-- Demand Selection (for "Selected Only") -->
                     <div id="demandSelection" class="selection-section" style="display: none;">
-                        <label class="form-label"><strong>Select Demand Numbers</strong></label>
-                        <p class="text-muted mb-3">Choose which demand numbers to apply the tax increase to:</p>
+                        <label class="form-label"><strong>Select Demands</strong></label>
+                        <p class="text-muted mb-3">Choose which demands to apply the tax increase to:</p>
                         
                         <div class="demand-numbers-grid">
-                            @foreach($demandNumbers as $demandNumber)
+                            @foreach($demands as $demand)
                             <label class="demand-checkbox">
-                                <input type="checkbox" name="selected_demand_numbers[]" value="{{ $demandNumber }}">
+                                <input type="checkbox" name="selected_demand_numbers[]" value="{{ $demand->id }}">
                                 <span class="checkbox-content">
                                     <i class="fas fa-file-invoice"></i>
-                                    Demand {{ $demandNumber }}
+                                    {{ $demand->name ?? ('Demand ' . $demand->id) }}
                                 </span>
                             </label>
                             @endforeach
                         </div>
 
-                        @if($demandNumbers->isEmpty())
+                        @if($demands->isEmpty())
                         <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> No demand numbers found.
+                            <i class="fas fa-info-circle"></i> No demands found.
                         </div>
                         @endif
                     </div>
@@ -586,7 +586,7 @@
             const selectedDemands = [];
             document.querySelectorAll('input[name="selected_demand_numbers[]"]:checked').forEach(cb => selectedDemands.push(cb.value));
             if(selectedDemands.length === 0) {
-                alert('Please select at least one demand number');
+                alert('Please select at least one demand');
                 return;
             }
             payload.selected_demand_numbers = selectedDemands;

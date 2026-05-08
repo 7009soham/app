@@ -40,7 +40,7 @@ class WaterTaxController extends Controller
             $query->where('demand_id', $request->demand_id);
         }
 
-        $records = $query->paginate(20);
+        $records = $query->paginate(20)->withQueryString();
 
         $demands = \App\Models\Demand::all();
 
@@ -60,8 +60,9 @@ class WaterTaxController extends Controller
      */
     public function show(WaterTaxRecord $waterTaxRecord)
     {
-        $waterTaxRecord->load('citizen');
-        return view('admin.water-tax.show', compact('waterTaxRecord'));
+        $waterTaxRecord->load(['citizen.demand']);
+        $demand = $waterTaxRecord->demand_id ? \App\Models\Demand::find($waterTaxRecord->demand_id) : null;
+        return view('admin.water-tax.show', compact('waterTaxRecord', 'demand'));
     }
 
     /**
@@ -91,6 +92,9 @@ class WaterTaxController extends Controller
             'citizen_id' => 'nullable|exists:citizens,id',
             'demand_id' => 'nullable|exists:demands,id',
         ]);
+
+        // DB column has a default of 0 and is NOT NULL; normalize blank input.
+        $validated['amount_paid'] = $validated['amount_paid'] ?? 0;
 
         $validated['oversize_charge'] = $validated['balance'] > 0 ? $validated['balance'] * 0.10 : 0;
 
@@ -127,6 +131,9 @@ class WaterTaxController extends Controller
             'citizen_id' => 'nullable|exists:citizens,id',
             'demand_id' => 'nullable|exists:demands,id',
         ]);
+
+        // DB column has a default of 0 and is NOT NULL; normalize blank input.
+        $validated['amount_paid'] = $validated['amount_paid'] ?? 0;
 
         $validated['oversize_charge'] = $validated['balance'] > 0 ? $validated['balance'] * 0.10 : 0;
 
@@ -189,47 +196,78 @@ class WaterTaxController extends Controller
      */
     public function bulk(Request $request)
     {
-        $action = $request->input('action');
-        $ids = $request->input('ids');
+        $validated = $request->validate([
+            'action' => 'required|in:delete,mark_paid,export',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|distinct|exists:water_tax_records,id',
+        ]);
 
-        if (empty($ids) || !is_array($ids)) {
-            return back()->with('error', 'No records selected.');
-        }
+        $action = $validated['action'];
+        $ids = $validated['ids'];
 
         if ($action === 'delete') {
-            WaterTaxRecord::whereIn('id', $ids)->delete();
-            return back()->with('success', count($ids) . ' water tax records deleted successfully.');
+            $deleted = WaterTaxRecord::whereIn('id', $ids)->delete();
+            return back()->with('success', $deleted . ' water tax records deleted successfully.');
         }
 
         if ($action === 'mark_paid') {
+            $processed = 0;
+            $skipped = 0;
+
             foreach (WaterTaxRecord::whereIn('id', $ids)->get() as $record) {
-                // simple logic to mark as paid
-                $record->amount_paid = $record->amount_paid + $record->balance;
+                $balance = (float) ($record->balance ?? 0);
+
+                if ($balance <= 0) {
+                    $skipped++;
+                    continue;
+                }
+
+                $record->amount_paid = (float) ($record->amount_paid ?? 0) + $balance;
                 $record->balance = 0;
+                $record->oversize_charge = 0;
                 $record->save();
+
+                $processed++;
             }
-            return back()->with('success', count($ids) . ' water tax records marked as paid.');
+
+            $message = $processed . ' water tax records marked as paid.';
+            if ($skipped > 0) {
+                $message .= ' ' . $skipped . ' already-settled records skipped.';
+            }
+
+            return back()->with('success', $message);
         }
 
         if ($action === 'export') {
             $records = WaterTaxRecord::whereIn('id', $ids)->orderBy('a_no')->get();
+
             $filename = 'water_tax_records_bulk_' . date('Y-m-d') . '.csv';
             $headers = [
                 'Content-Type' => 'text/csv',
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
+
             $callback = function () use ($records) {
                 $file = fopen('php://output', 'w');
                 fputcsv($file, ['A.No', 'Customer No', 'Customer Name', 'Phone', 'Monthly Bill', 'Period', 'Balance', 'Amount Paid', 'Oversize Charge']);
+
                 foreach ($records as $record) {
                     fputcsv($file, [
-                        $record->a_no, $record->customer_no, $record->customer_name,
-                        $record->phone, $record->monthly_bill, $record->period,
-                        $record->balance, $record->amount_paid, $record->oversize_charge,
+                        $record->a_no,
+                        $record->customer_no,
+                        $record->customer_name,
+                        $record->phone,
+                        $record->monthly_bill,
+                        $record->period,
+                        $record->balance,
+                        $record->amount_paid,
+                        $record->oversize_charge,
                     ]);
                 }
+
                 fclose($file);
             };
+
             return response()->stream($callback, 200, $headers);
         }
 

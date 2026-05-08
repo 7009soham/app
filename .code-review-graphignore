@@ -1,0 +1,43 @@
+# Logs & runtime
+storage/**
+logs/**
+*.log
+
+# Build / compiled
+public/build/**
+dist/**
+.next/**
+out/**
+
+# Dependencies
+node_modules/**
+vendor/**
+
+# Cache
+bootstrap/cache/**
+.cache/**
+
+# Static assets
+public/images/**
+public/uploads/**
+
+# IDE / system
+.vscode/**
+.idea/**
+.DS_Store
+
+# Temp / test junk
+tmp/**
+temp/**
+coverage/**
+
+# Large data
+data/**
+datasets/**
+
+# Experimental / drafts
+design/**
+drafts/**
+
+# Tests
+tests/**

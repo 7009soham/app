@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class TaxPayment extends Model
 {
+    protected static array $columnCache = [];
+
     protected $fillable = [
         'transaction_id',
         'citizen_id',
@@ -26,6 +29,7 @@ class TaxPayment extends Model
         'payment_method',
         'provider_transaction_id',
         'phonepe_transaction_id',
+        'failure_reason',
         'payment_data',
         'payment_response',
         'paid_at',
@@ -76,32 +80,43 @@ class TaxPayment extends Model
 
     public function scopeCompleted($query)
     {
-        return $query->where(function ($q) {
-            $q->where('status', 'success')
-              ->orWhere('payment_status', 'completed');
-        });
+        if ($this->hasTaxPaymentsColumn('status')) {
+            $query->where('status', 'success');
+        }
+
+        return $query->where('payment_status', 'completed')
+            ->whereNotNull('paid_at');
     }
 
     public function scopePending($query)
     {
         return $query->where(function ($q) {
-            $q->where('status', 'pending')
-              ->orWhere('payment_status', 'pending');
+            if ($this->hasTaxPaymentsColumn('status')) {
+                $q->where('status', 'pending')
+                    ->orWhere('payment_status', 'pending');
+                return;
+            }
+
+            $q->where('payment_status', 'pending');
         });
     }
 
     public function scopeFailed($query)
     {
         return $query->where(function ($q) {
-            $q->where('status', 'failed')
-              ->orWhere('payment_status', 'failed');
+            if ($this->hasTaxPaymentsColumn('status')) {
+                $q->where('status', 'failed')
+                    ->orWhere('payment_status', 'failed');
+                return;
+            }
+
+            $q->where('payment_status', 'failed');
         });
     }
 
     public function markAsCompleted(string $providerTransactionId, array $response = []): void
     {
-        $this->update([
-            'status' => 'success',
+        $updateData = [
             'payment_status' => 'completed',
             'provider_transaction_id' => $providerTransactionId,
             'phonepe_transaction_id' => $providerTransactionId,
@@ -110,19 +125,43 @@ class TaxPayment extends Model
                 'completed_at' => now()->toDateTimeString(),
             ]),
             'paid_at' => now(),
-        ]);
+        ];
+
+        if ($this->hasTaxPaymentsColumn('status')) {
+            $updateData['status'] = 'success';
+        }
+
+        $this->update($updateData);
     }
 
-    public function markAsFailed(array $response = []): void
+    public function markAsFailed(array $response = [], ?string $failureReason = null): void
     {
-        $this->update([
-            'status' => 'failed',
+        $updateData = [
             'payment_status' => 'failed',
             'payment_response' => $response,
             'payment_data' => array_merge($this->payment_data ?? [], [
                 'failed_at' => now()->toDateTimeString(),
             ]),
-        ]);
+        ];
+
+        if ($this->hasTaxPaymentsColumn('status')) {
+            $updateData['status'] = 'failed';
+        }
+
+        if ($this->hasTaxPaymentsColumn('failure_reason')) {
+            $updateData['failure_reason'] = $failureReason;
+        }
+
+        $this->update($updateData);
+    }
+
+    private function hasTaxPaymentsColumn(string $column): bool
+    {
+        if (!array_key_exists($column, self::$columnCache)) {
+            self::$columnCache[$column] = Schema::hasColumn('tax_payments', $column);
+        }
+
+        return self::$columnCache[$column];
     }
 
     /**

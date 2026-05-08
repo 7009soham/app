@@ -512,7 +512,7 @@
         </div>
         <div class="stat-content">
             <div class="stat-label">{{ __('messages.total_payments_made') }}</div>
-            <div class="stat-value">{{ $paymentHistory->count() }}</div>
+            <div class="stat-value">{{ $totalPaymentsMade ?? 0 }}</div>
             <div class="stat-change success">
                 <i class="fas fa-history"></i> {{ __('messages.recent_transactions') }}
             </div>

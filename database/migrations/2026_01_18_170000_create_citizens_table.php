@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('customer_no')->unique(); // Customer number from data
             $table->string('name');
-            $table->string('phone')->unique();
+            $table->string('phone')->nullable()->unique();
             $table->string('address')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamp('phone_verified_at')->nullable();

@@ -45,16 +45,19 @@ class PaymentManagementController extends Controller
             $query->where('tax_type', $request->tax_type);
         }
 
-        // Filter by Demand Number
-        if ($request->filled('demand_number')) {
-            $query->whereHas('citizen', function ($q) use ($request) {
-                $q->where('demand_number', $request->demand_number);
+        // Filter by Demand (schema uses citizens.demand_id)
+        $demandId = $request->input('demand_id') ?? $request->input('demand_number');
+        if (!empty($demandId)) {
+            $query->whereHas('citizen', function ($q) use ($demandId) {
+                $q->where('demand_id', $demandId);
             });
         }
 
-        $payments = $query->latest('paid_at')->paginate(20);
+        $payments = $query->latest('paid_at')->paginate(20)->withQueryString();
 
-        return view('admin.payments.index', compact('payments'));
+        $demands = \App\Models\Demand::all();
+
+        return view('admin.payments.index', compact('payments', 'demands'));
     }
 
     public function show(Payment $payment)

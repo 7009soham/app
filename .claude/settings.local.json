@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l app/Services/RazorpayService.php)",
+      "Bash(php -l app/Http/Controllers/Citizen/PaymentController.php)",
+      "Bash(php -l app/Http/Controllers/Admin/SettingsController.php)",
+      "Bash(php -l routes/web.php)"
+    ]
+  }
+}

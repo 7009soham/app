@@ -36,6 +36,13 @@ Route::get('/terms-conditions', [HomeController::class, 'termsConditions'])->nam
 Route::get('/refund-policy', [HomeController::class, 'refundPolicy'])->name('refund-policy');
 Route::get('/digital-services', [HomeController::class, 'digitalServices'])->name('digital-services');
 
+Route::prefix('design-exploration')->name('design-exploration.')->group(function () {
+    Route::get('/home', [HomeController::class, 'designExplorationIndex'])->name('home.index');
+    Route::get('/home/variation-1', [HomeController::class, 'designExplorationVariationOne'])->name('home.variation-1');
+    Route::get('/home/variation-2', [HomeController::class, 'designExplorationVariationTwo'])->name('home.variation-2');
+    Route::get('/home/variation-3', [HomeController::class, 'designExplorationVariationThree'])->name('home.variation-3');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Language Switch Routes
@@ -181,6 +188,7 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/simulate-system-emails', [SettingsController::class, 'simulateSystemEmails'])->name('settings.simulate-emails');
     Route::get('/settings/general', [SettingsController::class, 'general'])->name('settings.general');
     Route::get('/settings/social', [SettingsController::class, 'social'])->name('settings.social');
     Route::get('/settings/payment', [SettingsController::class, 'payment'])->name('settings.payment');
@@ -205,6 +213,8 @@ Route::prefix('citizen')->name('citizen.')->group(function () {
     Route::get('/login', [CitizenAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/send-otp', [CitizenAuthController::class, 'sendOtp'])->name('send-otp');
     Route::post('/verify-otp', [CitizenAuthController::class, 'verifyOtp'])->name('verify-otp');
+    Route::post('/send-email-otp', [CitizenAuthController::class, 'sendEmailOtp'])->name('send-email-otp');
+    Route::post('/verify-email-otp', [CitizenAuthController::class, 'verifyEmailOtp'])->name('verify-email-otp');
     Route::post('/logout', [CitizenAuthController::class, 'logout'])->name('logout');
 });
 
@@ -229,10 +239,13 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
     Route::get('/transactions/{payment}', [PaymentHistoryController::class, 'show'])->name('transactions.show');
     Route::get('/payment-history', [PaymentHistoryController::class, 'index'])->name('payment-history'); // Keep for backward compatibility if needed
     
-    // Payment Processing (PhonePe v2)
+    // Payment Processing
     Route::post('/payment/initiate', [\App\Http\Controllers\Citizen\PaymentController::class, 'initiatePayment'])->name('payment.initiate');
     Route::get('/payment/redirect', [\App\Http\Controllers\Citizen\PaymentController::class, 'redirect'])->name('payment.redirect');
     Route::post('/payment/check-status', [\App\Http\Controllers\Citizen\PaymentController::class, 'checkStatus'])->name('payment.check-status');
+    // Razorpay
+    Route::get('/payment/razorpay-checkout', [\App\Http\Controllers\Citizen\PaymentController::class, 'razorpayCheckout'])->name('payment.razorpay-checkout');
+    Route::post('/payment/razorpay-return', [\App\Http\Controllers\Citizen\PaymentController::class, 'razorpayReturn'])->name('payment.razorpay-return');
 
     // Profile
     Route::get('/profile', [CitizenDashboardController::class, 'profile'])->name('profile');

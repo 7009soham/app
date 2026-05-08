@@ -20,9 +20,9 @@ class PropertyTaxController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('customer_no', 'like', "%{$search}%")
-                  ->orWhere('property_no', 'like', "%{$search}%")
+                                $q->where('property_no', 'like', "%{$search}%")
                   ->orWhere('customer_name', 'like', "%{$search}%")
+                                    ->orWhere('aadhaar_no', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%");
             });
         }
@@ -31,7 +31,7 @@ class PropertyTaxController extends Controller
         if ($request->filled('status')) {
             if ($request->status === 'pending') {
                 $query->where('balance', '>', 0);
-            } else {
+            } elseif ($request->status === 'paid') {
                 $query->where('balance', '<=', 0);
             }
         }
@@ -41,14 +41,15 @@ class PropertyTaxController extends Controller
             $query->where('demand_id', $request->demand_id);
         }
 
-        $records = $query->paginate(20);
+        $records = $query->paginate(20)->withQueryString();
 
         $demands = \App\Models\Demand::all();
 
-        // Stats - Calculate total paid as current_total minus balance
+        // Stats - Calculate total paid from previous + current totals minus balance
+        $totalPrevious = PropertyTaxRecord::sum('previous_total');
         $totalCurrent = PropertyTaxRecord::sum('current_total');
         $totalBalance = PropertyTaxRecord::sum('balance');
-        $totalPaid = $totalCurrent - $totalBalance;
+        $totalPaid = max(($totalPrevious + $totalCurrent) - $totalBalance, 0);
 
         $stats = [
             'total_records' => PropertyTaxRecord::count(),
@@ -65,8 +66,9 @@ class PropertyTaxController extends Controller
      */
     public function show(PropertyTaxRecord $propertyTaxRecord)
     {
-        $propertyTaxRecord->load('citizen');
-        return view('admin.property-tax.show', compact('propertyTaxRecord'));
+        $propertyTaxRecord->load(['citizen.demand']);
+        $demand = $propertyTaxRecord->demand_id ? \App\Models\Demand::find($propertyTaxRecord->demand_id) : null;
+        return view('admin.property-tax.show', compact('propertyTaxRecord', 'demand'));
     }
 
     /**
@@ -86,12 +88,11 @@ class PropertyTaxController extends Controller
     {
         $validated = $request->validate([
             'a_no' => 'required|integer',
-            'customer_no' => 'required|string|max:50',
             'property_no' => 'required|string|max:50',
-            'property_type' => 'required|string|max:50',
+            'property_type' => 'nullable|string|max:50',
             'customer_name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:15',
             'aadhaar_no' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20',
             'previous_house_tax' => 'nullable|numeric|min:0',
             'previous_electricity_tax' => 'nullable|numeric|min:0',
             'previous_health_tax' => 'nullable|numeric|min:0',
@@ -104,6 +105,18 @@ class PropertyTaxController extends Controller
             'citizen_id' => 'nullable|exists:citizens,id',
             'demand_id' => 'nullable|exists:demands,id',
         ]);
+
+        // DB columns are NOT NULL with defaults; normalize blank inputs.
+        $validated['previous_house_tax'] = $validated['previous_house_tax'] ?? 0;
+        $validated['previous_electricity_tax'] = $validated['previous_electricity_tax'] ?? 0;
+        $validated['previous_health_tax'] = $validated['previous_health_tax'] ?? 0;
+        $validated['previous_total'] = $validated['previous_total'] ?? 0;
+        $validated['customer_no'] = $validated['property_no'];
+
+        // If left blank, omit this field so the DB default applies.
+        if (array_key_exists('property_type', $validated) && trim((string) $validated['property_type']) === '') {
+            unset($validated['property_type']);
+        }
 
         PropertyTaxRecord::create($validated);
 
@@ -128,12 +141,11 @@ class PropertyTaxController extends Controller
     {
         $validated = $request->validate([
             'a_no' => 'required|integer',
-            'customer_no' => 'required|string|max:50',
             'property_no' => 'required|string|max:50',
-            'property_type' => 'required|string|max:50',
+            'property_type' => 'nullable|string|max:50',
             'customer_name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:15',
             'aadhaar_no' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20',
             'previous_house_tax' => 'nullable|numeric|min:0',
             'previous_electricity_tax' => 'nullable|numeric|min:0',
             'previous_health_tax' => 'nullable|numeric|min:0',
@@ -146,6 +158,18 @@ class PropertyTaxController extends Controller
             'citizen_id' => 'nullable|exists:citizens,id',
             'demand_id' => 'nullable|exists:demands,id',
         ]);
+
+        // DB columns are NOT NULL with defaults; normalize blank inputs.
+        $validated['previous_house_tax'] = $validated['previous_house_tax'] ?? 0;
+        $validated['previous_electricity_tax'] = $validated['previous_electricity_tax'] ?? 0;
+        $validated['previous_health_tax'] = $validated['previous_health_tax'] ?? 0;
+        $validated['previous_total'] = $validated['previous_total'] ?? 0;
+        $validated['customer_no'] = $validated['property_no'];
+
+        // If left blank, don't overwrite the existing value.
+        if (array_key_exists('property_type', $validated) && trim((string) $validated['property_type']) === '') {
+            unset($validated['property_type']);
+        }
 
         $propertyTaxRecord->update($validated);
 
@@ -184,8 +208,8 @@ class PropertyTaxController extends Controller
                 'Property No', 
                 'Property Type',
                 'Customer Name', 
-                'Phone', 
                 'Aadhaar No',
+                'Phone',
                 'Previous House Tax',
                 'Previous Electricity Tax',
                 'Previous Health Tax',
@@ -203,8 +227,8 @@ class PropertyTaxController extends Controller
                     $record->property_no,
                     $record->property_type,
                     $record->customer_name,
-                    $record->phone,
                     $record->aadhaar_no,
+                    $record->phone,
                     $record->previous_house_tax,
                     $record->previous_electricity_tax,
                     $record->previous_health_tax,
@@ -228,25 +252,25 @@ class PropertyTaxController extends Controller
      */
     public function bulk(Request $request)
     {
-        $action = $request->input('action');
-        $ids = $request->input('ids');
+        $validated = $request->validate([
+            'action' => 'required|in:delete,mark_paid,export',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|distinct|exists:property_tax_records,id',
+        ]);
 
-        if (empty($ids) || !is_array($ids)) {
-            return back()->with('error', 'No records selected.');
-        }
+        $action = $validated['action'];
+        $ids = $validated['ids'];
 
         if ($action === 'delete') {
-            PropertyTaxRecord::whereIn('id', $ids)->delete();
-            return back()->with('success', count($ids) . ' property tax records deleted successfully.');
+            $deleted = PropertyTaxRecord::whereIn('id', $ids)->delete();
+            return back()->with('success', $deleted . ' property tax records deleted successfully.');
         }
 
         if ($action === 'mark_paid') {
-            foreach (PropertyTaxRecord::whereIn('id', $ids)->get() as $record) {
-                // simple logic to mark as paid
-                $record->balance = 0;
-                $record->save();
-            }
-            return back()->with('success', count($ids) . ' property tax records marked as paid.');
+            $updated = PropertyTaxRecord::whereIn('id', $ids)
+                ->where('balance', '>', 0)
+                ->update(['balance' => 0]);
+            return back()->with('success', $updated . ' property tax records marked as paid.');
         }
 
         if ($action === 'export') {
@@ -259,14 +283,14 @@ class PropertyTaxController extends Controller
             $callback = function () use ($records) {
                 $file = fopen('php://output', 'w');
                 fputcsv($file, [
-                    'A.No', 'Property No', 'Property Type', 'Customer Name', 'Phone', 'Aadhaar No',
+                    'A.No', 'Property No', 'Property Type', 'Customer Name', 'Aadhaar No', 'Phone',
                     'Previous House Tax', 'Previous Electricity Tax', 'Previous Health Tax', 'Previous Total',
                     'Current House Tax', 'Current Electricity Tax', 'Current Health Tax', 'Current Total', 'Balance'
                 ]);
                 foreach ($records as $record) {
                     fputcsv($file, [
                         $record->a_no, $record->property_no, $record->property_type, $record->customer_name,
-                        $record->phone, $record->aadhaar_no, $record->previous_house_tax, $record->previous_electricity_tax,
+                        $record->aadhaar_no, $record->phone, $record->previous_house_tax, $record->previous_electricity_tax,
                         $record->previous_health_tax, $record->previous_total, $record->current_house_tax,
                         $record->current_electricity_tax, $record->current_health_tax, $record->current_total, $record->balance,
                     ]);

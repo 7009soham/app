@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
+use App\Mail\CitizenEmailOtpMail;
 use App\Models\Citizen;
 use App\Models\SiteSetting;
 use App\Models\WaterTaxRecord;
@@ -11,6 +12,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -26,6 +31,74 @@ class AuthController extends Controller
         }
 
         return $digits;
+    }
+
+    private function isEmailVerificationEnabled(): bool
+    {
+        $value = strtolower(trim((string) SiteSetting::get('email_verification_enabled', '1')));
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function citizenHasColumn(string $column): bool
+    {
+        static $citizenColumns = null;
+
+        if ($citizenColumns === null) {
+            try {
+                $citizenColumns = array_flip(Schema::getColumnListing('citizens'));
+            } catch (\Throwable $e) {
+                $citizenColumns = [];
+            }
+        }
+
+        return isset($citizenColumns[$column]);
+    }
+
+    private function safeCitizenUpdate(Citizen $citizen, array $attributes): void
+    {
+        $filtered = [];
+
+        foreach ($attributes as $column => $value) {
+            if ($this->citizenHasColumn($column)) {
+                $filtered[$column] = $value;
+            }
+        }
+
+        if (!empty($filtered)) {
+            $citizen->update($filtered);
+        }
+    }
+
+    private function linkEmailToCitizen(Citizen $citizen, string $email): void
+    {
+        DB::transaction(function () use ($citizen, $email): void {
+            $lockedCitizen = Citizen::whereKey($citizen->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $existingOwner = Citizen::whereRaw('LOWER(email) = ?', [$email])
+                ->where('id', '!=', $lockedCitizen->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingOwner) {
+                $this->safeCitizenUpdate($existingOwner, [
+                    'email' => null,
+                    'email_verified_at' => null,
+                    'otp' => null,
+                    'otp_expires_at' => null,
+                    'otp_sent_at' => null,
+                ]);
+            }
+
+            $this->safeCitizenUpdate($lockedCitizen, [
+                'email' => $email,
+                'email_verified_at' => now(),
+                'otp' => null,
+                'otp_expires_at' => null,
+                'otp_sent_at' => null,
+            ]);
+        });
     }
 
     /**
@@ -207,12 +280,223 @@ class AuthController extends Controller
     }
 
     /**
+     * Send OTP to citizen email (independent from phone/Firebase flow)
+     */
+    public function sendEmailOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+        $citizen = Auth::guard('citizen')->user();
+
+        if (!$citizen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login to verify your email.',
+            ], 401);
+        }
+
+        $pendingProfileRequest = Session::get('profile_email_change_request');
+        $hasPendingProfileRequest =
+            is_array($pendingProfileRequest)
+            && (int) data_get($pendingProfileRequest, 'citizen_id', 0) === (int) $citizen->id
+            && (string) data_get($pendingProfileRequest, 'operation', '') === 'set'
+            && trim((string) data_get($pendingProfileRequest, 'email', '')) !== '';
+
+        if ($hasPendingProfileRequest) {
+            $email = strtolower(trim((string) data_get($pendingProfileRequest, 'email')));
+        } else {
+            $email = strtolower(trim((string) ($validated['email'] ?? '')));
+            if ($email === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please provide a valid email address.',
+                ], 422);
+            }
+        }
+
+        $emailOwner = Citizen::whereRaw('LOWER(email) = ?', [$email])->first();
+        $emailExistsForAnotherCitizen = $emailOwner && (int) $emailOwner->id !== (int) $citizen->id;
+
+        $sendRateKey = 'citizen-email-otp-send:' . $citizen->id . ':' . sha1($request->ip());
+        if (RateLimiter::tooManyAttempts($sendRateKey, 5)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many OTP requests. Please wait and try again.',
+                'seconds_remaining' => RateLimiter::availableIn($sendRateKey),
+            ], 429);
+        }
+
+        Session::put('citizen_email_otp_pending', [
+            'citizen_id' => (int) $citizen->id,
+            'email' => $email,
+        ]);
+        Session::put('show_profile_email_otp', true);
+        Session::put('profile_pending_email', $email);
+        Session::put('profile_email_otp_operation', 'set');
+
+        if (!$this->isEmailVerificationEnabled()) {
+            $this->linkEmailToCitizen($citizen, $email);
+
+            Session::forget('citizen_email_otp_pending');
+            Session::forget('show_profile_email_otp');
+            Session::forget('profile_pending_email');
+            Session::forget('profile_email_otp_operation');
+            Session::forget('profile_email_change_request');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email verification is disabled by admin. Email marked verified.',
+            ]);
+        }
+
+        $cooldownEndsAt = $citizen->otp_sent_at ? $citizen->otp_sent_at->copy()->addSeconds(30) : null;
+        if ($cooldownEndsAt && $cooldownEndsAt->isFuture()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please wait before requesting another OTP.',
+                'seconds_remaining' => now()->diffInSeconds($cooldownEndsAt),
+            ], 429);
+        }
+
+        $otp = $citizen->generateOtp();
+        $this->safeCitizenUpdate($citizen, ['otp_sent_at' => now()]);
+        RateLimiter::hit($sendRateKey, 600);
+        RateLimiter::clear('citizen-email-otp-attempt:' . $citizen->id . ':' . sha1($email));
+
+        try {
+            Mail::to($email)->send(new CitizenEmailOtpMail([
+                'citizen_name' => $citizen->name,
+                'otp' => $otp,
+                'expires_in_minutes' => 10,
+            ]));
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to send OTP email right now. Please try again.',
+            ], 503);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $emailExistsForAnotherCitizen
+                ? 'Email already exists. Please verify to continue'
+                : 'OTP has been sent to your email address.',
+        ]);
+    }
+
+    /**
+     * Verify OTP for citizen email (independent from phone/Firebase flow)
+     */
+    public function verifyEmailOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'nullable|email',
+        ]);
+
+        $citizen = Auth::guard('citizen')->user();
+
+        if (!$citizen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login to verify your email.',
+            ], 401);
+        }
+
+        $pending = Session::get('citizen_email_otp_pending');
+        $pendingEmail = strtolower(trim((string) data_get($pending, 'email', '')));
+        $pendingCitizenId = (int) data_get($pending, 'citizen_id', 0);
+        $requestedEmail = strtolower(trim((string) ($validated['email'] ?? '')));
+
+        if ($requestedEmail !== '' && $requestedEmail !== $pendingEmail) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification email mismatch. Please request a new OTP.',
+            ], 422);
+        }
+
+        if ($pendingCitizenId !== (int) $citizen->id || $pendingEmail === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification session expired. Please request a new OTP.',
+            ], 422);
+        }
+
+        $email = $pendingEmail;
+
+        if (!$this->isEmailVerificationEnabled()) {
+            $this->linkEmailToCitizen($citizen, $email);
+
+            Session::forget('citizen_email_otp_pending');
+            Session::forget('show_profile_email_otp');
+            Session::forget('profile_pending_email');
+            Session::forget('profile_email_otp_operation');
+            Session::forget('profile_email_change_request');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email verification is disabled by admin. Email marked verified.',
+            ]);
+        }
+
+        $otpValidated = $request->validate([
+            'otp' => ['required', 'string', 'regex:/^\d{4,6}$/'],
+        ]);
+        $otp = trim((string) $otpValidated['otp']);
+
+        $attemptKey = 'citizen-email-otp-attempt:' . $citizen->id . ':' . sha1($email);
+        if (RateLimiter::tooManyAttempts($attemptKey, 5)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many invalid OTP attempts. Please request a new OTP.',
+                'seconds_remaining' => RateLimiter::availableIn($attemptKey),
+            ], 429);
+        }
+
+        if (!$citizen->verifyOtp($otp)) {
+            $isExpired = $citizen->otp_expires_at && $citizen->otp_expires_at->isPast();
+            RateLimiter::hit($attemptKey, 600);
+
+            return response()->json([
+                'success' => false,
+                'message' => $isExpired ? 'OTP has expired. Please request a new OTP.' : 'Invalid OTP.',
+            ], 422);
+        }
+
+        try {
+            $this->linkEmailToCitizen($citizen, $email);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to link email right now. Please try again.',
+            ], 500);
+        }
+
+        Session::forget('citizen_email_otp_pending');
+        Session::forget('show_profile_email_otp');
+        Session::forget('profile_pending_email');
+        Session::forget('profile_email_otp_operation');
+        Session::forget('profile_email_change_request');
+        RateLimiter::clear($attemptKey);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email verified successfully.',
+        ]);
+    }
+
+    /**
      * Logout citizen
      */
     public function logout(Request $request)
     {
         Auth::guard('citizen')->logout();
         Session::forget('citizen_phone_pending');
+        Session::forget('citizen_email_otp_pending');
+        Session::forget('show_profile_email_otp');
+        Session::forget('profile_pending_email');
+        Session::forget('profile_email_otp_operation');
+        Session::forget('profile_email_change_request');
 
         return redirect()->route('citizen.login')->with('success', 'Logged out successfully.');
     }

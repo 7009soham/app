@@ -31,11 +31,33 @@ class HomeController extends Controller
 
     public function index()
     {
-        $data = $this->getCommonData();
-        $data['sliders'] = Slider::active()->ordered()->get();
-        $data['taxTypes'] = TaxType::active()->get();
+        $data = $this->getHomepageData();
 
         return view('home', $data);
+    }
+
+    public function designExplorationIndex()
+    {
+        $data = $this->getHomepageData();
+        return view('design-exploration.home.index', $data);
+    }
+
+    public function designExplorationVariationOne()
+    {
+        $data = $this->getHomepageData();
+        return view('design-exploration.home.variation-1', $data);
+    }
+
+    public function designExplorationVariationTwo()
+    {
+        $data = $this->getHomepageData();
+        return view('design-exploration.home.variation-2', $data);
+    }
+
+    public function designExplorationVariationThree()
+    {
+        $data = $this->getHomepageData();
+        return view('design-exploration.home.variation-3', $data);
     }
 
     public function about()
@@ -72,5 +94,14 @@ class HomeController extends Controller
     {
         $data = $this->getCommonData();
         return view('pages.digital-services', $data);
+    }
+
+    protected function getHomepageData(): array
+    {
+        $data = $this->getCommonData();
+        $data['sliders'] = Slider::active()->ordered()->get();
+        $data['taxTypes'] = TaxType::active()->get();
+
+        return $data;
     }
 }

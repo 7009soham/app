@@ -188,17 +188,15 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">Role *</label>
-                <select name="role_id" class="form-select" required {{ $admin->isSuperAdmin() ? 'disabled' : '' }}>
+                <label class="form-label">Account Type (Admin / Super Admin) *</label>
+                <select name="role_id" class="form-select" required>
                     @foreach($roles as $role)
                     <option value="{{ $role->id }}" {{ old('role_id', $admin->role_id) == $role->id ? 'selected' : '' }}>
                         {{ $role->name }} ({{ ucfirst($role->type) }})
                     </option>
                     @endforeach
                 </select>
-                @if($admin->isSuperAdmin())
-                <input type="hidden" name="role_id" value="{{ $admin->role_id }}">
-                @endif
+                <p class="password-hint">As Super Admin, you can choose either Admin or Super Admin.</p>
             </div>
 
             <div class="form-group">

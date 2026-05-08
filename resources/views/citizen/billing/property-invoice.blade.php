@@ -206,10 +206,6 @@
                 <div class="value">{{ $citizen->name }}</div>
             </div>
             <div class="card">
-                <div class="label">Customer Number</div>
-                <div class="value">{{ $bill->customer_no }}</div>
-            </div>
-            <div class="card">
                 <div class="label">Property Number</div>
                 <div class="value">{{ $record->property_no ?? '-' }}</div>
             </div>

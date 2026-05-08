@@ -343,7 +343,7 @@
         <div class="filters-row">
             <div class="filter-group">
                 <label>Search</label>
-                <input type="text" name="search" placeholder="Customer No, Name, Phone" value="{{ request('search') }}">
+                <input type="text" name="search" placeholder="Property No, Name, Aadhaar, Phone" value="{{ request('search') }}">
             </div>
             <div class="filter-group" style="max-width: 180px;">
                 <label>Status</label>
@@ -354,12 +354,14 @@
                 </select>
             </div>
             <div class="filter-group" style="max-width: 150px;">
-                <label>Demand No</label>
-                <select name="demand_number">
+                <label>Demand</label>
+                <select name="demand_id">
                     <option value="">All</option>
-                    @for($i = 1; $i <= 8; $i++)
-                        <option value="{{ $i }}" {{ request('demand_number') == $i ? 'selected' : '' }}>{{ $i }}</option>
-                    @endfor
+                    @foreach($demands as $demand)
+                        <option value="{{ $demand->id }}" {{ (string) request('demand_id') === (string) $demand->id ? 'selected' : '' }}>
+                            {{ $demand->name }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
             <button type="submit" class="filter-btn">
@@ -380,8 +382,8 @@
                     <th>A.No</th>
                     <th>Property No</th>
                     <th>Customer</th>
-                    <th>Type</th>
                     <th>Phone</th>
+                    <th>Type</th>
                     <th>Current Tax</th>
                     <th>Balance</th>
                     <th>Status</th>
@@ -400,8 +402,8 @@
                             <div class="customer-no">{{ $record->aadhaar_no }}</div>
                         @endif
                     </td>
+                    <td class="customer-no">{{ $record->phone ?: '-' }}</td>
                     <td>{{ $record->property_type }}</td>
-                    <td>{{ $record->phone ?? 'N/A' }}</td>
                     <td>
                         <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">
                             ₹{{ number_format($record->current_total) }}
@@ -428,15 +430,6 @@
                     </td>
                     <td>
                         <div class="actions-cell">
-                            @if($record->phone)
-                            <form action="{{ route('admin.login-as-citizen') }}" method="POST" target="_blank" style="display:inline;">
-                                @csrf
-                                <input type="hidden" name="phone" value="{{ $record->phone }}">
-                                <button type="submit" class="btn-action btn-view" title="Login as Citizen">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                </button>
-                            </form>
-                            @endif
                             <a href="{{ route('admin.property-tax.edit', $record) }}" class="btn-action btn-edit">
                                 <i class="fas fa-edit"></i>
                             </a>

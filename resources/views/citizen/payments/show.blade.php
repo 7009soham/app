@@ -4,6 +4,14 @@
 @section('page-title', 'Transaction Details')
 
 @section('content')
+@php
+    $rawStatus = strtolower($payment->status ?? $payment->payment_status ?? 'pending');
+    $statusKey = in_array($rawStatus, ['success', 'completed']) ? 'success' : ($rawStatus === 'failed' ? 'failed' : 'pending');
+    $statusLabel = strtoupper($statusKey);
+    $displayDate = \Carbon\Carbon::parse($payment->paid_at ?? $payment->created_at);
+    $statusColor = $statusKey === 'success' ? '#16a34a' : ($statusKey === 'failed' ? '#dc2626' : '#d97706');
+    $statusIcon = $statusKey === 'success' ? 'fa-check-circle' : ($statusKey === 'failed' ? 'fa-times-circle' : 'fa-clock');
+@endphp
 <div class="section-card">
     <div class="section-header d-flex justify-content-between align-items-center">
         <h3 class="section-title">
@@ -17,11 +25,19 @@
     
     <div class="section-body" style="padding: 32px;">
         <div style="text-align: center; margin-bottom: 40px;">
-            <div style="font-size: 48px; color: #16a34a; margin-bottom: 16px;">
-                <i class="fas fa-check-circle"></i>
+            <div style="font-size: 48px; color: {{ $statusColor }}; margin-bottom: 16px;">
+                <i class="fas {{ $statusIcon }}"></i>
             </div>
-            <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary);">Payment Successful</h2>
-            <p style="color: var(--text-secondary);">Your payment has been processed and recorded.</p>
+            <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary);">Payment {{ $statusLabel }}</h2>
+            <p style="color: var(--text-secondary);">
+                @if($statusKey === 'success')
+                    Your payment has been processed and recorded.
+                @elseif($statusKey === 'failed')
+                    {{ $payment->failure_reason ?? 'Payment could not be completed.' }}
+                @else
+                    Payment is still being processed. Please check again shortly.
+                @endif
+            </p>
         </div>
 
         <div style="background: var(--surface-secondary); border-radius: var(--radius); padding: 24px; margin-bottom: 32px;">
@@ -31,7 +47,7 @@
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
                 <span style="color: var(--text-secondary);">Date & Time</span>
-                <span style="font-weight: 600;">{{ $payment->paid_at->format('d M Y, h:i A') }}</span>
+                <span style="font-weight: 600;">{{ $displayDate->format('d M Y, h:i A') }}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
                 <span style="color: var(--text-secondary);">Payment Method</span>
@@ -41,8 +57,18 @@
                 <span style="color: var(--text-secondary);">Tax Type</span>
                 <span style="font-weight: 600;">{{ $payment->tax_type == 'water_tax' ? 'Water Tax' : 'Property Tax' }}</span>
             </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+                <span style="color: var(--text-secondary);">Status</span>
+                <span style="font-weight: 700; color: {{ $statusColor }};">{{ $statusLabel }}</span>
+            </div>
+            @if($statusKey === 'failed' && $payment->failure_reason)
+                <div style="display: flex; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px; gap: 16px;">
+                    <span style="color: var(--text-secondary);">Failure Reason</span>
+                    <span style="font-weight: 600; color: #b91c1c; text-align: right;">{{ $payment->failure_reason }}</span>
+                </div>
+            @endif
             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
-                <span style="color: var(--text-primary); font-weight: 700; font-size: 18px;">Total Paid</span>
+                <span style="color: var(--text-primary); font-weight: 700; font-size: 18px;">Amount</span>
                 <span style="color: #16a34a; font-weight: 800; font-size: 24px;">₹{{ number_format($payment->amount, 2) }}</span>
             </div>
         </div>

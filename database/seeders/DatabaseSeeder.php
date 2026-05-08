@@ -155,10 +155,13 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // Call additional seeders for tax data
-        $this->call([
-            WaterTaxSeeder::class,
-            PropertyTaxSeeder::class,
-        ]);
+        // Keep transactional data empty by default (production-safe).
+        // Set SEED_SAMPLE_TAX_DATA=true only when you explicitly need demo data.
+        if (filter_var(env('SEED_SAMPLE_TAX_DATA', false), FILTER_VALIDATE_BOOLEAN)) {
+            $this->call([
+                WaterTaxSeeder::class,
+                PropertyTaxSeeder::class,
+            ]);
+        }
     }
 }

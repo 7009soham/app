@@ -24,7 +24,7 @@
             
             <div class="form-group" style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #64748b;">Phone Number</label>
-                <input type="text" name="phone" value="{{ old('phone') }}" required
+                <input type="text" name="phone" value="{{ old('phone') }}"
                        style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
                 @error('phone') <span style="color: red; font-size: 13px;">{{ $message }}</span> @enderror
             </div>

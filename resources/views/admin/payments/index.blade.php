@@ -15,11 +15,13 @@
                         <input type="text" name="search" class="form-control" placeholder="TXN ID or Citizen Name" value="{{ request('search') }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Demand No</label>
-                        <select name="demand_number" class="form-select">
+                        <label class="form-label">Demand</label>
+                        <select name="demand_id" class="form-select">
                             <option value="">All</option>
-                            @foreach(range(1, 8) as $d)
-                                <option value="{{ $d }}" {{ request('demand_number') == $d ? 'selected' : '' }}>{{ $d }}</option>
+                            @foreach($demands as $demand)
+                                <option value="{{ $demand->id }}" {{ (string) request('demand_id') === (string) $demand->id ? 'selected' : '' }}>
+                                    {{ $demand->name ?? ('Demand ' . $demand->id) }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
