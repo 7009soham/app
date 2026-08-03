@@ -34,6 +34,10 @@ Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/privacy-policy', [HomeController::class, 'privacyPolicy'])->name('privacy-policy');
 Route::get('/terms-conditions', [HomeController::class, 'termsConditions'])->name('terms-conditions');
 Route::get('/refund-policy', [HomeController::class, 'refundPolicy'])->name('refund-policy');
+Route::get('/disclaimer', [HomeController::class, 'disclaimer'])->name('disclaimer');
+Route::get('/accessibility-statement', [HomeController::class, 'accessibilityStatement'])->name('accessibility-statement');
+Route::get('/copyright-policy', [HomeController::class, 'copyrightPolicy'])->name('copyright-policy');
+Route::get('/hyperlinking-policy', [HomeController::class, 'hyperlinkingPolicy'])->name('hyperlinking-policy');
 Route::get('/digital-services', [HomeController::class, 'digitalServices'])->name('digital-services');
 
 Route::prefix('design-exploration')->name('design-exploration.')->group(function () {

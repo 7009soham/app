@@ -208,6 +208,17 @@ return [
     'reset' => 'रीसेट',
     'save_changes' => 'बदल जतन करा',
 
+    // Legal & Policy Pages
+    'legal_policies' => 'धोरणे',
+    'privacy_policy' => 'गोपनीयता धोरण',
+    'terms_conditions' => 'नियम व अटी',
+    'refund_policy' => 'परतावा धोरण',
+    'disclaimer' => 'अस्वीकरण',
+    'accessibility_statement' => 'सुलभता विधान',
+    'copyright_policy' => 'कॉपीराइट धोरण',
+    'hyperlinking_policy' => 'हायपरलिंकिंग धोरण',
+    'grievance_officer' => 'तक्रार निवारण अधिकारी',
+
     // Status
     'paid' => 'भरले',
     'unpaid' => 'न भरलेले',

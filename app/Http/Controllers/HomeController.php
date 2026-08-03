@@ -90,6 +90,30 @@ class HomeController extends Controller
         return view('pages.refund-policy', $data);
     }
 
+    public function disclaimer()
+    {
+        $data = $this->getCommonData();
+        return view('pages.disclaimer', $data);
+    }
+
+    public function accessibilityStatement()
+    {
+        $data = $this->getCommonData();
+        return view('pages.accessibility-statement', $data);
+    }
+
+    public function copyrightPolicy()
+    {
+        $data = $this->getCommonData();
+        return view('pages.copyright-policy', $data);
+    }
+
+    public function hyperlinkingPolicy()
+    {
+        $data = $this->getCommonData();
+        return view('pages.hyperlinking-policy', $data);
+    }
+
     public function digitalServices()
     {
         $data = $this->getCommonData();

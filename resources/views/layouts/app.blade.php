@@ -442,6 +442,17 @@
             </div>
             
             <div class="footer-bottom">
+                <nav class="footer-legal" aria-label="{{ __('messages.legal_policies') }}">
+                    <ul>
+                        <li><a href="{{ route('privacy-policy') }}">{{ __('messages.privacy_policy') }}</a></li>
+                        <li><a href="{{ route('terms-conditions') }}">{{ __('messages.terms_conditions') }}</a></li>
+                        <li><a href="{{ route('refund-policy') }}">{{ __('messages.refund_policy') }}</a></li>
+                        <li><a href="{{ route('disclaimer') }}">{{ __('messages.disclaimer') }}</a></li>
+                        <li><a href="{{ route('accessibility-statement') }}">{{ __('messages.accessibility_statement') }}</a></li>
+                        <li><a href="{{ route('copyright-policy') }}">{{ __('messages.copyright_policy') }}</a></li>
+                        <li><a href="{{ route('hyperlinking-policy') }}">{{ __('messages.hyperlinking_policy') }}</a></li>
+                    </ul>
+                </nav>
                 <p>&copy; {{ date('Y') }} {{ $settings['site_name'] ?? 'Gram Panchayat' }}. {{ __('messages.all_rights_reserved') }}</p>
             </div>
         </div>

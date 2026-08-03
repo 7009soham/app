@@ -208,6 +208,17 @@ return [
     'reset' => 'Reset',
     'save_changes' => 'Save Changes',
 
+    // Legal & Policy Pages
+    'legal_policies' => 'Policies',
+    'privacy_policy' => 'Privacy Policy',
+    'terms_conditions' => 'Terms & Conditions',
+    'refund_policy' => 'Refund Policy',
+    'disclaimer' => 'Disclaimer',
+    'accessibility_statement' => 'Accessibility Statement',
+    'copyright_policy' => 'Copyright Policy',
+    'hyperlinking_policy' => 'Hyperlinking Policy',
+    'grievance_officer' => 'Grievance Officer',
+
     // Status
     'paid' => 'Paid',
     'unpaid' => 'Unpaid',

@@ -1,0 +1,186 @@
+name: Deploy to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      skip_migrations:
+        description: 'Skip database migrations'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Never allow two deploys to touch the server at once.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test before deploy
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: testing
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, mysql, pdo_mysql, bcmath, gd
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      - name: Execute tests
+        run: php artisan test
+
+  build:
+    name: Build assets
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: public/build
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to production
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://www.neralgov.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: public/build
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+
+      - name: Upload built assets to server
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_APP_PATH: ${{ secrets.VPS_APP_PATH }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p ${VPS_PORT:-22} -o StrictHostKeyChecking=yes" \
+            public/build/ \
+            "$VPS_USER@$VPS_HOST:$VPS_APP_PATH/public/build/"
+
+      - name: Upload deploy script
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_APP_PATH: ${{ secrets.VPS_APP_PATH }}
+        run: |
+          scp -i ~/.ssh/deploy_key -P "${VPS_PORT:-22}" \
+            scripts/deploy.sh \
+            "$VPS_USER@$VPS_HOST:$VPS_APP_PATH/scripts/deploy.sh"
+
+      - name: Run deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_APP_PATH: ${{ secrets.VPS_APP_PATH }}
+          SKIP_MIGRATIONS: ${{ inputs.skip_migrations }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${VPS_PORT:-22}" \
+            "$VPS_USER@$VPS_HOST" \
+            "chmod +x '$VPS_APP_PATH/scripts/deploy.sh' && \
+             DEPLOY_REF='${{ github.sha }}' \
+             SKIP_MIGRATIONS='${SKIP_MIGRATIONS:-false}' \
+             '$VPS_APP_PATH/scripts/deploy.sh' '$VPS_APP_PATH'"
+
+      - name: Verify site is up
+        env:
+          HEALTH_URL: ${{ secrets.HEALTH_CHECK_URL }}
+        run: |
+          URL="${HEALTH_URL:-https://www.neralgov.com}"
+          echo "Checking $URL ..."
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$URL" || echo "000")
+            if [ "$CODE" = "200" ]; then
+              echo "Health check passed (HTTP $CODE)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $CODE — retrying in 10s"
+            sleep 10
+          done
+          echo "::error::Health check failed after 5 attempts (last status $CODE)"
+          exit 1
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
