@@ -409,36 +409,51 @@
                     </div>
                 </div>
                 
-                <div class="footer-section">
-                    <h4>{{ __('messages.quick_links') }}</h4>
-                    <ul>
-                        @foreach($quickLinks ?? [] as $link)
-                            <li>
-                                <a href="{{ $link->url }}" @if($link->open_new_tab) target="_blank" @endif>
-                                    {{ $link->title }}
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>{{ __('messages.contact_us') }}</h4>
-                    <ul class="contact-info">
-                        <li>
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>{{ $settings['address'] ?? 'Gram Panchayat Office' }}</span>
-                        </li>
-                        <li>
-                            <i class="fas fa-phone"></i>
-                            <a href="tel:{{ $settings['contact_phone'] ?? '' }}">{{ $settings['contact_phone'] ?? '' }}</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-envelope"></i>
-                            <a href="mailto:{{ $settings['contact_email'] ?? '' }}">{{ $settings['contact_email'] ?? '' }}</a>
-                        </li>
-                    </ul>
-                </div>
+                @if(!empty($quickLinks) && count($quickLinks))
+                    <div class="footer-section">
+                        <h4>{{ __('messages.quick_links') }}</h4>
+                        <ul>
+                            @foreach($quickLinks as $link)
+                                <li>
+                                    <a href="{{ $link->url }}" @if($link->open_new_tab) target="_blank" rel="noopener" @endif>
+                                        {{ $link->title }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                @php
+                    $footerAddress = $settings['address'] ?? null;
+                    $footerPhone = $settings['contact_phone'] ?? null;
+                    $footerEmail = $settings['contact_email'] ?? null;
+                @endphp
+                @if(!empty($footerAddress) || !empty($footerPhone) || !empty($footerEmail))
+                    <div class="footer-section">
+                        <h4>{{ __('messages.contact_us') }}</h4>
+                        <ul class="contact-info">
+                            @if(!empty($footerAddress))
+                                <li>
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ $footerAddress }}</span>
+                                </li>
+                            @endif
+                            @if(!empty($footerPhone))
+                                <li>
+                                    <i class="fas fa-phone"></i>
+                                    <a href="tel:{{ preg_replace('/[^0-9+]/', '', $footerPhone) }}">{{ $footerPhone }}</a>
+                                </li>
+                            @endif
+                            @if(!empty($footerEmail))
+                                <li>
+                                    <i class="fas fa-envelope"></i>
+                                    <a href="mailto:{{ $footerEmail }}">{{ $footerEmail }}</a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                @endif
             </div>
             
             <div class="footer-bottom">

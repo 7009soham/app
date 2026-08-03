@@ -856,7 +856,7 @@ ul {
 
 .footer-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr repeat(auto-fit, minmax(0, 1fr));
     gap: var(--spacing-12);
     margin-bottom: var(--spacing-12);
 }
