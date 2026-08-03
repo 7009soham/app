@@ -193,9 +193,18 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/simulate-system-emails', [SettingsController::class, 'simulateSystemEmails'])->name('settings.simulate-emails');
+
+    // Each settings section is its own page and posts only its own fields.
     Route::get('/settings/general', [SettingsController::class, 'general'])->name('settings.general');
+    Route::put('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.general.update');
     Route::get('/settings/social', [SettingsController::class, 'social'])->name('settings.social');
+    Route::put('/settings/social', [SettingsController::class, 'updateSocial'])->name('settings.social.update');
+    Route::get('/settings/firebase', [SettingsController::class, 'firebase'])->name('settings.firebase');
+    Route::put('/settings/firebase', [SettingsController::class, 'updateFirebase'])->name('settings.firebase.update');
     Route::get('/settings/payment', [SettingsController::class, 'payment'])->name('settings.payment');
+    Route::put('/settings/payment', [SettingsController::class, 'updatePayment'])->name('settings.payment.update');
+    Route::get('/settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
+    Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
 
     // Tax Rate Adjustment (Super Admin Only)
     Route::get('/tax-rate-adjustment', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'index'])->name('tax-rate-adjustment.index');

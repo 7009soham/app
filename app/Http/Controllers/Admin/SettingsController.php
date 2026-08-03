@@ -90,14 +90,67 @@ class SettingsController extends Controller
         'email_template_completion_body' => 'notifications',
     ];
 
+    /**
+     * Keys stored as '1'/'0'. An unchecked checkbox posts nothing, so these are
+     * always written explicitly rather than read from the request.
+     */
+    private $booleanKeys = [
+        'partial_payment_enabled',
+        'partial_payment_allow_50',
+        'partial_payment_allow_75',
+        'due_reminder_enabled',
+        'smtp_enabled',
+        'email_verification_enabled',
+        'phonepe_enabled',
+        'razorpay_enabled',
+        'payu_enabled',
+    ];
+
     public function index()
+    {
+        return redirect()->route('admin.settings.general');
+    }
+
+    /**
+     * Render one settings section. Every section page receives the full grouped
+     * collection so shared partials keep working, but its form posts only its
+     * own fields.
+     */
+    private function section(string $view): \Illuminate\View\View
     {
         if (SiteSetting::get('email_verification_enabled', null) === null) {
             SiteSetting::set('email_verification_enabled', '1', 'notifications', 'boolean');
         }
 
         $settings = SiteSetting::all()->groupBy('group');
-        return view('admin.settings.index', compact('settings'));
+
+        return view('admin.settings.' . $view, compact('settings'));
+    }
+
+    /**
+     * Persist only the keys that belong to $group. Anything posted that maps to
+     * a different group is ignored, so one section can never overwrite another.
+     */
+    private function updateSection(Request $request, string $group)
+    {
+        $allowed = array_keys(array_filter(
+            $this->settingGroups,
+            fn ($mappedGroup) => $mappedGroup === $group
+        ));
+
+        $booleanKeys = array_values(array_intersect($this->booleanKeys, $allowed));
+
+        $settingsData = $request->only($allowed);
+
+        foreach ($booleanKeys as $key) {
+            $settingsData[$key] = $request->has($key) ? '1' : '0';
+        }
+
+        $settingsData = $this->normaliseEmailTemplateFields($settingsData);
+
+        $this->persistSettings($settingsData, $booleanKeys, $request);
+
+        return redirect()->back()->with('success', 'Settings updated successfully.');
     }
 
     public function update(Request $request)
@@ -206,43 +259,70 @@ class SettingsController extends Controller
             $settingsData[$key] = $request->has($key) ? '1' : '0';
         }
 
+        $this->persistSettings($settingsData, $booleanKeys, $request);
+
+        return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
+    }
+
+    /**
+     * Strip tags from template subjects and sanitise template bodies, leaving
+     * every other key untouched. Modes fall back to 'custom' when unrecognised.
+     */
+    private function normaliseEmailTemplateFields(array $settingsData): array
+    {
+        foreach (['invoice', 'due_reminder', 'payment_success', 'payment_failure', 'completion'] as $template) {
+            $subjectKey = "email_template_{$template}_subject";
+            $bodyKey = "email_template_{$template}_body";
+            $modeKey = "email_template_{$template}_mode";
+
+            if (array_key_exists($subjectKey, $settingsData)) {
+                $settingsData[$subjectKey] = trim(strip_tags((string) $settingsData[$subjectKey]));
+            }
+
+            if (array_key_exists($bodyKey, $settingsData)) {
+                $settingsData[$bodyKey] = $this->sanitizeEmailTemplateHtml((string) $settingsData[$bodyKey]);
+            }
+
+            if (array_key_exists($modeKey, $settingsData)) {
+                $mode = strtolower(trim((string) $settingsData[$modeKey]));
+                $settingsData[$modeKey] = in_array($mode, ['current', 'custom'], true) ? $mode : 'custom';
+            }
+        }
+
+        return $settingsData;
+    }
+
+    /**
+     * Write a prepared key => value map to site_settings.
+     *
+     * Secrets posted blank keep their stored value, readonly callback URLs are
+     * never written, and each key lands in the group declared by $settingGroups.
+     */
+    private function persistSettings(array $settingsData, array $booleanKeys, Request $request): void
+    {
+        $preservedSecrets = [
+            'smtp_password' => SiteSetting::get('smtp_password', ''),
+            'phonepe_salt_key' => SiteSetting::get('phonepe_salt_key', ''),
+            'razorpay_key_secret' => SiteSetting::get('razorpay_key_secret', ''),
+            'payu_merchant_salt' => SiteSetting::get('payu_merchant_salt', ''),
+        ];
+
         foreach ($settingsData as $key => $value) {
-            // Skip readonly callback URL fields
+            // Readonly callback URLs are rendered for copy/paste only.
             if (in_array($key, ['phonepe_callback_url', 'razorpay_callback_url', 'payu_callback_url'], true)) {
                 continue;
             }
 
-            // Keep existing SMTP password when the field is intentionally left blank.
-            if ($key === 'smtp_password' && trim((string) $value) === '') {
-                if (!empty($existingSmtpPassword)) {
-                    $value = $existingSmtpPassword;
-                } else {
+            // A blank secret field means "keep what is already stored".
+            if (array_key_exists($key, $preservedSecrets) && trim((string) $value) === '') {
+                if ($preservedSecrets[$key] === '') {
                     continue;
                 }
+                $value = $preservedSecrets[$key];
             }
 
-            // Keep existing Razorpay key secret when the field is intentionally left blank.
-            if ($key === 'razorpay_key_secret' && trim((string) $value) === '') {
-                if (!empty($existingRazorpaySecret)) {
-                    $value = $existingRazorpaySecret;
-                } else {
-                    continue;
-                }
-            }
-
-            // Keep existing PayU merchant salt when the field is intentionally left blank.
-            if ($key === 'payu_merchant_salt' && trim((string) $value) === '') {
-                if (!empty($existingPayuSalt)) {
-                    $value = $existingPayuSalt;
-                } else {
-                    continue;
-                }
-            }
-
-            // Determine the group for this setting
             $group = $this->settingGroups[$key] ?? 'general';
-            
-            // Handle file uploads
+
             if ($request->hasFile($key)) {
                 $existingSetting = SiteSetting::where('key', $key)->first();
                 if ($existingSetting && $existingSetting->value && Storage::disk('public')->exists($existingSetting->value)) {
@@ -250,12 +330,10 @@ class SettingsController extends Controller
                 }
                 $value = $request->file($key)->store('settings', 'public');
             }
-            
+
             $type = in_array($key, $booleanKeys, true) ? 'boolean' : 'text';
             SiteSetting::set($key, $value, $group, $type);
         }
-
-        return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
     }
 
     public function simulateSystemEmails(Request $request, SystemEmailSimulationService $simulationService)
@@ -298,26 +376,119 @@ class SettingsController extends Controller
 
     public function general()
     {
-        $settings = SiteSetting::where('group', 'general')->pluck('value', 'key');
-        return view('admin.settings.general', compact('settings'));
+        return $this->section('general');
+    }
+
+    public function updateGeneral(Request $request)
+    {
+        $request->validate([
+            'site_name' => 'nullable|string|max:255',
+            'site_tagline' => 'nullable|string|max:255',
+            'site_description' => 'nullable|string|max:1000',
+            'contact_email' => 'nullable|email|max:255',
+            'contact_phone' => 'nullable|string|max:32',
+            'address' => 'nullable|string|max:500',
+        ]);
+
+        return $this->updateSection($request, 'general');
     }
 
     public function social()
     {
-        $settings = SiteSetting::where('group', 'social')->pluck('value', 'key');
-        return view('admin.settings.social', compact('settings'));
+        return $this->section('social');
     }
 
-    public function payment()
+    public function updateSocial(Request $request)
     {
-        $settings = SiteSetting::where('group', 'payment')->pluck('value', 'key');
-        return view('admin.settings.payment', compact('settings'));
+        $request->validate([
+            'facebook_url' => 'nullable|url|max:255',
+            'twitter_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
+            'youtube_url' => 'nullable|url|max:255',
+        ]);
+
+        return $this->updateSection($request, 'social');
     }
 
     public function firebase()
     {
-        $settings = SiteSetting::where('group', 'firebase')->pluck('value', 'key');
-        return view('admin.settings.firebase', compact('settings'));
+        return $this->section('firebase');
+    }
+
+    public function updateFirebase(Request $request)
+    {
+        $request->validate([
+            'firebase_api_key' => 'nullable|string|max:255',
+            'firebase_auth_domain' => 'nullable|string|max:255',
+            'firebase_project_id' => 'nullable|string|max:255',
+            'firebase_storage_bucket' => 'nullable|string|max:255',
+            'firebase_messaging_sender_id' => 'nullable|string|max:64',
+            'firebase_app_id' => 'nullable|string|max:255',
+            'firebase_enabled' => 'nullable|in:0,1',
+        ]);
+
+        return $this->updateSection($request, 'firebase');
+    }
+
+    public function payment()
+    {
+        return $this->section('payment');
+    }
+
+    public function updatePayment(Request $request)
+    {
+        $request->validate([
+            'active_payment_gateway' => 'nullable|in:phonepe,razorpay,payu',
+            'convenience_fee_percentage' => 'nullable|numeric|min:0|max:20',
+            'phonepe_merchant_id' => 'nullable|string|max:255',
+            'phonepe_salt_index' => 'nullable|string|max:8',
+            'phonepe_env' => 'nullable|in:sandbox,production',
+            'razorpay_key_id' => 'nullable|string|max:255',
+            'razorpay_env' => 'nullable|in:sandbox,production',
+            'payu_merchant_key' => 'nullable|string|max:255',
+            'payu_merchant_id' => 'nullable|string|max:255',
+            'payu_env' => 'nullable|in:sandbox,production',
+        ]);
+
+        return $this->updateSection($request, 'payment');
+    }
+
+    public function notifications()
+    {
+        return $this->section('notifications');
+    }
+
+    public function updateNotifications(Request $request)
+    {
+        $existingSmtpPassword = SiteSetting::get('smtp_password', '');
+
+        $rules = [
+            'due_reminder_days_before' => 'nullable|integer|min:0|max:30',
+            'smtp_port' => 'nullable|integer|min:1|max:65535',
+            'smtp_timeout' => 'nullable|integer|min:5|max:300',
+            'smtp_encryption' => 'nullable|in:tls,ssl,none',
+            'smtp_from_address' => 'nullable|email|max:255',
+            'smtp_from_name' => 'nullable|string|max:255',
+        ];
+
+        foreach (['invoice', 'due_reminder', 'payment_success', 'payment_failure', 'completion'] as $template) {
+            $rules["email_template_{$template}_mode"] = 'nullable|in:current,custom';
+            $rules["email_template_{$template}_subject"] = 'nullable|string|max:255';
+            $rules["email_template_{$template}_body"] = 'nullable|string|max:50000';
+        }
+
+        if ($request->has('smtp_enabled')) {
+            $rules = array_merge($rules, [
+                'smtp_host' => 'required|string|max:255',
+                'smtp_username' => 'required|string|max:255',
+                'smtp_password' => empty($existingSmtpPassword) ? 'required|string|max:255' : 'nullable|string|max:255',
+                'smtp_from_address' => 'required|email|max:255',
+            ]);
+        }
+
+        $request->validate($rules);
+
+        return $this->updateSection($request, 'notifications');
     }
 
     private function sanitizeEmailTemplateHtml(string $html): string
