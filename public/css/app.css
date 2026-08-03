@@ -950,6 +950,37 @@ ul {
     color: var(--color-gray-500);
 }
 
+.footer-legal ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-2) var(--spacing-4);
+    list-style: none;
+    margin: 0 0 var(--spacing-4);
+    padding: 0;
+}
+
+.footer-legal a {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-300);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-legal a:hover,
+.footer-legal a:focus-visible {
+    color: #fff;
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .footer-legal ul {
+        flex-direction: column;
+        gap: var(--spacing-3);
+    }
+}
+
 /* ============================================
    RESPONSIVE DESIGN
    ============================================ */
