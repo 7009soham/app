@@ -239,6 +239,14 @@
                                         <div style="font-size: 12px; color: #64748b;">Standard Checkout · UPI, Cards, NetBanking</div>
                                     </div>
                                 </label>
+                                <label class="gateway-option {{ $activeGateway === 'payu' ? 'selected' : '' }}" style="flex: 1; min-width: 160px; cursor: pointer; border: 2px solid {{ $activeGateway === 'payu' ? '#00838f' : '#e2e8f0' }}; border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 12px; transition: all 0.2s;">
+                                    <input type="radio" name="active_payment_gateway" value="payu" {{ $activeGateway === 'payu' ? 'checked' : '' }} style="accent-color: #00838f;">
+                                    <span style="font-size: 22px;">🏦</span>
+                                    <div>
+                                        <div style="font-weight: 600; color: #1e293b;">PayU</div>
+                                        <div style="font-size: 12px; color: #64748b;">Hosted Checkout · UPI, Cards, NetBanking</div>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -422,22 +430,100 @@
                     </div>
                 </div>
 
+                {{-- PayU Config --}}
+                <div class="card gateway-config-card" id="payu-config" style="margin-bottom: 20px; display: {{ $activeGateway === 'payu' ? 'block' : 'none' }};">
+                    <div class="card-header" style="background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); border-bottom: 1px solid #67e8f9;">
+                        <h3><i class="fas fa-university" style="color: #00838f;"></i> PayU Configuration</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning" style="background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; margin-bottom: 20px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Configuration only.</strong> The PayU checkout flow is not yet implemented, so selecting PayU as the active gateway will not process citizen payments. Keep PhonePe or Razorpay active until the integration is completed.
+                        </div>
+
+                        <div class="alert alert-info" style="background: #ecfeff; border: 1px solid #67e8f9; color: #0e7490; margin-bottom: 20px;">
+                            <i class="fas fa-info-circle"></i>
+                            Get your credentials from the <a href="https://onboarding.payu.in/app/account" target="_blank" style="color: #0e7490;">PayU Dashboard</a>.
+                            PayU uses a signed form redirect with SHA-512 hashing · UPI, Cards, NetBanking, Wallets.
+                        </div>
+
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="payu_enabled" value="1"
+                                    @if(($paymentSettings->firstWhere('key', 'payu_enabled')?->value ?? '0') == '1') checked @endif>
+                                <span style="font-weight: 600;">Enable PayU</span>
+                            </label>
+                        </div>
+
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group">
+                                <label for="payu_merchant_key">Merchant Key *</label>
+                                <input type="text" id="payu_merchant_key" name="payu_merchant_key" class="form-control"
+                                       value="{{ $paymentSettings->firstWhere('key', 'payu_merchant_key')?->value ?? '' }}"
+                                       placeholder="gtKFFx">
+                                <small style="color: #64748b;">Shown as <code>Key</code> in the PayU dashboard.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="payu_env">Environment</label>
+                                <select id="payu_env" name="payu_env" class="form-control">
+                                    @php $payuEnv = $paymentSettings->firstWhere('key', 'payu_env')?->value ?? 'sandbox'; @endphp
+                                    <option value="sandbox" {{ $payuEnv === 'sandbox' ? 'selected' : '' }}>🧪 Sandbox (Testing)</option>
+                                    <option value="production" {{ $payuEnv === 'production' ? 'selected' : '' }}>🚀 Production (Live)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="payu_merchant_salt">Merchant Salt *</label>
+                            <input type="password" id="payu_merchant_salt" name="payu_merchant_salt" class="form-control"
+                                   value=""
+                                   placeholder="{{ !empty($paymentSettings->firstWhere('key', 'payu_merchant_salt')?->value) ? 'Salt is set — leave blank to keep it' : 'Enter your Merchant Salt' }}">
+                            <small style="color: #64748b;">Leave blank to keep the existing salt. Used to generate the SHA-512 request hash.</small>
+                        </div>
+
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group">
+                                <label for="payu_merchant_id">Merchant ID (MID)</label>
+                                <input type="text" id="payu_merchant_id" name="payu_merchant_id" class="form-control"
+                                       value="{{ $paymentSettings->firstWhere('key', 'payu_merchant_id')?->value ?? '' }}"
+                                       placeholder="Optional — used for reconciliation">
+                            </div>
+                            <div class="form-group">
+                                <label>Callback URL (readonly)</label>
+                                <input type="text" class="form-control" value="{{ url('/citizen/payment/payu-return') }}" readonly style="background: #f1f5f9; font-size: 13px;">
+                                <small style="color: #64748b;">Add as both Success and Failure URL in the PayU dashboard.</small>
+                            </div>
+                        </div>
+
+                        <div style="background: #f8fafc; border-radius: 8px; padding: 14px; margin-top: 4px; font-family: monospace; font-size: 12px; color: #64748b;">
+                            <strong style="font-family: sans-serif; font-size: 13px; color: #374151;">API Endpoints (auto-configured):</strong><br>
+                            Sandbox: https://test.payu.in/_payment<br>
+                            Production: https://secure.payu.in/_payment
+                        </div>
+                    </div>
+                </div>
+
                 <script>
                     (function () {
                         var radios = document.querySelectorAll('input[name="active_payment_gateway"]');
-                        var ppCard = document.getElementById('phonepe-config');
-                        var rzpCard = document.getElementById('razorpay-config');
+                        var cards = {
+                            phonepe: document.getElementById('phonepe-config'),
+                            razorpay: document.getElementById('razorpay-config'),
+                            payu: document.getElementById('payu-config')
+                        };
+                        var accents = { phonepe: '#5f259f', razorpay: '#3b82f6', payu: '#00838f' };
                         var gatewayLabels = document.querySelectorAll('.gateway-option');
 
                         function switchGateway(value) {
-                            ppCard.style.display = value === 'phonepe' ? 'block' : 'none';
-                            rzpCard.style.display = value === 'razorpay' ? 'block' : 'none';
+                            Object.keys(cards).forEach(function (name) {
+                                if (cards[name]) {
+                                    cards[name].style.display = name === value ? 'block' : 'none';
+                                }
+                            });
                             gatewayLabels.forEach(function (lbl) {
                                 var radio = lbl.querySelector('input[type=radio]');
                                 var isSelected = radio && radio.value === value;
-                                lbl.style.borderColor = isSelected
-                                    ? (value === 'phonepe' ? '#5f259f' : '#3b82f6')
-                                    : '#e2e8f0';
+                                lbl.style.borderColor = isSelected ? (accents[value] || '#e2e8f0') : '#e2e8f0';
                             });
                         }
 

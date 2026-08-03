@@ -48,6 +48,11 @@ class SettingsController extends Controller
         'razorpay_key_id' => 'payment',
         'razorpay_key_secret' => 'payment',
         'razorpay_env' => 'payment',
+        'payu_enabled' => 'payment',
+        'payu_merchant_key' => 'payment',
+        'payu_merchant_salt' => 'payment',
+        'payu_merchant_id' => 'payment',
+        'payu_env' => 'payment',
         'partial_payment_enabled' => 'payment',
         'partial_payment_allow_50' => 'payment',
         'partial_payment_allow_75' => 'payment',
@@ -99,6 +104,7 @@ class SettingsController extends Controller
     {
         $existingSmtpPassword = SiteSetting::get('smtp_password', '');
         $existingRazorpaySecret = SiteSetting::get('razorpay_key_secret', '');
+        $existingPayuSalt = SiteSetting::get('payu_merchant_salt', '');
 
         $validationRules = [
             'convenience_fee_percentage' => 'nullable|numeric|min:0|max:20',
@@ -193,6 +199,7 @@ class SettingsController extends Controller
             'email_verification_enabled',
             'phonepe_enabled',
             'razorpay_enabled',
+            'payu_enabled',
         ];
 
         foreach ($booleanKeys as $key) {
@@ -201,7 +208,7 @@ class SettingsController extends Controller
 
         foreach ($settingsData as $key => $value) {
             // Skip readonly callback URL fields
-            if (in_array($key, ['phonepe_callback_url', 'razorpay_callback_url'], true)) {
+            if (in_array($key, ['phonepe_callback_url', 'razorpay_callback_url', 'payu_callback_url'], true)) {
                 continue;
             }
 
@@ -218,6 +225,15 @@ class SettingsController extends Controller
             if ($key === 'razorpay_key_secret' && trim((string) $value) === '') {
                 if (!empty($existingRazorpaySecret)) {
                     $value = $existingRazorpaySecret;
+                } else {
+                    continue;
+                }
+            }
+
+            // Keep existing PayU merchant salt when the field is intentionally left blank.
+            if ($key === 'payu_merchant_salt' && trim((string) $value) === '') {
+                if (!empty($existingPayuSalt)) {
+                    $value = $existingPayuSalt;
                 } else {
                     continue;
                 }
