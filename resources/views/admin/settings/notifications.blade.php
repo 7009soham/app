@@ -255,7 +255,7 @@
                                                 <textarea class="email-template-source"
                                                           style="display:none;"
                                                           name="{{ $template['body_key'] }}"
-                                                          id="{{ $template['body_key'] }}">{!! old($template['body_key'], $bodyValue) !!}</textarea>
+                                                          id="{{ $template['body_key'] }}">{{ old($template['body_key'], $bodyValue) }}</textarea>
                                                 <div id="{{ $template['body_key'] }}_editor"
                                                      class="email-template-editor"
                                                      data-source-input="{{ $template['body_key'] }}"></div>

@@ -232,7 +232,9 @@ class PhonePeService
         $calculatedHash = hash('sha256', $stringToSign);
         $expectedChecksum = $calculatedHash . '###' . $this->saltIndex;
 
-        return $receivedChecksum === $expectedChecksum;
+        // Constant-time comparison: a plain === leaks how much of the checksum
+        // matched through response timing.
+        return hash_equals($expectedChecksum, (string) $receivedChecksum);
     }
 
     /**

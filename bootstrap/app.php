@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add SetLocale middleware to web group for language switching
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
         
         $middleware->alias([
