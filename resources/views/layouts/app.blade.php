@@ -6,7 +6,18 @@
     <meta name="description" content="{{ $settings['site_description'] ?? 'Official Gram Panchayat Portal' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', $settings['site_name'] ?? 'Gram Panchayat')</title>
-    
+
+    <!-- Progressive Web App -->
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#1a365d">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Neral GP">
+    <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('icons/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('icons/favicon-16.png') }}">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -566,6 +577,18 @@
                 servicesBtn && servicesBtn.classList.add('active');
             }
         })();
+    </script>
+
+    <script>
+        // Registered after load so it never competes with the page's own requests.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('{{ asset('sw.js') }}', { scope: '/' })
+                    .catch(function (error) {
+                        console.warn('Service worker registration failed:', error);
+                    });
+            });
+        }
     </script>
 </body>
 </html>

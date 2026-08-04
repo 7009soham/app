@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a365d">
+    <title>No connection — Neral Gram Panchayat</title>
+    <style>
+        :root { --navy: #1a365d; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            font-family: 'Inter', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .card {
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 36px 28px;
+        }
+        img { width: 72px; height: 72px; border-radius: 14px; }
+        h1 { font-size: 20px; margin: 20px 0 8px; color: var(--navy); }
+        p { margin: 0 0 10px; font-size: 15px; line-height: 1.6; color: #475569; }
+        .note { font-size: 13px; color: #64748b; margin-top: 18px; }
+        button {
+            margin-top: 22px;
+            width: 100%;
+            padding: 13px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            background: var(--navy);
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover { background: #2d5a87; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="/icons/icon-192.png" alt="">
+        <h1>You are offline</h1>
+        <p>This page needs an internet connection.</p>
+        <p lang="mr">या पृष्ठासाठी इंटरनेट कनेक्शन आवश्यक आहे.</p>
+        <p lang="hi">इस पृष्ठ के लिए इंटरनेट कनेक्शन आवश्यक है।</p>
+        <button onclick="location.reload()">Try again</button>
+        <p class="note">
+            Tax balances and payments are always fetched live, so they are never
+            shown from a saved copy.
+        </p>
+    </div>
+</body>
+</html>
