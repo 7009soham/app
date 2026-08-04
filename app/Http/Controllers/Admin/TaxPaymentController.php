@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\Csv;
 use App\Http\Controllers\Controller;
 use App\Models\TaxPayment;
 use App\Models\TaxType;
@@ -97,7 +98,8 @@ class TaxPaymentController extends Controller
 
         $callback = function () use ($payments) {
             $handle = fopen('php://output', 'w');
-            
+            Csv::writeBom($handle);
+
             // Header row
             fputcsv($handle, [
                 'Transaction ID',
@@ -115,9 +117,9 @@ class TaxPaymentController extends Controller
             // Data rows
             foreach ($payments as $payment) {
                 fputcsv($handle, [
-                    $payment->transaction_id,
+                    Csv::text($payment->transaction_id),
                     $payment->citizen_name,
-                    $payment->citizen_phone,
+                    Csv::text($payment->citizen_phone),
                     $payment->citizen_address,
                     $payment->taxType->name ?? '-',
                     ucfirst($payment->period_type ?? '-'),

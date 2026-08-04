@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\Csv;
 use App\Http\Controllers\Controller;
 use App\Models\WaterTaxRecord;
 use App\Models\Citizen;
@@ -169,14 +170,15 @@ class WaterTaxController extends Controller
 
         $callback = function () use ($records) {
             $file = fopen('php://output', 'w');
+            Csv::writeBom($file);
             fputcsv($file, ['A.No', 'Customer No', 'Customer Name', 'Phone', 'Monthly Bill', 'Period', 'Balance', 'Amount Paid', 'Oversize Charge']);
 
             foreach ($records as $record) {
                 fputcsv($file, [
                     $record->a_no,
-                    $record->customer_no,
+                    Csv::text($record->customer_no),
                     $record->customer_name,
-                    $record->phone,
+                    Csv::text($record->phone),
                     $record->monthly_bill,
                     $record->period,
                     $record->balance,

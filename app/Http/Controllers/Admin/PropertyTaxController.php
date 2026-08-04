@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\Csv;
 use App\Http\Controllers\Controller;
 use App\Models\PropertyTaxRecord;
 use App\Models\Citizen;
@@ -203,9 +204,10 @@ class PropertyTaxController extends Controller
 
         $callback = function () use ($records) {
             $file = fopen('php://output', 'w');
+            Csv::writeBom($file);
             fputcsv($file, [
-                'A.No', 
-                'Property No', 
+                'A.No',
+                'Property No',
                 'Property Type',
                 'Customer Name', 
                 'Aadhaar No',
@@ -227,8 +229,8 @@ class PropertyTaxController extends Controller
                     $record->property_no,
                     $record->property_type,
                     $record->customer_name,
-                    $record->aadhaar_no,
-                    $record->phone,
+                    Csv::text($record->aadhaar_no),
+                    Csv::text($record->phone),
                     $record->previous_house_tax,
                     $record->previous_electricity_tax,
                     $record->previous_health_tax,
