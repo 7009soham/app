@@ -36,7 +36,12 @@
                                 @endif
                                 {{ $link->title }}
                             </td>
-                            <td><code>{{ $link->url }}</code></td>
+                            <td>
+                                <code>{{ $link->url }}</code>
+                                @if($link->ownsItsPage())
+                                    <span class="badge badge-primary" style="margin-left:6px;font-size:11px;">page</span>
+                                @endif
+                            </td>
                             <td>
                                 <span class="badge {{ $link->location === 'header' ? 'badge-primary' : 'badge-secondary' }}">
                                     {{ ucfirst($link->location) }}

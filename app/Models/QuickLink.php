@@ -9,6 +9,7 @@ class QuickLink extends Model
     protected $fillable = [
         'title',
         'url',
+        'custom_page_id',
         'icon',
         'location',
         'order',
@@ -40,5 +41,19 @@ class QuickLink extends Model
     public function scopeFooter($query)
     {
         return $query->where('location', 'footer');
+    }
+
+    /**
+     * The page whose content this link owns, when the content was written in
+     * the link form rather than pointing at an existing URL.
+     */
+    public function customPage()
+    {
+        return $this->belongsTo(CustomPage::class);
+    }
+
+    public function ownsItsPage(): bool
+    {
+        return $this->custom_page_id !== null;
     }
 }
