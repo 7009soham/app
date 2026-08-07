@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
@@ -521,7 +522,33 @@ class PaymentController extends Controller
             $updateData['paid_at'] = null;
         }
 
-        $payment->update($updateData);
+        // Marking the payment and crediting the ledger must be one unit of
+        // work. Previously they were separate writes: a failure between them
+        // left the payment recorded as completed while the citizen's balance
+        // was untouched, so they had paid and still owed the money.
+        //
+        // The row lock serialises concurrent callbacks. Gateways retry, and the
+        // citizen's own "check status" poll can arrive at the same moment; two
+        // requests reading the same balance and both writing would otherwise
+        // lose one of the updates or credit the payment twice.
+        $confirmation = null;
+
+        DB::transaction(function () use ($payment, $updateData, $newStatus, &$confirmation) {
+            $locked = TaxPayment::whereKey($payment->getKey())->lockForUpdate()->first();
+
+            if (!$locked) {
+                return;
+            }
+
+            $locked->update($updateData);
+
+            if ($newStatus === 'success') {
+                $confirmation = $this->updateTaxRecord($locked);
+            }
+
+            // Keep the caller's instance in step with what was committed.
+            $payment->setRawAttributes($locked->getAttributes(), true);
+        });
 
         Log::info('Payment Status Updated', [
             'payment_id' => $payment->id,
@@ -530,9 +557,11 @@ class PaymentController extends Controller
             'payment_status' => $updateData['payment_status'],
         ]);
 
-        // If payment is successful, update the tax record
-        if ($newStatus === 'success') {
-            $this->updateTaxRecord($payment);
+        // Sent only after the commit. Inside the transaction a later rollback
+        // would still leave the citizen holding a receipt for a payment the
+        // database no longer records, and mail latency would hold row locks.
+        if ($confirmation !== null) {
+            $this->sendPaymentConfirmationEmail(...$confirmation);
         }
     }
 
@@ -607,7 +636,20 @@ class PaymentController extends Controller
     /**
      * Update tax record after successful payment
      */
-    protected function updateTaxRecord(TaxPayment $payment)
+    /**
+     * Credit a confirmed payment to the citizen's ledger.
+     *
+     * MUST be called inside a transaction with the payment row already locked -
+     * updatePaymentStatus() is the only caller and does both. The guard below
+     * is only sound while that lock is held: without it two concurrent
+     * callbacks both read an unset ledger_updated_at and both credit the
+     * payment.
+     *
+     * Returns the arguments for the confirmation email, or null when the
+     * payment was already credited. The email is deliberately not sent here so
+     * it cannot go out for work that is later rolled back.
+     */
+    protected function updateTaxRecord(TaxPayment $payment): ?array
     {
         $existingPaymentData = $payment->payment_data ?? [];
         if (!empty($existingPaymentData['ledger_updated_at'])) {
@@ -615,7 +657,7 @@ class PaymentController extends Controller
                 'payment_id' => $payment->id,
                 'transaction_id' => $payment->transaction_id,
             ]);
-            return;
+            return null;
         }
 
         // Extract the actual tax amount (excluding convenience fee)
@@ -627,7 +669,8 @@ class PaymentController extends Controller
         $annualBill = null;
 
         if ($payment->tax_type === 'water_tax') {
-            $record = WaterTaxRecord::find($payment->record_id);
+            // Locked: amount_paid below is a read-modify-write.
+            $record = WaterTaxRecord::whereKey($payment->record_id)->lockForUpdate()->first();
 
             if ($record) {
                 // Update amount_paid. We keep the original balance for transparency in the invoice history
@@ -652,8 +695,9 @@ class PaymentController extends Controller
                 }
             }
         } else {
-            // Property Tax – annual billing
-            $record = PropertyTaxRecord::find($payment->record_id);
+            // Property Tax – annual billing. Locked: balance below is a
+            // read-modify-write.
+            $record = PropertyTaxRecord::whereKey($payment->record_id)->lockForUpdate()->first();
 
             if ($record) {
                 // Only apply the tax portion to the balance
@@ -702,17 +746,6 @@ class PaymentController extends Controller
             ]),
         ]);
 
-        $citizen = $payment->citizen;
-        $this->sendPaymentConfirmationEmail(
-            $payment,
-            $citizen,
-            $record,
-            $monthlyBill,
-            $annualBill,
-            $taxAmount,
-            $convenienceFee
-        );
-
         Log::info('Tax Record Updated After Online Payment', [
             'record_id'       => $payment->record_id,
             'payment_id'      => $payment->id,
@@ -721,6 +754,17 @@ class PaymentController extends Controller
             'tax_amount'      => $taxAmount,
             'convenience_fee' => $convenienceFee,
         ]);
+
+        // Handed back to the caller and sent after commit.
+        return [
+            $payment,
+            $payment->citizen,
+            $record,
+            $monthlyBill,
+            $annualBill,
+            $taxAmount,
+            $convenienceFee,
+        ];
     }
 
     /**
