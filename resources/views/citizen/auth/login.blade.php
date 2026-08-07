@@ -558,15 +558,20 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <script>
-        // Firebase Configuration (from Admin Settings)
+        // Firebase configuration, entirely from Admin > Settings > Firebase.
+        //
+        // No fallback values on purpose. Hardcoded defaults previously pointed
+        // at an unrelated Firebase project, so clearing the settings would have
+        // silently authenticated citizens against someone else's project
+        // instead of failing visibly.
         const firebaseConfig = {
-            apiKey: "{{ \App\Models\SiteSetting::get('firebase_api_key', 'AIzaSyDIeHdDdsADHz6C16y7bFrhzLWX9nmfUhs') }}",
-            authDomain: "{{ \App\Models\SiteSetting::get('firebase_auth_domain', 'tanay-gram-panchayat.firebaseapp.com') }}",
-            projectId: "{{ \App\Models\SiteSetting::get('firebase_project_id', 'tanay-gram-panchayat') }}",
-            storageBucket: "{{ \App\Models\SiteSetting::get('firebase_storage_bucket', 'tanay-gram-panchayat.firebasestorage.app') }}",
-            messagingSenderId: "{{ \App\Models\SiteSetting::get('firebase_messaging_sender_id', '568603870082') }}",
-            appId: "{{ \App\Models\SiteSetting::get('firebase_app_id', '1:568603870082:web:c1fac76db1c1c8a1cd059b') }}",
-            measurementId: "G-62RN0ZLRM8"
+            apiKey: @json(\App\Models\SiteSetting::get('firebase_api_key', '')),
+            authDomain: @json(\App\Models\SiteSetting::get('firebase_auth_domain', '')),
+            projectId: @json(\App\Models\SiteSetting::get('firebase_project_id', '')),
+            storageBucket: @json(\App\Models\SiteSetting::get('firebase_storage_bucket', '')),
+            messagingSenderId: @json(\App\Models\SiteSetting::get('firebase_messaging_sender_id', '')),
+            appId: @json(\App\Models\SiteSetting::get('firebase_app_id', '')),
+            measurementId: @json(\App\Models\SiteSetting::get('firebase_measurement_id', ''))
         };
 
         const firebaseEnabled = "{{ \App\Models\SiteSetting::get('firebase_enabled', '0') }}" === "1";

@@ -80,12 +80,23 @@
                                 
                                 <div class="form-group">
                                     <label for="firebase_app_id">App ID</label>
-                                    <input type="text" id="firebase_app_id" name="firebase_app_id" class="form-control" 
+                                    <input type="text" id="firebase_app_id" name="firebase_app_id" class="form-control"
                                            value="{{ $firebaseSettings->firstWhere('key', 'firebase_app_id')?->value ?? '' }}"
                                            placeholder="1:123456789012:web:abc123">
                                 </div>
                             </div>
-                            
+
+                            <div class="form-group">
+                                <label for="firebase_measurement_id">Measurement ID <span style="font-weight:400;color:#64748b;">(optional)</span></label>
+                                <input type="text" id="firebase_measurement_id" name="firebase_measurement_id" class="form-control"
+                                       value="{{ $firebaseSettings->firstWhere('key', 'firebase_measurement_id')?->value ?? '' }}"
+                                       placeholder="G-XXXXXXXXXX">
+                                <small style="color: #64748b;">
+                                    Only used if Google Analytics is added to the site. Storing it here does not
+                                    start any tracking on its own.
+                                </small>
+                            </div>
+
                             <div class="form-group">
                                 <label for="firebase_enabled">Status</label>
                                 <select id="firebase_enabled" name="firebase_enabled" class="form-control">

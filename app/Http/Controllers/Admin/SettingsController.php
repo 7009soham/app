@@ -36,6 +36,7 @@ class SettingsController extends Controller
         'firebase_storage_bucket' => 'firebase',
         'firebase_messaging_sender_id' => 'firebase',
         'firebase_app_id' => 'firebase',
+        'firebase_measurement_id' => 'firebase',
         'firebase_enabled' => 'firebase',
         
         // Payment Settings
@@ -430,6 +431,7 @@ class SettingsController extends Controller
             'firebase_storage_bucket' => 'nullable|string|max:255',
             'firebase_messaging_sender_id' => 'nullable|string|max:64',
             'firebase_app_id' => 'nullable|string|max:255',
+            'firebase_measurement_id' => 'nullable|string|max:64',
             'firebase_enabled' => 'nullable|in:0,1',
         ]);
 
