@@ -39,6 +39,7 @@ Route::get('/accessibility-statement', [HomeController::class, 'accessibilitySta
 Route::get('/copyright-policy', [HomeController::class, 'copyrightPolicy'])->name('copyright-policy');
 Route::get('/hyperlinking-policy', [HomeController::class, 'hyperlinkingPolicy'])->name('hyperlinking-policy');
 Route::get('/digital-services', [HomeController::class, 'digitalServices'])->name('digital-services');
+Route::get('/page/{slug}', [HomeController::class, 'customPage'])->name('custom-page');
 
 Route::prefix('design-exploration')->name('design-exploration.')->group(function () {
     Route::get('/home', [HomeController::class, 'designExplorationIndex'])->name('home.index');
@@ -168,6 +169,9 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     // Content Management
     Route::resource('sliders', SliderController::class);
     Route::resource('quick-links', QuickLinkController::class);
+
+    // Admin-authored public pages (schemes, notices, committee members)
+    Route::resource('custom-pages', \App\Http\Controllers\Admin\CustomPageController::class)->except(['show']);
 
     // Role Management (Super Admin Only)
     Route::resource('roles', RoleController::class);

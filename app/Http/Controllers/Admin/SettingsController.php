@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\RichText;
 use App\Http\Controllers\Controller;
 use App\Services\SystemEmailSimulationService;
 use App\Models\SiteSetting;
@@ -243,7 +244,7 @@ class SettingsController extends Controller
 
         foreach ($bodyKeys as $key) {
             if (array_key_exists($key, $settingsData)) {
-                $settingsData[$key] = $this->sanitizeEmailTemplateHtml((string) $settingsData[$key]);
+                $settingsData[$key] = RichText::sanitize((string) $settingsData[$key]);
             }
         }
 
@@ -284,7 +285,7 @@ class SettingsController extends Controller
             }
 
             if (array_key_exists($bodyKey, $settingsData)) {
-                $settingsData[$bodyKey] = $this->sanitizeEmailTemplateHtml((string) $settingsData[$bodyKey]);
+                $settingsData[$bodyKey] = RichText::sanitize((string) $settingsData[$bodyKey]);
             }
 
             if (array_key_exists($modeKey, $settingsData)) {
@@ -498,25 +499,4 @@ class SettingsController extends Controller
         return $this->updateSection($request, 'notifications');
     }
 
-    private function sanitizeEmailTemplateHtml(string $html): string
-    {
-        $html = trim($html);
-        if ($html === '') {
-            return '';
-        }
-
-        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html) ?? $html;
-        $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html) ?? $html;
-        $html = preg_replace('/<(iframe|object|embed|form|input|button|textarea|select)[^>]*>.*?<\/\1>/is', '', $html) ?? $html;
-        $html = preg_replace('/<(iframe|object|embed|form|input|button|textarea|select)[^>]*\/?>/is', '', $html) ?? $html;
-
-        $allowedTags = '<p><br><strong><b><em><i><u><h1><h2><h3><h4><h5><h6><ul><ol><li><a><blockquote><hr><div><span><table><thead><tbody><tr><th><td>';
-        $html = strip_tags($html, $allowedTags);
-
-        $html = preg_replace('/\son[a-z]+\s*=\s*"[^"]*"/i', '', $html) ?? $html;
-        $html = preg_replace('/\son[a-z]+\s*=\s*\'[^\']*\'/i', '', $html) ?? $html;
-        $html = preg_replace('/javascript\s*:/i', '', $html) ?? $html;
-
-        return $html;
-    }
 }

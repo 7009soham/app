@@ -90,6 +90,16 @@ class HomeController extends Controller
         return view('pages.refund-policy', $data);
     }
 
+    public function customPage(string $slug)
+    {
+        $page = \App\Models\CustomPage::published()->where('slug', $slug)->firstOrFail();
+
+        $data = $this->getCommonData();
+        $data['page'] = $page;
+
+        return view('pages.custom', $data);
+    }
+
     public function disclaimer()
     {
         $data = $this->getCommonData();

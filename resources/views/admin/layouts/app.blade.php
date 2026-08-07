@@ -134,6 +134,12 @@
                             <span>Quick Links</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('admin.custom-pages.index') }}" class="{{ request()->routeIs('admin.custom-pages*') ? 'active' : '' }}">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Pages</span>
+                        </a>
+                    </li>
                     @endif
                     
                     <!-- User Management -->
