@@ -347,8 +347,18 @@
         <div class="container">
             <nav class="nav">
                 <a href="{{ route('home') }}" class="logo">
-                    <i class="fas fa-landmark"></i>
-                    <span>{{ $settings['site_name'] ?? 'Gram Panchayat' }}</span>
+                    @if(!empty($settings['site_logo']))
+                        <img src="{{ asset('storage/' . $settings['site_logo']) }}"
+                             alt="{{ $settings['site_name'] ?? 'Gram Panchayat' }}" class="logo-mark">
+                    @else
+                        <i class="fas fa-landmark"></i>
+                    @endif
+                    <span class="logo-text">
+                        {{ $settings['site_name'] ?? 'Gram Panchayat' }}
+                        @if(!empty($settings['site_tagline']))
+                            <small class="logo-tagline">{{ $settings['site_tagline'] }}</small>
+                        @endif
+                    </span>
                 </a>
                 
                 <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
@@ -402,7 +412,15 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-section">
-                    <h3><i class="fas fa-landmark"></i> {{ $settings['site_name'] ?? 'Gram Panchayat' }}</h3>
+                    <h3>
+                        @if(!empty($settings['site_logo']))
+                            <img src="{{ asset('storage/' . $settings['site_logo']) }}"
+                                 alt="" class="footer-logo-mark">
+                        @else
+                            <i class="fas fa-landmark"></i>
+                        @endif
+                        {{ $settings['site_name'] ?? 'Gram Panchayat' }}
+                    </h3>
                     <p>{{ $settings['site_description'] ?? 'Serving our community with dedication and transparency.' }}</p>
                     <div class="social-links">
                         @if(!empty($settings['facebook_url']))

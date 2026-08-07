@@ -16,6 +16,7 @@ class SettingsController extends Controller
      */
     private $settingGroups = [
         // General Settings
+        'site_logo' => 'general',
         'site_name' => 'general',
         'site_tagline' => 'general',
         'site_description' => 'general',
@@ -389,6 +390,9 @@ class SettingsController extends Controller
     public function updateGeneral(Request $request)
     {
         $request->validate([
+            // SVG is excluded on purpose: it can carry script, and an uploaded
+            // logo is served from our own origin.
+            'site_logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:1024|dimensions:max_width=1200,max_height=400',
             'site_name' => 'nullable|string|max:255',
             'site_tagline' => 'nullable|string|max:255',
             'site_description' => 'nullable|string|max:1000',

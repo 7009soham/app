@@ -241,6 +241,50 @@ ul {
     color: var(--color-primary);
 }
 
+/* Uploaded emblem. Height-constrained so the header does not jump when a
+   logo of unknown proportions is set from the admin panel. */
+.logo-mark {
+    height: 42px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.logo-tagline {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--color-gray-500);
+    letter-spacing: 0.01em;
+}
+
+.footer-logo-mark {
+    height: 30px;
+    width: auto;
+    max-width: 120px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: var(--spacing-2);
+}
+
+@media (max-width: 768px) {
+    .logo-mark {
+        height: 34px;
+        max-width: 120px;
+    }
+
+    /* The tagline is the first thing to go on a narrow header. */
+    .logo-tagline {
+        display: none;
+    }
+}
+
 .nav-links {
     display: flex;
     align-items: center;

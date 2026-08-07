@@ -20,7 +20,7 @@
             <div class="slide active" style="background: linear-gradient(135deg, #1a365d 0%, #2d5a87 100%);">
                 <div class="slide-content">
                     <h1>{{ __('messages.welcome_to') }} {{ $settings['site_name'] ?? 'Gram Panchayat' }}</h1>
-                    <p>{{ $settings['site_tagline'] ?? __('messages.serving_community') }}</p>
+                    <p>{{ $settings['site_tagline'] ?: __('messages.serving_community') }}</p>
                     <a href="{{ route('citizen.login') }}" class="btn btn-primary btn-lg">{{ __('messages.login_to_pay_tax') }}</a>
                 </div>
             </div>

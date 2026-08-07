@@ -12,8 +12,11 @@ class HomeController extends Controller
     protected function getCommonData()
     {
         $settings = [
+            'site_logo' => SiteSetting::get('site_logo', ''),
             'site_name' => SiteSetting::get('site_name', 'Gram Panchayat'),
-            'site_tagline' => SiteSetting::get('site_tagline', 'Serving Our Community'),
+            // No filler default: an unset tagline should be absent from the
+            // header rather than showing generic placeholder copy.
+            'site_tagline' => SiteSetting::get('site_tagline', ''),
             'site_description' => SiteSetting::get('site_description', ''),
             'contact_email' => SiteSetting::get('contact_email', ''),
             'contact_phone' => SiteSetting::get('contact_phone', ''),

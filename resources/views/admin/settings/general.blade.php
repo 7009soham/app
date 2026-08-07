@@ -22,12 +22,42 @@
                             <h3>General Settings</h3>
                         </div>
                         <div class="card-body">
-                            @php $generalSettings = $settings->get('general', collect()); @endphp
-                            
+                            @php
+                                $generalSettings = $settings->get('general', collect());
+                                $logoPath = $generalSettings->firstWhere('key', 'site_logo')?->value;
+                            @endphp
+
+                            <div class="form-group">
+                                <label for="site_logo">Logo / Emblem</label>
+                                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                                    <div style="width:96px;height:96px;border:1px dashed #cbd5e1;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f8fafc;flex-shrink:0;">
+                                        @if($logoPath)
+                                            <img src="{{ asset('storage/' . $logoPath) }}" alt="Current logo"
+                                                 style="max-width:88px;max-height:88px;object-fit:contain;">
+                                        @else
+                                            <i class="fas fa-landmark" style="font-size:34px;color:#94a3b8;"></i>
+                                        @endif
+                                    </div>
+                                    <div style="flex:1;min-width:240px;">
+                                        <input type="file" id="site_logo" name="site_logo" class="form-control"
+                                               accept="image/png,image/jpeg,image/webp">
+                                        <small style="color:#64748b;display:block;margin-top:6px;">
+                                            PNG, JPG or WebP up to 1&nbsp;MB, max 1200&times;400px. A transparent PNG works
+                                            best. Leave empty to keep the current image.
+                                            @unless($logoPath)
+                                                Until one is uploaded, the header shows a generic building icon.
+                                            @endunless
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="site_name">Site Name</label>
-                                <input type="text" id="site_name" name="site_name" class="form-control" 
-                                       value="{{ $generalSettings->firstWhere('key', 'site_name')?->value ?? '' }}">
+                                <input type="text" id="site_name" name="site_name" class="form-control"
+                                       value="{{ $generalSettings->firstWhere('key', 'site_name')?->value ?? '' }}"
+                                       placeholder="e.g. Neral Gram Panchayat">
+                                <small style="color:#64748b;">Shown in the header, footer, page titles and emails.</small>
                             </div>
                             
                             <div class="form-group">
