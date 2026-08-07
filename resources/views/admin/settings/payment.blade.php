@@ -264,44 +264,83 @@
     
                             <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                                 <div class="form-group">
-                                    <label for="payu_merchant_key">Merchant Key *</label>
-                                    <input type="text" id="payu_merchant_key" name="payu_merchant_key" class="form-control"
-                                           value="{{ $paymentSettings->firstWhere('key', 'payu_merchant_key')?->value ?? '' }}"
-                                           placeholder="gtKFFx">
-                                    <small style="color: #64748b;">Shown as <code>Key</code> in the PayU dashboard.</small>
-                                </div>
-                                <div class="form-group">
                                     <label for="payu_env">Environment</label>
                                     <select id="payu_env" name="payu_env" class="form-control">
                                         @php $payuEnv = $paymentSettings->firstWhere('key', 'payu_env')?->value ?? 'sandbox'; @endphp
                                         <option value="sandbox" {{ $payuEnv === 'sandbox' ? 'selected' : '' }}>🧪 Sandbox (Testing)</option>
                                         <option value="production" {{ $payuEnv === 'production' ? 'selected' : '' }}>🚀 Production (Live)</option>
                                     </select>
-                                </div>
-                            </div>
-    
-                            <div class="form-group">
-                                <label for="payu_merchant_salt">Merchant Salt *</label>
-                                <input type="password" id="payu_merchant_salt" name="payu_merchant_salt" class="form-control"
-                                       value=""
-                                       placeholder="{{ !empty($paymentSettings->firstWhere('key', 'payu_merchant_salt')?->value) ? 'Salt is set — leave blank to keep it' : 'Enter your Merchant Salt' }}">
-                                <small style="color: #64748b;">Leave blank to keep the existing salt. Used to generate the SHA-512 request hash.</small>
-                            </div>
-    
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                <div class="form-group">
-                                    <label for="payu_merchant_id">Merchant ID (MID)</label>
-                                    <input type="text" id="payu_merchant_id" name="payu_merchant_id" class="form-control"
-                                           value="{{ $paymentSettings->firstWhere('key', 'payu_merchant_id')?->value ?? '' }}"
-                                           placeholder="Optional — used for reconciliation">
+                                    <small style="color: #64748b;">Applies to both merchant IDs below.</small>
                                 </div>
                                 <div class="form-group">
                                     <label>Callback URL (readonly)</label>
                                     <input type="text" class="form-control" value="{{ url('/citizen/payment/payu-return') }}" readonly style="background: #f1f5f9; font-size: 13px;">
-                                    <small style="color: #64748b;">Add as both Success and Failure URL in the PayU dashboard.</small>
+                                    <small style="color: #64748b;">Add as Success and Failure URL for <strong>both</strong> MIDs in the PayU dashboard.</small>
                                 </div>
                             </div>
-    
+
+                            <div class="alert" style="background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; margin: 4px 0 20px;">
+                                <i class="fas fa-university"></i>
+                                <strong>One merchant ID per bank account.</strong> PayU settles each MID into exactly one
+                                account, so property tax and water tax each need their own MID, key and salt. A payment is
+                                routed by the tax the citizen selected — credentials are never shared between the two.
+                            </div>
+
+                            @php
+                                $payuHeads = [
+                                    'property' => ['label' => 'Property Tax', 'icon' => 'fas fa-home', 'accent' => '#7c3aed', 'bg' => '#f5f3ff', 'border' => '#c4b5fd'],
+                                    'water' => ['label' => 'Water Tax', 'icon' => 'fas fa-tint', 'accent' => '#0891b2', 'bg' => '#ecfeff', 'border' => '#67e8f9'],
+                                ];
+                            @endphp
+
+                            @foreach($payuHeads as $head => $meta)
+                                @php
+                                    $keyField = "payu_{$head}_merchant_key";
+                                    $saltField = "payu_{$head}_merchant_salt";
+                                    $midField = "payu_{$head}_merchant_id";
+                                    $saltIsSet = !empty($paymentSettings->firstWhere('key', $saltField)?->value);
+                                @endphp
+                                <div style="border: 1px solid {{ $meta['border'] }}; background: {{ $meta['bg'] }}; border-radius: 10px; padding: 18px; margin-bottom: 18px;">
+                                    <h4 style="margin: 0 0 4px; font-size: 15px; color: {{ $meta['accent'] }};">
+                                        <i class="{{ $meta['icon'] }}"></i> {{ $meta['label'] }} — merchant account
+                                    </h4>
+                                    <p style="font-size: 12px; color: #64748b; margin: 0 0 14px;">
+                                        Settles into the {{ strtolower($meta['label']) }} bank account.
+                                    </p>
+
+                                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                        <div class="form-group">
+                                            <label for="{{ $keyField }}">Merchant Key *</label>
+                                            <input type="text" id="{{ $keyField }}" name="{{ $keyField }}" class="form-control"
+                                                   value="{{ $paymentSettings->firstWhere('key', $keyField)?->value ?? '' }}"
+                                                   placeholder="gtKFFx" autocomplete="off">
+                                            <small style="color: #64748b;">Shown as <code>Key</code> in the PayU dashboard.</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="{{ $midField }}">Merchant ID (MID)</label>
+                                            <input type="text" id="{{ $midField }}" name="{{ $midField }}" class="form-control"
+                                                   value="{{ $paymentSettings->firstWhere('key', $midField)?->value ?? '' }}"
+                                                   placeholder="Used for reconciliation" autocomplete="off">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="{{ $saltField }}">
+                                            Merchant Salt *
+                                            @if($saltIsSet)
+                                                <span style="font-size: 11px; font-weight: 500; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 999px; margin-left: 6px;">configured</span>
+                                            @else
+                                                <span style="font-size: 11px; font-weight: 500; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 999px; margin-left: 6px;">not set</span>
+                                            @endif
+                                        </label>
+                                        <input type="password" id="{{ $saltField }}" name="{{ $saltField }}" class="form-control"
+                                               value="" autocomplete="new-password"
+                                               placeholder="{{ $saltIsSet ? 'Leave blank to keep the existing salt' : 'Enter the ' . $meta['label'] . ' merchant salt' }}">
+                                        <small style="color: #64748b;">Signs the SHA-512 request hash for {{ strtolower($meta['label']) }} payments only.</small>
+                                    </div>
+                                </div>
+                            @endforeach
+
                             <div style="background: #f8fafc; border-radius: 8px; padding: 14px; margin-top: 4px; font-family: monospace; font-size: 12px; color: #64748b;">
                                 <strong style="font-family: sans-serif; font-size: 13px; color: #374151;">API Endpoints (auto-configured):</strong><br>
                                 Sandbox: https://test.payu.in/_payment<br>

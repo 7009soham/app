@@ -4,46 +4,125 @@ namespace App\Services;
 
 use App\Models\SiteSetting;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * PayU (India) gateway configuration and hashing helpers.
  *
- * PayU does not expose a create-order API for its hosted checkout. Instead the
- * citizen's browser form-POSTs a SHA-512 signed field set to PayU, and PayU
- * posts the outcome back with a reverse hash we verify. This class holds the
- * credentials and the hash helpers only.
+ * Property tax and water tax settle into different bank accounts, and PayU maps
+ * exactly one bank account per merchant ID. So each tax head has its own MID,
+ * key and salt, and this service is always constructed for a specific head:
  *
- * NOTE: the checkout page and callback route are not implemented yet, so PayU
- * cannot process payments even when enabled here. See isReady().
+ *     PayuService::forTaxType('property')->getMerchantKey();
+ *
+ * Getting this wrong moves real money into the wrong department's account, so
+ * an unknown tax type throws rather than silently falling back to a default.
+ *
+ * PayU has no create-order API for hosted checkout: the citizen's browser
+ * form-POSTs a SHA-512 signed field set and PayU posts the outcome back with a
+ * reverse hash. This class holds the credentials and the hash helpers only -
+ * see isReady() for what is still missing.
  */
 class PayuService
 {
+    public const TAX_PROPERTY = 'property';
+    public const TAX_WATER = 'water';
+
+    /** Human labels, used by the admin UI and error messages. */
+    public const TAX_TYPES = [
+        self::TAX_PROPERTY => 'Property Tax',
+        self::TAX_WATER => 'Water Tax',
+    ];
+
+    protected string $taxType;
     protected string $merchantKey;
     protected string $salt;
     protected string $merchantId;
     protected string $environment;
 
-    public function __construct()
+    public function __construct(string $taxType)
     {
-        $this->merchantKey = SiteSetting::get('payu_merchant_key', '');
-        $this->salt = SiteSetting::get('payu_merchant_salt', '');
-        $this->merchantId = SiteSetting::get('payu_merchant_id', '');
+        $this->taxType = self::normaliseTaxType($taxType);
+
+        $prefix = "payu_{$this->taxType}_";
+
+        $this->merchantKey = SiteSetting::get($prefix . 'merchant_key', '');
+        $this->salt = SiteSetting::get($prefix . 'merchant_salt', '');
+        $this->merchantId = SiteSetting::get($prefix . 'merchant_id', '');
+
+        // Sandbox/production is an account-wide choice, not a per-head one.
         $this->environment = SiteSetting::get('payu_env', 'sandbox');
     }
 
+    public static function forTaxType(string $taxType): self
+    {
+        return new self($taxType);
+    }
+
     /**
-     * Credentials are present and the gateway is switched on in the admin panel.
+     * Accepts the request value ("water"), the stored value ("water_tax") or
+     * the label, and returns the canonical key.
+     *
+     * @throws InvalidArgumentException on anything unrecognised - never guess
+     *         which bank account a payment belongs to.
+     */
+    public static function normaliseTaxType(string $taxType): string
+    {
+        // Separators are unified before the suffix is stripped, so "Water Tax",
+        // "water-tax" and "water_tax" all reduce to "water".
+        $key = Str::of($taxType)->lower()->trim()->replace(['-', ' '], '_')->toString();
+        $key = Str::endsWith($key, '_tax') ? Str::beforeLast($key, '_tax') : $key;
+
+        if (!array_key_exists($key, self::TAX_TYPES)) {
+            throw new InvalidArgumentException(
+                "Unknown PayU tax type [{$taxType}]. Expected one of: " . implode(', ', array_keys(self::TAX_TYPES))
+            );
+        }
+
+        return $key;
+    }
+
+    /** Setting keys owned by one tax head. */
+    public static function settingKeysFor(string $taxType): array
+    {
+        $prefix = 'payu_' . self::normaliseTaxType($taxType) . '_';
+
+        return [
+            'key' => $prefix . 'merchant_key',
+            'salt' => $prefix . 'merchant_salt',
+            'mid' => $prefix . 'merchant_id',
+        ];
+    }
+
+    public function getTaxType(): string
+    {
+        return $this->taxType;
+    }
+
+    public function getLabel(): string
+    {
+        return self::TAX_TYPES[$this->taxType];
+    }
+
+    /**
+     * Credentials are present for THIS tax head and PayU is switched on.
+     * Property tax being configured says nothing about water tax.
      */
     public function isEnabled(): bool
     {
         return SiteSetting::get('payu_enabled', '0') === '1'
-            && !empty($this->merchantKey)
-            && !empty($this->salt);
+            && $this->hasCredentials();
+    }
+
+    public function hasCredentials(): bool
+    {
+        return $this->merchantKey !== '' && $this->salt !== '';
     }
 
     /**
-     * PayU can actually take a payment. Always false until the checkout page and
-     * callback route are built, so callers never route citizens to a dead end.
+     * PayU can actually take a payment for this head. Always false until the
+     * checkout page and callback route exist, so callers never route a citizen
+     * to a dead end.
      */
     public function isReady(): bool
     {
@@ -65,9 +144,6 @@ class PayuService
         return $this->environment !== 'production';
     }
 
-    /**
-     * Base URL the signed checkout form posts to.
-     */
     public function getPaymentUrl(): string
     {
         return $this->isSandbox()
@@ -75,9 +151,6 @@ class PayuService
             : 'https://secure.payu.in/_payment';
     }
 
-    /**
-     * Server-to-server verification endpoint.
-     */
     public function getVerifyUrl(): string
     {
         return $this->isSandbox()
@@ -91,11 +164,11 @@ class PayuService
     }
 
     /**
-     * Request hash PayU expects on the outgoing form:
+     * Request hash for the outgoing form:
      * sha512(key|txnid|amount|productinfo|firstname|email|udf1..udf5||||||salt)
      *
-     * The amount must be the same string that is posted, in rupees with two
-     * decimals - PayU compares it byte for byte.
+     * The amount must be the exact string posted (rupees, two decimals) - PayU
+     * compares it byte for byte.
      */
     public function generateRequestHash(array $params): string
     {
@@ -119,15 +192,17 @@ class PayuService
     }
 
     /**
-     * Verify the reverse hash PayU signs its response with. The sequence is the
-     * request sequence reversed, with the status inserted after the salt, and
-     * additional_charges prepended when PayU applied any.
+     * Verify the reverse hash on PayU's response: the request sequence
+     * reversed, status after the salt, additional_charges prepended when set.
+     *
+     * Must be called on the service for the SAME tax head that initiated the
+     * payment - the other head's salt will never validate.
      */
     public function verifyResponseHash(array $response): bool
     {
         $postedHash = strtolower((string) ($response['hash'] ?? ''));
 
-        if ($postedHash === '' || empty($this->salt)) {
+        if ($postedHash === '' || $this->salt === '') {
             return false;
         }
 
@@ -152,14 +227,31 @@ class PayuService
             array_unshift($sequence, $response['additional_charges']);
         }
 
-        $calculated = strtolower(hash('sha512', implode('|', $sequence)));
-
-        return hash_equals($calculated, $postedHash);
+        return hash_equals(strtolower(hash('sha512', implode('|', $sequence))), $postedHash);
     }
 
     /**
-     * PayU rejects txnids containing anything outside this set.
+     * Identify which tax head a PayU response belongs to by finding the only
+     * configured head whose salt validates the reverse hash.
+     *
+     * The callback must not trust a tax type supplied in the response body -
+     * that is attacker-controlled. The signature is the only trustworthy
+     * indicator of which merchant account the payment actually went to.
      */
+    public static function resolveFromResponse(array $response): ?self
+    {
+        foreach (array_keys(self::TAX_TYPES) as $taxType) {
+            $service = new self($taxType);
+
+            if ($service->hasCredentials() && $service->verifyResponseHash($response)) {
+                return $service;
+            }
+        }
+
+        return null;
+    }
+
+    /** PayU rejects txnids containing anything outside this set. */
     public function sanitizeTransactionId(string $txnid): string
     {
         return preg_replace('/[^a-zA-Z0-9_-]/', '', $txnid) ?? '';

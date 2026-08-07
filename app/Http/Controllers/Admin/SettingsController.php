@@ -49,10 +49,15 @@ class SettingsController extends Controller
         'razorpay_key_secret' => 'payment',
         'razorpay_env' => 'payment',
         'payu_enabled' => 'payment',
-        'payu_merchant_key' => 'payment',
-        'payu_merchant_salt' => 'payment',
-        'payu_merchant_id' => 'payment',
         'payu_env' => 'payment',
+        // Each tax head settles into its own bank account, so each has its own
+        // PayU merchant ID, key and salt.
+        'payu_property_merchant_key' => 'payment',
+        'payu_property_merchant_salt' => 'payment',
+        'payu_property_merchant_id' => 'payment',
+        'payu_water_merchant_key' => 'payment',
+        'payu_water_merchant_salt' => 'payment',
+        'payu_water_merchant_id' => 'payment',
         'partial_payment_enabled' => 'payment',
         'partial_payment_allow_50' => 'payment',
         'partial_payment_allow_75' => 'payment',
@@ -157,7 +162,6 @@ class SettingsController extends Controller
     {
         $existingSmtpPassword = SiteSetting::get('smtp_password', '');
         $existingRazorpaySecret = SiteSetting::get('razorpay_key_secret', '');
-        $existingPayuSalt = SiteSetting::get('payu_merchant_salt', '');
 
         $validationRules = [
             'convenience_fee_percentage' => 'nullable|numeric|min:0|max:20',
@@ -304,7 +308,8 @@ class SettingsController extends Controller
             'smtp_password' => SiteSetting::get('smtp_password', ''),
             'phonepe_salt_key' => SiteSetting::get('phonepe_salt_key', ''),
             'razorpay_key_secret' => SiteSetting::get('razorpay_key_secret', ''),
-            'payu_merchant_salt' => SiteSetting::get('payu_merchant_salt', ''),
+            'payu_property_merchant_salt' => SiteSetting::get('payu_property_merchant_salt', ''),
+            'payu_water_merchant_salt' => SiteSetting::get('payu_water_merchant_salt', ''),
         ];
 
         foreach ($settingsData as $key => $value) {
@@ -445,8 +450,10 @@ class SettingsController extends Controller
             'phonepe_env' => 'nullable|in:sandbox,production',
             'razorpay_key_id' => 'nullable|string|max:255',
             'razorpay_env' => 'nullable|in:sandbox,production',
-            'payu_merchant_key' => 'nullable|string|max:255',
-            'payu_merchant_id' => 'nullable|string|max:255',
+            'payu_property_merchant_key' => 'nullable|string|max:255',
+            'payu_property_merchant_id' => 'nullable|string|max:255',
+            'payu_water_merchant_key' => 'nullable|string|max:255',
+            'payu_water_merchant_id' => 'nullable|string|max:255',
             'payu_env' => 'nullable|in:sandbox,production',
         ]);
 
