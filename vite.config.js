@@ -5,7 +5,14 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            // admin-ui.css is the Tailwind + DaisyUI entry used only by pages
+            // extending admin.layouts.tailwind. Kept separate from app.css so
+            // Tailwind's preflight cannot reach the unmigrated pages.
+            input: [
+                'resources/css/app.css',
+                'resources/css/admin-ui.css',
+                'resources/js/app.js',
+            ],
             refresh: true,
         }),
         tailwindcss(),

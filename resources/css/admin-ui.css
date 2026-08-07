@@ -1,0 +1,76 @@
+/*
+ * Tailwind + DaisyUI stylesheet for the admin panel.
+ *
+ * Deliberately a SEPARATE entry point from resources/css/app.css. Tailwind's
+ * preflight resets base element styles and DaisyUI sets its own :root theme,
+ * both of which would fight the hand-written public/css/app.css and admin.css
+ * that the rest of the site still depends on. Only pages extending
+ * admin.layouts.tailwind load this file, so the blast radius is exactly the
+ * pages that have been migrated and checked.
+ */
+
+@import 'tailwindcss';
+
+/* Scan only what this stylesheet is actually used by, to keep the build small. */
+@source '../views/admin/**/*.blade.php';
+
+@plugin 'daisyui' {
+    themes: false;
+}
+
+/*
+ * Theme derived from the existing tokens in public/css/app.css so a migrated
+ * page sits beside an unmigrated one without a visible colour shift.
+ *   --color-primary   #1a365d  (navy)
+ *   --color-accent    #d97706  (amber, used for citizen CTAs)
+ *   --color-secondary #c6553b  (terracotta)
+ */
+@plugin 'daisyui/theme' {
+    name: 'neralgov';
+    default: true;
+    prefersdark: false;
+    color-scheme: light;
+
+    --color-base-100: #ffffff;
+    --color-base-200: #f8fafc;
+    --color-base-300: #e2e8f0;
+    --color-base-content: #1e293b;
+
+    --color-primary: #1a365d;
+    --color-primary-content: #ffffff;
+
+    --color-secondary: #c6553b;
+    --color-secondary-content: #ffffff;
+
+    --color-accent: #d97706;
+    --color-accent-content: #ffffff;
+
+    --color-neutral: #334155;
+    --color-neutral-content: #ffffff;
+
+    --color-info: #0284c7;
+    --color-info-content: #ffffff;
+    --color-success: #16a34a;
+    --color-success-content: #ffffff;
+    --color-warning: #d97706;
+    --color-warning-content: #ffffff;
+    --color-error: #dc2626;
+    --color-error-content: #ffffff;
+
+    /* Matches the 8px radius used by the existing .card and .btn rules. */
+    --radius-selector: 0.5rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.5rem;
+
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+}
+
+/* Inter and Noto Sans Devanagari are already loaded by the layout; names are
+   frequently in Marathi so the Devanagari face must stay in the stack. */
+@theme {
+    --font-sans: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+}
