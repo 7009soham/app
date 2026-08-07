@@ -612,7 +612,10 @@
                 'auth/too-many-requests': 'Too many attempts. Please wait a few minutes and try again.',
                 'auth/quota-exceeded': 'SMS quota exceeded for Firebase project. Please contact support.',
                 'auth/app-not-authorized': 'This domain is not authorized in Firebase. Please contact admin.',
-                'auth/operation-not-allowed': 'Phone authentication is disabled in Firebase settings.',
+                // Deliberately vague: Firebase returns this code both when the
+                // Phone provider is off AND when the SMS region policy blocks
+                // the destination country. The detail below distinguishes them.
+                'auth/operation-not-allowed': 'SMS could not be sent. Please contact the Gram Panchayat office.',
                 'auth/captcha-check-failed': 'reCAPTCHA verification failed. Please retry.',
                 'auth/network-request-failed': 'Network issue while contacting Firebase. Please check internet and retry.',
             };
@@ -624,15 +627,20 @@
                 'auth/network-request-failed': 'Network issue while verifying OTP. Please retry.',
             };
 
-            if (phase === 'verify' && verifyErrors[code]) {
-                return verifyErrors[code];
+            var friendly = (phase === 'verify' && verifyErrors[code])
+                ? verifyErrors[code]
+                : (sendErrors[code] || 'Firebase OTP service error. Please try again.');
+
+            // Log the raw code and message. A single Firebase code can have
+            // several causes - auth/operation-not-allowed means either the
+            // Phone provider is off or the SMS region policy excludes the
+            // country - and a friendly message alone hides which one it is,
+            // which turns a two-minute console fix into a guessing game.
+            if (code || error?.message) {
+                console.error('[Firebase OTP]', code, error?.message || '');
             }
 
-            if (sendErrors[code]) {
-                return sendErrors[code];
-            }
-
-            return 'Firebase OTP service error. Please try again.';
+            return friendly;
         }
 
         if (!firebaseInitialized) {
