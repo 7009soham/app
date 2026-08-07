@@ -479,6 +479,116 @@ body {
     color: var(--color-gray-700);
 }
 
+/* badge-primary, badge-info and badge-lg were already in use in the views but
+   had no rules, so those badges rendered as bare text. */
+.badge-primary {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-info {
+    background: #e0f2fe;
+    color: #075985;
+}
+
+.badge-lg {
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+/* ============================================
+   UI POLISH
+   ============================================ */
+
+/* A hairline plus a softer, layered shadow reads crisper against the grey
+   page background than a single flat drop shadow. */
+.card {
+    border: 1px solid var(--color-gray-200);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.card-header {
+    background: var(--color-gray-50);
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+}
+
+.table tbody tr {
+    transition: background var(--transition);
+}
+
+/* Keep the action column tight against the right edge and stop its buttons
+   wrapping on narrow screens. */
+.table td:last-child,
+.table th:last-child {
+    white-space: nowrap;
+}
+
+.table td .btn-sm + .btn-sm,
+.table td form {
+    margin-left: 4px;
+}
+
+/* Destructive actions read as outlines until hovered. A grid of solid red
+   squares dominates the table and makes every row look like a warning. */
+.btn-outline-danger {
+    background: transparent;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+}
+
+.btn-outline-danger:hover {
+    background: var(--color-danger, #dc2626);
+    border-color: var(--color-danger, #dc2626);
+    color: var(--color-white);
+}
+
+/* Visible keyboard focus everywhere, not just on inputs. Required for the
+   WCAG 2.1 AA conformance the accessibility statement claims. */
+.btn:focus-visible,
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--admin-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+}
+
+/* Shared empty state, so list pages stop styling this inline. */
+.empty-state {
+    text-align: center;
+    padding: 36px 20px;
+    color: var(--color-gray-500);
+}
+
+.empty-state i {
+    font-size: 30px;
+    color: var(--color-gray-300);
+    display: block;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    margin: 0 0 4px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+}
+
+.empty-state small {
+    font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .table tbody tr,
+    .btn,
+    .form-control {
+        transition: none;
+    }
+}
+
 /* ============================================
    BUTTONS
    ============================================ */

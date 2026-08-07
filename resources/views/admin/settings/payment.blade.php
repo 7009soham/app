@@ -164,8 +164,8 @@
                                     <label for="phonepe_env">Environment</label>
                                     <select id="phonepe_env" name="phonepe_env" class="form-control">
                                         @php $ppEnv = $paymentSettings->firstWhere('key', 'phonepe_env')?->value ?? 'sandbox'; @endphp
-                                        <option value="sandbox" {{ $ppEnv === 'sandbox' ? 'selected' : '' }}>🧪 Sandbox (Testing)</option>
-                                        <option value="production" {{ $ppEnv === 'production' ? 'selected' : '' }}>🚀 Production (Live)</option>
+                                        <option value="sandbox" {{ $ppEnv === 'sandbox' ? 'selected' : '' }}>Sandbox (Testing)</option>
+                                        <option value="production" {{ $ppEnv === 'production' ? 'selected' : '' }}>Production (Live)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -215,8 +215,8 @@
                                     <label for="razorpay_env">Environment</label>
                                     <select id="razorpay_env" name="razorpay_env" class="form-control">
                                         @php $rzpEnv = $paymentSettings->firstWhere('key', 'razorpay_env')?->value ?? 'sandbox'; @endphp
-                                        <option value="sandbox" {{ $rzpEnv === 'sandbox' ? 'selected' : '' }}>🧪 Sandbox (Testing)</option>
-                                        <option value="production" {{ $rzpEnv === 'production' ? 'selected' : '' }}>🚀 Production (Live)</option>
+                                        <option value="sandbox" {{ $rzpEnv === 'sandbox' ? 'selected' : '' }}>Sandbox (Testing)</option>
+                                        <option value="production" {{ $rzpEnv === 'production' ? 'selected' : '' }}>Production (Live)</option>
                                     </select>
                                 </div>
                             </div>
@@ -267,8 +267,8 @@
                                     <label for="payu_env">Environment</label>
                                     <select id="payu_env" name="payu_env" class="form-control">
                                         @php $payuEnv = $paymentSettings->firstWhere('key', 'payu_env')?->value ?? 'sandbox'; @endphp
-                                        <option value="sandbox" {{ $payuEnv === 'sandbox' ? 'selected' : '' }}>🧪 Sandbox (Testing)</option>
-                                        <option value="production" {{ $payuEnv === 'production' ? 'selected' : '' }}>🚀 Production (Live)</option>
+                                        <option value="sandbox" {{ $payuEnv === 'sandbox' ? 'selected' : '' }}>Sandbox (Testing)</option>
+                                        <option value="production" {{ $payuEnv === 'production' ? 'selected' : '' }}>Production (Live)</option>
                                     </select>
                                     <small style="color: #64748b;">Applies to both merchant IDs below.</small>
                                 </div>

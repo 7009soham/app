@@ -62,7 +62,7 @@
                                       onsubmit="return confirm('Delete “{{ $page->title }}”? Any quick link pointing at /page/{{ $page->slug }} will break.');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline" style="color: #dc2626;">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Delete page">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -70,9 +70,15 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 28px; color: #64748b;">
-                                No pages yet.
-                                <a href="{{ route('admin.custom-pages.create') }}">Create one now</a>.
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <i class="fas fa-file-alt"></i>
+                                    <p>No pages yet</p>
+                                    <small>
+                                        <a href="{{ route('admin.custom-pages.create') }}">Create your first page</a>
+                                        to publish content without a developer.
+                                    </small>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
