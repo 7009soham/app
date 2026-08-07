@@ -16,15 +16,7 @@ class CitizenController extends Controller
 
         $query = Citizen::query();
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('customer_no', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        $query->search($request->input('search'));
 
         $citizens = $query->latest()->paginate(20);
 

@@ -31,14 +31,7 @@ class GrievanceController extends Controller
         }
 
         // Search by ticket number or phone
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('ticket_no', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%");
-            });
-        }
+        $query->search($request->input('search'));
 
         $grievances = $query->paginate(15);
         $categories = Grievance::getCategories();

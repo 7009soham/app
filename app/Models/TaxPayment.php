@@ -9,6 +9,12 @@ use Illuminate\Support\Str;
 
 class TaxPayment extends Model
 {
+    use \App\Models\Concerns\Searchable;
+
+    protected array $searchable = ['transaction_id', 'citizen_phone', 'provider_transaction_id'];
+
+    protected array $transliterates = ['citizen_name' => 'citizen_name_roman'];
+
     protected static array $columnCache = [];
 
     protected $fillable = [

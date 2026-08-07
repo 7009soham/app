@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\Mail;
 
 class Citizen extends Authenticatable
 {
+    use \App\Models\Concerns\Searchable;
+
+    protected array $searchable = ['phone', 'customer_no', 'email'];
+
+    protected array $transliterates = ['name' => 'name_roman'];
+
     use Notifiable;
 
     protected static function booted(): void

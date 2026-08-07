@@ -37,14 +37,7 @@ class TaxPaymentController extends Controller
         }
 
         // Search by name, phone, or transaction ID
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('citizen_name', 'like', "%{$search}%")
-                  ->orWhere('citizen_phone', 'like', "%{$search}%")
-                  ->orWhere('transaction_id', 'like', "%{$search}%");
-            });
-        }
+        $query->search($request->input('search'));
 
         // Get summary stats
         $stats = [

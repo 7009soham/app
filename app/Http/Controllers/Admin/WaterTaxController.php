@@ -18,14 +18,7 @@ class WaterTaxController extends Controller
         $query = WaterTaxRecord::with('citizen')->orderBy('created_at', 'desc');
 
         // Search
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('customer_no', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
+        $query->search($request->input('search'));
 
         // Filter by balance status
         if ($request->filled('status')) {

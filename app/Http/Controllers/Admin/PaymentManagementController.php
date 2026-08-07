@@ -28,11 +28,16 @@ class PaymentManagementController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $search = trim($request->input('search'));
+            $roman = \App\Helpers\Transliterate::toSearchKey($search);
+
+            $query->where(function ($q) use ($search, $roman) {
                 $q->where('transaction_id', 'like', "%{$search}%")
-                  ->orWhereHas('citizen', function($cq) use ($search) {
-                      $cq->where('name', 'like', "%{$search}%");
+                  ->orWhereHas('citizen', function ($cq) use ($search, $roman) {
+                      // Same both-forms match as the Searchable scope, applied
+                      // through the relationship.
+                      $cq->where('name', 'like', "%{$search}%")
+                         ->orWhere('name_roman', 'like', "%{$roman}%");
                   });
             });
         }

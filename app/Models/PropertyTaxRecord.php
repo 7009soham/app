@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PropertyTaxRecord extends Model
 {
+    use Searchable;
+
+    protected array $searchable = ['property_no', 'customer_no', 'a_no', 'aadhaar_no', 'phone'];
+
+    protected array $transliterates = ['customer_name' => 'customer_name_roman'];
+
     protected $fillable = [
         'a_no',
         'customer_no',

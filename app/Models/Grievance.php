@@ -8,6 +8,12 @@ use Illuminate\Support\Str;
 
 class Grievance extends Model
 {
+    use \App\Models\Concerns\Searchable;
+
+    protected array $searchable = ['ticket_no', 'phone', 'email'];
+
+    protected array $transliterates = ['name' => 'name_roman'];
+
     protected $fillable = [
         'ticket_no',
         'citizen_id',
