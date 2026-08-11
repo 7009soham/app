@@ -99,9 +99,12 @@ class DatabaseSeeder extends Seeder
         }
 
         // Tax Types
+        // The slug must stay "property-tax": PaymentController resolves the tax
+        // type by this value, and the old "house-tax" slug never matched, so
+        // property payments failed at that lookup.
         TaxType::create([
-            'name' => 'House Tax',
-            'slug' => 'house-tax',
+            'name' => 'Property Tax',
+            'slug' => 'property-tax',
             'description' => 'Annual property tax for residential and commercial properties',
             'monthly_rate' => 100.00,
             'quarterly_rate' => 280.00,

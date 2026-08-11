@@ -27,11 +27,12 @@ class PaymentLedgerAtomicityTest extends TestCase
         parent::setUp();
         Mail::fake();
 
-        $this->taxType = \App\Models\TaxType::create([
-            'name' => 'Property Tax',
-            'slug' => 'property-tax',
-            'is_active' => true,
-        ]);
+        // Seeded by the ensure_required_tax_types migration; reuse it rather
+        // than colliding on the unique slug.
+        $this->taxType = \App\Models\TaxType::firstOrCreate(
+            ['slug' => 'property-tax'],
+            ['name' => 'Property Tax', 'is_active' => true]
+        );
 
         $this->citizen = Citizen::create([
             'customer_no' => 'C-001',

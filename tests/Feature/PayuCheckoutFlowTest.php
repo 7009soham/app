@@ -30,7 +30,11 @@ class PayuCheckoutFlowTest extends TestCase
         SiteSetting::set('payu_property_merchant_key', 'PROPKEY', 'payment');
         SiteSetting::set('payu_property_merchant_salt', 'propsalt', 'payment');
 
-        $this->taxType = TaxType::create(['name' => 'Property Tax', 'slug' => 'property-tax', 'is_active' => true]);
+        // Seeded by the ensure_required_tax_types migration.
+        $this->taxType = TaxType::firstOrCreate(
+            ['slug' => 'property-tax'],
+            ['name' => 'Property Tax', 'is_active' => true]
+        );
 
         $this->citizen = Citizen::create([
             'customer_no' => 'C-001',
