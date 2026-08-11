@@ -25,4 +25,13 @@ class HomePageEnhancementsTest extends TestCase
             ->assertSee('btn-hero', false)
             ->assertSee('btn-arrow', false);
     }
+
+    public function test_quick_action_card_links_to_the_four_core_tasks(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('qa-card', false)
+            ->assertSee(route('grievance.create'), false)
+            ->assertSee(route('digital-services'), false)
+            ->assertSee('Certificates');
+    }
 }

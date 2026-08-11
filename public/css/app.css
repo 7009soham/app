@@ -605,6 +605,92 @@ ul {
 }
 
 /* ============================================
+   ICON CHIP (shared) + QUICK ACTIONS
+   ============================================ */
+.icon-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-lg);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: transform var(--transition-base);
+}
+
+.icon-chip--tint {
+    background-color: var(--tint-primary);
+    color: var(--color-primary);
+}
+
+.icon-chip--gradient {
+    background: var(--gradient-primary);
+    color: var(--color-white);
+}
+
+.icon-chip--danger {
+    background-color: #fdecec;
+    color: #dc2626;
+}
+
+.quick-actions {
+    position: relative;
+    z-index: 2;
+}
+
+.qa-card {
+    display: flex;
+    max-width: 720px;
+    margin: calc(-1 * var(--spacing-10)) auto 0;
+    padding: var(--spacing-4) var(--spacing-2);
+    background-color: var(--color-white);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card-lg);
+}
+
+.qa-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-gray-700);
+    text-align: center;
+    position: relative;
+    padding: var(--spacing-1);
+}
+
+.qa-item:hover {
+    color: var(--color-primary);
+}
+
+.qa-item:hover .icon-chip,
+.qa-item:active .icon-chip {
+    transform: scale(0.94);
+}
+
+.qa-item--new::after {
+    content: attr(data-badge);
+    position: absolute;
+    top: -6px;
+    right: 12%;
+    padding: 2px 6px;
+    background-color: var(--color-accent);
+    color: var(--color-white);
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    border-radius: var(--radius-full);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .icon-chip { transition: none; }
+}
+
+/* ============================================
    STATS SECTION
    ============================================ */
 .stats-section {

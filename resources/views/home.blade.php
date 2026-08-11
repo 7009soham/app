@@ -48,6 +48,30 @@
         @endif
     </section>
 
+    <!-- Quick Actions -->
+    <section class="quick-actions" aria-label="{{ __('messages.quick_actions') }}">
+        <div class="container">
+            <div class="qa-card" data-reveal>
+                <a href="{{ route('citizen.login') }}" class="qa-item">
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-house"></i></span>
+                    <span>{{ __('messages.property_tax') }}</span>
+                </a>
+                <a href="{{ route('citizen.login') }}" class="qa-item">
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-droplet"></i></span>
+                    <span>{{ __('messages.water_tax') }}</span>
+                </a>
+                <a href="{{ route('grievance.create') }}" class="qa-item qa-item--new" data-badge="{{ __('messages.new') }}">
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-bullhorn"></i></span>
+                    <span>{{ __('messages.grievance') }}</span>
+                </a>
+                <a href="{{ route('digital-services') }}" class="qa-item">
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-file-lines"></i></span>
+                    <span>{{ __('messages.certificates') }}</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Quick Stats -->
     <section class="stats-section">
         <div class="container">
