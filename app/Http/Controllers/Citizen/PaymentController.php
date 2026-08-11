@@ -476,8 +476,10 @@ class PaymentController extends Controller
                 'txnid' => $response['txnid'] ?? null,
             ]);
 
-            return redirect()->route('citizen.payment-history')
-                ->with('error', 'Payment could not be verified. If money was debited it will be refunded automatically.');
+            return $this->unverifiedReturnPage(
+                'We could not verify this payment result.',
+                $response['txnid'] ?? null
+            );
         }
 
         $payment = TaxPayment::where('transaction_id', $response['txnid'] ?? '')->first();
@@ -485,8 +487,10 @@ class PaymentController extends Controller
         if (!$payment) {
             Log::error('PayU return: no matching payment', ['txnid' => $response['txnid'] ?? null]);
 
-            return redirect()->route('citizen.payment-history')
-                ->with('error', 'Payment record not found. Please contact the Gram Panchayat office.');
+            return $this->unverifiedReturnPage(
+                'We could not find a matching payment record.',
+                $response['txnid'] ?? null
+            );
         }
 
         // The signature covers the amount, so a mismatch means the payment we
@@ -500,8 +504,10 @@ class PaymentController extends Controller
 
             $this->markPaymentFailed($payment, 'Amount mismatch on PayU return');
 
-            return redirect()->route('citizen.payment-history')
-                ->with('error', 'Payment amount did not match our records. Please contact the Gram Panchayat office.');
+            return $this->unverifiedReturnPage(
+                'The amount reported by the gateway did not match our records.',
+                $payment->transaction_id
+            );
         }
 
         $status = strtolower((string) ($response['status'] ?? ''));
@@ -527,24 +533,89 @@ class PaymentController extends Controller
                 'exception' => $e->getMessage(),
             ]);
 
-            return redirect()->route('citizen.payment-history')->with(
-                'error',
-                'Your payment went through but we could not update your record immediately. '
-                . 'Please do not pay again — it will appear shortly. Reference: ' . $payment->transaction_id
-            );
+            // No session to flash to on this route, so the outcome goes through
+            // the signed result page like every other path. Reconciliation will
+            // settle the record within ten minutes.
+            return redirect()->to($this->paymentResultUrl($payment, 'deferred'));
         }
 
-        if ($status === 'success') {
-            return redirect()->route('citizen.transactions.show', $payment->fresh())
-                ->with('success', 'Payment successful.');
+        // No session here by design (see the route), so the outcome travels in
+        // a signed URL rather than a flash message.
+        return redirect()->to($this->paymentResultUrl($payment->fresh(), $status, $response));
+    }
+
+    /**
+     * Rendered when a gateway result cannot be trusted or matched.
+     *
+     * Returned directly rather than redirected with a flash: this route runs
+     * without a session, so flashing would write to a store that is never
+     * persisted and the citizen would land on a silent page.
+     */
+    private function unverifiedReturnPage(string $reason, ?string $reference)
+    {
+        return response()->view('citizen.payment.unverified', [
+            'reason' => $reason,
+            'reference' => $reference,
+        ], 200);
+    }
+
+    /**
+     * Signed, short-lived URL carrying the outcome of a PayU payment.
+     *
+     * Signed because the return handler runs without a session and therefore
+     * cannot flash: without a signature anyone could craft a URL claiming a
+     * payment had succeeded.
+     */
+    private function paymentResultUrl(TaxPayment $payment, string $status, array $response = []): string
+    {
+        $outcome = match (true) {
+            // Recorded outside the normal status vocabulary: the gateway said
+            // paid but we could not write it down yet.
+            $status === 'deferred' => 'deferred',
+            $status === 'success' => 'success',
+            $this->isCitizenAbandonment($this->resolveFailureCode($status, $response)) => 'cancelled',
+            default => 'failed',
+        };
+
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'citizen.payment.result',
+            now()->addMinutes(30),
+            ['payment' => $payment->getKey(), 'outcome' => $outcome]
+        );
+    }
+
+    /**
+     * Shows the outcome after returning from a gateway.
+     *
+     * Not behind citizen.auth: the signature already proves we generated this
+     * link, and a citizen whose session did expire must still be told whether
+     * their money went through rather than being bounced to a login form.
+     */
+    public function paymentResult(Request $request, TaxPayment $payment)
+    {
+        $outcome = $request->query('outcome', 'failed');
+
+        // The signature proves the link is ours, but if someone IS logged in it
+        // must still be their own payment.
+        $citizenId = Auth::guard('citizen')->id();
+        if ($citizenId && (string) $payment->citizen_id !== (string) $citizenId) {
+            abort(403);
         }
 
-        $failureCode = $this->resolveFailureCode($status, $response);
-        $message = $this->mapFailureReason($failureCode);
+        $message = match ($outcome) {
+            'success' => 'Payment successful. Your balance has been updated.',
+            'cancelled' => $this->mapFailureReason('USER_CANCELLED'),
+            'deferred' => 'Your payment went through, but we could not update your record immediately. '
+                . 'Please do not pay again — it will appear within a few minutes.',
+            default => $payment->failure_reason ?: $this->mapFailureReason('UNKNOWN'),
+        };
 
-        // A cancellation is shown as information, not as a red error.
-        return redirect()->route('citizen.payment-history')
-            ->with($this->isCitizenAbandonment($failureCode) ? 'info' : 'error', $message);
+        return view('citizen.payment.result', [
+            'payment' => $payment,
+            'outcome' => $outcome,
+            'message' => $message,
+            'isLoggedIn' => (bool) $citizenId,
+        ]);
     }
 
     public function razorpayCheckout()

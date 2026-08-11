@@ -178,7 +178,11 @@ class PayuCheckoutFlowTest extends TestCase
         $forged = $this->signedResponse();
         $forged['hash'] = str_repeat('a', 128);
 
-        $this->post(route('citizen.payment.payu-return'), $forged)->assertRedirect();
+        // Rendered directly rather than redirected: the return route has no
+        // session to flash a warning through.
+        $this->post(route('citizen.payment.payu-return'), $forged)
+            ->assertOk()
+            ->assertSee('could not be verified', false);
 
         $this->assertSame('1000.00', (string) $this->record->fresh()->balance);
         $this->assertNotSame('completed', TaxPayment::first()->payment_status);

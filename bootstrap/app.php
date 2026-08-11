@@ -23,5 +23,22 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // A stale CSRF token used to dump the bare "419 PAGE EXPIRED" screen.
+        // On a payment form that reads as "the payment broke", and a citizen
+        // who has been sitting on the page, or pressed Back from the gateway,
+        // has no idea whether money moved. Send them back to the page they
+        // came from with a plain explanation instead.
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your session expired. Please refresh the page and try again.',
+                ], 419);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput($request->except(['_token', 'password']))
+                ->with('warning', 'Your session expired before that was submitted, so nothing was processed. '
+                    . 'Please check the details and try again.');
+        });
     })->create();

@@ -298,12 +298,32 @@ Route::post('/citizen/payment/callback', [\App\Http\Controllers\Citizen\PaymentC
     ->name('citizen.payment.callback')
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
-// PayU posts the outcome here from its own domain, so this route cannot sit
-// behind citizen.auth or CSRF: the session cookie is SameSite=lax and is not
-// sent on a cross-site POST, and PayU has no CSRF token. The handler trusts
-// nothing in the body until the reverse hash validates against a stored salt.
-// The redirect it issues is a same-site GET, so the citizen's session is intact
-// on the page they land on.
+// PayU posts the outcome here from its own domain. The session cookie is
+// SameSite=lax so the browser does not send it on a cross-site POST, and PayU
+// has no CSRF token.
+//
+// Session handling is removed entirely, not just CSRF. With StartSession in
+// place Laravel saw no cookie, minted a fresh session and Set-Cookie'd it over
+// the citizen's own - logging them out and rotating their CSRF token, so they
+// landed on the login page after paying and got a 419 on the next attempt.
+// Without it their cookie is untouched and the same-site redirect below lands
+// them still signed in.
+//
+// Nothing in the request body is trusted until the reverse hash validates
+// against a stored salt.
 Route::post('/citizen/payment/payu-return', [\App\Http\Controllers\Citizen\PaymentController::class, 'payuReturn'])
     ->name('citizen.payment.payu-return')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        \App\Http\Middleware\VerifyCsrfToken::class,
+    ]);
+
+// Where PayU's return sends the citizen. Signed because the return handler has
+// no session to flash through, so the outcome travels in the URL and must not
+// be forgeable. Runs in the normal web group, so their original session - never
+// clobbered above - is present and they are still logged in.
+Route::get('/citizen/payment/result/{payment}', [\App\Http\Controllers\Citizen\PaymentController::class, 'paymentResult'])
+    ->name('citizen.payment.result')
+    ->middleware('signed');

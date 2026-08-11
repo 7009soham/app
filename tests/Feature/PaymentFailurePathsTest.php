@@ -90,6 +90,20 @@ class PaymentFailurePathsTest extends TestCase
     }
 
     /**
+     * Post a PayU result and return the rendered outcome page, lowercased.
+     *
+     * The return handler runs without a session (see the route), so the outcome
+     * travels in a signed URL rather than a flash message.
+     */
+    private function outcomePageFor(array $response): string
+    {
+        $location = $this->post(route('citizen.payment.payu-return'), $response)
+            ->headers->get('Location');
+
+        return strtolower($this->get($location)->getContent());
+    }
+
+    /**
      * The original bug: PayU reports cancellation in unmappedstatus, which was
      * never inspected, so someone who pressed Cancel was told there had been a
      * technical problem and might pay again out of doubt.
@@ -98,15 +112,10 @@ class PaymentFailurePathsTest extends TestCase
     {
         $this->payment();
 
-        $response = $this->post(
-            route('citizen.payment.payu-return'),
-            $this->signedFailure(['unmappedstatus' => 'userCancelled'])
-        );
+        $body = $this->outcomePageFor($this->signedFailure(['unmappedstatus' => 'userCancelled']));
 
-        // Shown as information, not as a red error.
-        $response->assertSessionHas('info');
-        $this->assertStringContainsString('cancelled', strtolower(session('info')));
-        $this->assertStringContainsString('nothing has been charged', strtolower(session('info')));
+        $this->assertStringContainsString('cancelled', $body);
+        $this->assertStringContainsString('nothing has been charged', $body);
         $this->assertSame('1000.00', (string) $this->record->fresh()->balance);
     }
 
@@ -118,52 +127,37 @@ class PaymentFailurePathsTest extends TestCase
     {
         $this->payment();
 
-        $this->post(
-            route('citizen.payment.payu-return'),
-            $this->signedFailure(['unmappedstatus' => 'userCancelled'])
-        );
+        $body = $this->outcomePageFor($this->signedFailure(['unmappedstatus' => 'userCancelled']));
 
-        $this->actingAs($this->citizen, 'citizen')
-            ->get(route('citizen.payment-history'))
-            ->assertOk()
-            ->assertSee('Payment cancelled', false);
+        $this->assertStringContainsString('payment cancelled', $body);
     }
 
     public function test_cancellation_wording_is_also_detected_from_the_bank_message(): void
     {
         $this->payment();
 
-        $this->post(
-            route('citizen.payment.payu-return'),
-            $this->signedFailure(['field9' => 'Transaction is cancelled by user'])
-        );
+        $body = $this->outcomePageFor($this->signedFailure(['field9' => 'Transaction is cancelled by user']));
 
-        $this->assertStringContainsString('cancelled', strtolower(session('info')));
+        $this->assertStringContainsString('cancelled', $body);
     }
 
     public function test_insufficient_funds_says_so_plainly(): void
     {
         $this->payment();
 
-        $this->post(
-            route('citizen.payment.payu-return'),
-            $this->signedFailure(['error_Message' => 'Insufficient funds in account'])
-        );
+        $body = $this->outcomePageFor($this->signedFailure(['error_Message' => 'Insufficient funds in account']));
 
-        $this->assertStringContainsString('insufficient funds', strtolower(session('error')));
+        $this->assertStringContainsString('insufficient funds', $body);
     }
 
     public function test_a_bank_decline_is_distinguished_from_a_technical_fault(): void
     {
         $this->payment();
 
-        $this->post(
-            route('citizen.payment.payu-return'),
-            $this->signedFailure(['error_Message' => 'Transaction declined by issuing bank'])
-        );
+        $body = $this->outcomePageFor($this->signedFailure(['error_Message' => 'Transaction declined by issuing bank']));
 
-        $this->assertStringContainsString('declined', strtolower(session('error')));
-        $this->assertStringContainsString('nothing has been charged', strtolower(session('error')));
+        $this->assertStringContainsString('declined', $body);
+        $this->assertStringContainsString('nothing has been charged', $body);
     }
 
     /**
@@ -174,11 +168,10 @@ class PaymentFailurePathsTest extends TestCase
     {
         $this->payment();
 
-        $this->post(route('citizen.payment.payu-return'), $this->signedFailure());
+        $body = $this->outcomePageFor($this->signedFailure());
 
-        $message = strtolower(session('error'));
-        $this->assertStringNotContainsString('nothing has been charged', $message);
-        $this->assertStringContainsString('contact the gram panchayat office', $message);
+        $this->assertStringNotContainsString('nothing has been charged', $body);
+        $this->assertStringContainsString('contact the gram panchayat office', $body);
     }
 
     public function test_an_unverifiable_response_tells_the_citizen_not_to_pay_again(): void
@@ -188,9 +181,12 @@ class PaymentFailurePathsTest extends TestCase
         $forged = $this->signedFailure();
         $forged['hash'] = str_repeat('f', 128);
 
-        $this->post(route('citizen.payment.payu-return'), $forged);
+        // A forged hash never reaches the result page. The route has no
+        // session, so the warning is rendered directly.
+        $body = strtolower($this->post(route('citizen.payment.payu-return'), $forged)->getContent());
 
-        $this->assertStringContainsString('could not be verified', strtolower(session('error')));
+        $this->assertStringContainsString('could not be verified', $body);
+        $this->assertStringContainsString('do not attempt the payment again', $body);
         $this->assertSame('1000.00', (string) $this->record->fresh()->balance);
     }
 
