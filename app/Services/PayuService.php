@@ -181,6 +181,14 @@ class PayuService
         return $this->merchantId;
     }
 
+    /**
+     * Only for signing server-to-server verification calls. Never render this.
+     */
+    public function getSalt(): string
+    {
+        return $this->salt;
+    }
+
     public function isSandbox(): bool
     {
         return $this->environment !== 'production';

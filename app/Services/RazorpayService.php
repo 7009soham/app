@@ -9,6 +9,10 @@ use Illuminate\Support\Str;
 
 class RazorpayService
 {
+    /** A hung gateway must not hold the worker until max_execution_time. */
+    private const CONNECT_TIMEOUT = 8;
+    private const REQUEST_TIMEOUT = 25;
+
     protected string $keyId;
     protected string $keySecret;
 
@@ -44,7 +48,9 @@ class RazorpayService
         $amount = (int) round($params['amount'] * 100); // Convert to paise
 
         try {
-            $response = Http::withBasicAuth($this->keyId, $this->keySecret)
+            $response = Http::timeout(self::REQUEST_TIMEOUT)
+                ->connectTimeout(self::CONNECT_TIMEOUT)
+                ->withBasicAuth($this->keyId, $this->keySecret)
                 ->post('https://api.razorpay.com/v1/orders', [
                     'amount'   => $amount,
                     'currency' => 'INR',
@@ -88,7 +94,10 @@ class RazorpayService
     public function fetchPayment(string $paymentId): array
     {
         try {
-            $response = Http::withBasicAuth($this->keyId, $this->keySecret)
+            $response = Http::timeout(self::REQUEST_TIMEOUT)
+                ->connectTimeout(self::CONNECT_TIMEOUT)
+                ->retry(2, 300, throw: false)
+                ->withBasicAuth($this->keyId, $this->keySecret)
                 ->get("https://api.razorpay.com/v1/payments/{$paymentId}");
 
             $data = $response->json();

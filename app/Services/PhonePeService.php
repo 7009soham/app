@@ -9,6 +9,14 @@ use Illuminate\Support\Str;
 
 class PhonePeService
 {
+    /**
+     * Without these a hung gateway holds the PHP worker until
+     * max_execution_time, and the citizen stares at a blank tab having no idea
+     * whether they were charged.
+     */
+    private const CONNECT_TIMEOUT = 8;
+    private const REQUEST_TIMEOUT = 25;
+
     protected $merchantId;
     protected $saltKey;
     protected $saltIndex;
@@ -106,10 +114,12 @@ class PhonePeService
         $checksum = $this->generateChecksum($jsonPayload, $endpoint);
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'X-VERIFY' => $checksum,
-            ])->post($this->baseUrl . $endpoint, [
+            $response = Http::timeout(self::REQUEST_TIMEOUT)
+                ->connectTimeout(self::CONNECT_TIMEOUT)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'X-VERIFY' => $checksum,
+                ])->post($this->baseUrl . $endpoint, [
                 'request' => $base64Payload,
             ]);
 
@@ -168,11 +178,14 @@ class PhonePeService
         $checksum = $sha256Hash . '###' . $this->saltIndex;
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'X-VERIFY' => $checksum,
-                'X-MERCHANT-ID' => $this->merchantId,
-            ])->get($this->baseUrl . $endpoint);
+            $response = Http::timeout(self::REQUEST_TIMEOUT)
+                ->connectTimeout(self::CONNECT_TIMEOUT)
+                ->retry(2, 300, throw: false)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'X-VERIFY' => $checksum,
+                    'X-MERCHANT-ID' => $this->merchantId,
+                ])->get($this->baseUrl . $endpoint);
 
             $responseData = $response->json();
 
@@ -279,10 +292,12 @@ class PhonePeService
         $checksum = $this->generateChecksum($jsonPayload, $endpoint);
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'X-VERIFY' => $checksum,
-            ])->post($this->baseUrl . $endpoint, [
+            $response = Http::timeout(self::REQUEST_TIMEOUT)
+                ->connectTimeout(self::CONNECT_TIMEOUT)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'X-VERIFY' => $checksum,
+                ])->post($this->baseUrl . $endpoint, [
                 'request' => $base64Payload,
             ]);
 

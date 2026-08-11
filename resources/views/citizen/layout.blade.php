@@ -458,8 +458,23 @@
                 @endif
 
                 @if(session('error'))
-                <div style="padding: 16px; background: #fee2e2; border: 1px solid #fecaca; border-radius: var(--radius); margin-bottom: 24px; color: #dc2626;">
+                <div role="alert" style="padding: 16px; background: #fee2e2; border: 1px solid #fecaca; border-radius: var(--radius); margin-bottom: 24px; color: #dc2626;">
                     <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                </div>
+                @endif
+
+                {{-- A cancelled payment is normal, not a fault. Without this it
+                     was flashed but never rendered, so the citizen cancelled and
+                     landed on a silent page with no idea what had happened. --}}
+                @if(session('info'))
+                <div role="status" style="padding: 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); margin-bottom: 24px; color: #1e40af;">
+                    <i class="fas fa-info-circle"></i> {{ session('info') }}
+                </div>
+                @endif
+
+                @if(session('warning'))
+                <div role="status" style="padding: 16px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: var(--radius); margin-bottom: 24px; color: #92400e;">
+                    <i class="fas fa-triangle-exclamation"></i> {{ session('warning') }}
                 </div>
                 @endif
 

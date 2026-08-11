@@ -114,18 +114,30 @@ class PaymentController extends Controller
              return back()->with('error', 'Tax Type configuration not found. Please contact admin.');
         }
 
-        // Determine active gateway and check it is ready
+        // Determine active gateway and check it is ready.
+        //
+        // The else-branch used to assume PhonePe, so picking PayU while
+        // PhonePe was switched off failed with "gateway not available" even
+        // though PayU was perfectly configured.
         $gateway = $this->activeGateway($validated['payment_method'] ?? null, $validated['tax_type']);
-        if ($gateway === 'razorpay') {
-            if (!$this->razorpayService->isEnabled()) {
-                return back()->with('error', 'Payment gateway is currently not available. Please try again later.');
-            }
-            $transactionId = $this->razorpayService->generateTransactionId();
-        } else {
-            if (!$this->phonePeService->isEnabled()) {
-                return back()->with('error', 'Payment gateway is currently not available. Please try again later.');
-            }
-            $transactionId = $this->phonePeService->generateTransactionId();
+
+        $transactionId = match ($gateway) {
+            'razorpay' => $this->razorpayService->isEnabled()
+                ? $this->razorpayService->generateTransactionId()
+                : null,
+            'payu' => $this->payuTransactionId($validated['tax_type']),
+            default => $this->phonePeService->isEnabled()
+                ? $this->phonePeService->generateTransactionId()
+                : null,
+        };
+
+        if ($transactionId === null) {
+            Log::warning('Payment initiation blocked: gateway not ready', [
+                'gateway' => $gateway,
+                'tax_type' => $validated['tax_type'],
+            ]);
+
+            return back()->with('error', 'Payment gateway is currently not available. Please try again later.');
         }
 
         // Determine period dates based on tax type
@@ -178,7 +190,31 @@ class PaymentController extends Controller
             $paymentCreateData['failure_reason'] = null;
         }
 
-        $payment = TaxPayment::create($paymentCreateData);
+        // A citizen who taps Pay twice, or comes back after abandoning a
+        // checkout, would otherwise leave a trail of pending rows for the same
+        // bill - which makes reconciliation ambiguous and the history
+        // confusing. Reuse a recent, still-pending attempt for the same record
+        // and amount instead of stacking another one up.
+        $reusable = TaxPayment::where('citizen_id', $citizenId)
+            ->where('record_id', $validated['record_id'])
+            ->where('tax_type', $validated['tax_type'] . '_tax')
+            ->where('payment_status', 'pending')
+            ->where('amount', $totalAmount)
+            ->where('created_at', '>=', now()->subMinutes(15))
+            ->latest('id')
+            ->first();
+
+        if ($reusable) {
+            Log::info('Reusing an existing pending payment instead of creating a duplicate', [
+                'transaction_id' => $reusable->transaction_id,
+                'record_id' => $reusable->record_id,
+            ]);
+
+            $payment = $reusable;
+            $transactionId = $reusable->transaction_id;
+        } else {
+            $payment = TaxPayment::create($paymentCreateData);
+        }
 
         // --- Razorpay flow ---
         if ($gateway === 'razorpay') {
@@ -472,20 +508,43 @@ class PaymentController extends Controller
 
         // updatePaymentStatus locks the row and credits the ledger in one
         // transaction, so a repeated return post cannot double-credit.
-        $this->updatePaymentStatus(
-            $payment,
-            $status === 'success' ? 'SUCCESS' : 'FAILED',
-            ['payu_response' => $response],
-            $status === 'success'
-        );
+        //
+        // Wrapped because this runs AFTER the citizen's money has moved. An
+        // uncaught error here would show a 500 to someone who has just paid,
+        // leaving them unsure whether to pay again. The transaction rolls back
+        // on its own; reconciliation picks the payment up afterwards.
+        try {
+            $this->updatePaymentStatus(
+                $payment,
+                $status === 'success' ? 'SUCCESS' : 'FAILED',
+                ['payu_response' => $response],
+                $status === 'success'
+            );
+        } catch (\Throwable $e) {
+            Log::error('PayU return: failed to record outcome', [
+                'transaction_id' => $payment->transaction_id,
+                'status' => $status,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('citizen.payment-history')->with(
+                'error',
+                'Your payment went through but we could not update your record immediately. '
+                . 'Please do not pay again — it will appear shortly. Reference: ' . $payment->transaction_id
+            );
+        }
 
         if ($status === 'success') {
             return redirect()->route('citizen.transactions.show', $payment->fresh())
                 ->with('success', 'Payment successful.');
         }
 
+        $failureCode = $this->resolveFailureCode($status, $response);
+        $message = $this->mapFailureReason($failureCode);
+
+        // A cancellation is shown as information, not as a red error.
         return redirect()->route('citizen.payment-history')
-            ->with('error', $this->mapFailureReason($this->resolveFailureCode($status, $response)));
+            ->with($this->isCitizenAbandonment($failureCode) ? 'info' : 'error', $message);
     }
 
     public function razorpayCheckout()
@@ -576,7 +635,23 @@ class PaymentController extends Controller
         $isCompleted = $fetchResult['success'] && ($fetchResult['is_completed'] ?? false);
         $providerStatus = $isCompleted ? 'COMPLETED' : (($fetchResult['status'] ?? 'UNKNOWN'));
 
-        $this->updatePaymentStatus($payment, $providerStatus, $fetchResult['data'] ?? [], true);
+        // Runs after the citizen has paid, so a failure here must not become a
+        // 500 that leaves them wondering whether to pay again.
+        try {
+            $this->updatePaymentStatus($payment, $providerStatus, $fetchResult['data'] ?? [], true);
+        } catch (\Throwable $e) {
+            Log::error('Razorpay return: failed to record outcome', [
+                'transaction_id' => $payment->transaction_id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('citizen.payment-history')->with(
+                'error',
+                'Your payment went through but we could not update your record immediately. '
+                . 'Please do not pay again — it will appear shortly. Reference: ' . $payment->transaction_id
+            );
+        }
+
         $payment->refresh();
 
         $latestStatus = $payment->status ?? $payment->payment_status;
@@ -615,6 +690,34 @@ class PaymentController extends Controller
     /**
      * Update payment status and related records
      */
+    /**
+     * A transaction id for the PayU account belonging to this tax head, or
+     * null when that head is not configured.
+     */
+    private function payuTransactionId(string $taxType): ?string
+    {
+        try {
+            $payu = PayuService::forTaxType($taxType);
+        } catch (\InvalidArgumentException) {
+            return null;
+        }
+
+        return $payu->isEnabled() ? $payu->generateTransactionId() : null;
+    }
+
+    /**
+     * Entry point for the reconciliation command.
+     *
+     * Deliberately routed through the same method a live callback uses, so a
+     * reconciled payment gets the identical locking, transaction and
+     * idempotency guard. Marked api-confirmed because the caller only ever
+     * passes a status it read from the gateway's own status API.
+     */
+    public function reconcilePaymentStatus(TaxPayment $payment, string $status, array $data = []): void
+    {
+        $this->updatePaymentStatus($payment, $status, $data, true);
+    }
+
     protected function updatePaymentStatus(
         TaxPayment $payment,
         string $status,
@@ -740,10 +843,40 @@ class PaymentController extends Controller
         $responseCode = strtoupper((string) ($responseData['code'] ?? ''));
         $responseMessage = strtoupper((string) ($responseData['message'] ?? ''));
         $state = strtoupper((string) ($responseData['data']['state'] ?? ''));
-        $haystack = $statusText . ' ' . $responseCode . ' ' . $responseMessage . ' ' . $state;
 
-        if (str_contains($haystack, 'CANCEL')) {
+        // PayU reports the reason in its own fields, and the response may also
+        // arrive wrapped under payu_response. Without these the haystack was
+        // just "failure", so a citizen who pressed Cancel was told there had
+        // been a technical problem.
+        $payu = $responseData['payu_response'] ?? $responseData;
+        $payuFields = strtoupper(implode(' ', array_filter(
+            [
+                $payu['unmappedstatus'] ?? null,
+                $payu['error_Message'] ?? null,
+                $payu['error'] ?? null,
+                // field9 is where PayU puts the bank's own message.
+                $payu['field9'] ?? null,
+            ],
+            fn ($value) => is_string($value) && $value !== ''
+        )));
+
+        $haystack = trim($statusText . ' ' . $responseCode . ' ' . $responseMessage . ' ' . $state . ' ' . $payuFields);
+
+        // "usercancelled" has no separator, so a word-boundary match would miss it.
+        if (str_contains($haystack, 'CANCEL') || str_contains($haystack, 'ABORT')) {
             return 'USER_CANCELLED';
+        }
+
+        if (str_contains($haystack, 'INSUFFICIENT') || str_contains($haystack, 'NOT ENOUGH')) {
+            return 'INSUFFICIENT_FUNDS';
+        }
+
+        if (str_contains($haystack, 'EXPIRE') || str_contains($haystack, 'EXPIRED')) {
+            return 'EXPIRED';
+        }
+
+        if (str_contains($haystack, 'DECLIN') || str_contains($haystack, 'REJECT') || str_contains($haystack, 'DO NOT HONOR')) {
+            return 'DECLINED';
         }
 
         if (str_contains($haystack, 'TIMEOUT') || str_contains($haystack, 'TIMED OUT')) {
@@ -770,15 +903,31 @@ class PaymentController extends Controller
         return 'UNKNOWN';
     }
 
+    /**
+     * Citizen-facing wording.
+     *
+     * Cancelling is not an error and must not be dressed as one, or people
+     * assume something broke and either give up or pay twice. Every other
+     * message says plainly whether money could have left their account.
+     */
     protected function mapFailureReason(string $failureCode): string
     {
         return match ($failureCode) {
-            'USER_CANCELLED' => 'Payment cancelled by user',
-            'TIMEOUT' => 'Payment gateway timeout',
-            'NETWORK' => 'Network issue, please retry',
-            'VERIFY_FAIL' => 'Payment verification failed',
-            default => 'Technical issue, please try again',
+            'USER_CANCELLED' => 'Payment cancelled. Nothing has been charged — you can try again whenever you are ready.',
+            'INSUFFICIENT_FUNDS' => 'The payment was declined for insufficient funds. Nothing has been charged.',
+            'DECLINED' => 'Your bank declined the payment. Nothing has been charged. Please try another method or contact your bank.',
+            'EXPIRED' => 'The payment session expired before it completed. Nothing has been charged — please start again.',
+            'TIMEOUT' => 'The payment gateway did not respond in time. If money was debited it will be reversed automatically within a few days.',
+            'NETWORK' => 'A network problem interrupted the payment. If money was debited it will be reversed automatically.',
+            'VERIFY_FAIL' => 'We could not verify this payment. Please do not pay again — contact the Gram Panchayat office with your transaction number.',
+            default => 'The payment did not complete. If money was debited, please contact the Gram Panchayat office before trying again.',
         };
+    }
+
+    /** Cancelling is a normal outcome, not a failure to apologise for. */
+    protected function isCitizenAbandonment(string $failureCode): bool
+    {
+        return in_array($failureCode, ['USER_CANCELLED', 'EXPIRED'], true);
     }
 
     protected function isConfirmedProviderSuccessPayload(array $responseData): bool
