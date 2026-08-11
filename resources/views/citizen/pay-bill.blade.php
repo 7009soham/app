@@ -212,6 +212,14 @@
         color: var(--text-primary);
     }
 
+    /* Shown when only one gateway is live, so the single tile does not look
+       like an unexplained choice. */
+    .method-note {
+        margin: 10px 0 0;
+        font-size: 13px;
+        color: var(--text-secondary, #64748b);
+    }
+
     /* Pay Button */
     .pay-btn {
         width: 100%;
@@ -384,12 +392,14 @@
             </div>
 
             @php
-                $phonePeEnabled = \App\Models\SiteSetting::get('phonepe_enabled', '0') === '1';
-                $phonePeConfigured = !empty(\App\Models\SiteSetting::get('phonepe_merchant_id', '')) 
-                                  && !empty(\App\Models\SiteSetting::get('phonepe_salt_key', ''));
+                // Driven entirely by Admin > Settings > Payment. Previously this
+                // checked PhonePe specifically, so switching the active gateway
+                // to Razorpay hid the payment form altogether.
+                $gateways = app(\App\Services\PaymentGatewayRegistry::class)->available($taxType);
+                $defaultGateway = app(\App\Services\PaymentGatewayRegistry::class)->default($taxType);
             @endphp
 
-            @if($phonePeEnabled && $phonePeConfigured)
+            @if(!empty($gateways))
             <!-- Payment Gateway Active -->
             <div class="info-notice success">
                 <i class="fas fa-check-circle"></i>
@@ -513,25 +523,26 @@
                 </script>
                 @endif
 
-                <!-- Payment Methods -->
+                <!-- Payment Methods, from Admin > Settings > Payment -->
                 <div class="payment-methods">
                     <div class="method-title">{{ __('messages.payment_gateway') }}</div>
                     <div class="method-options">
-                        <label class="method-option selected">
-                            <input type="radio" name="payment_method" value="phonepe" checked>
-                            <div class="method-icon">
-                                <i class="fas fa-mobile-alt" style="font-size: 24px; color: #5f259f;"></i>
-                            </div>
-                            <span class="method-name">PhonePe</span>
-                        </label>
-                        <label class="method-option">
-                            <input type="radio" name="payment_method" value="phonepe">
-                            <div class="method-icon">
-                                <i class="fas fa-qrcode" style="font-size: 24px; color: #00baf2;"></i>
-                            </div>
-                            <span class="method-name">UPI / Cards</span>
-                        </label>
+                        @foreach($gateways as $gateway)
+                            <label class="method-option {{ $gateway['key'] === $defaultGateway ? 'selected' : '' }}">
+                                <input type="radio" name="payment_method" value="{{ $gateway['key'] }}"
+                                    {{ $gateway['key'] === $defaultGateway ? 'checked' : '' }}>
+                                <div class="method-icon">
+                                    <i class="{{ $gateway['icon'] }}" style="font-size: 24px; color: {{ $gateway['colour'] }};"></i>
+                                </div>
+                                <span class="method-name">{{ $gateway['label'] }}</span>
+                            </label>
+                        @endforeach
                     </div>
+                    @if(count($gateways) === 1)
+                        <p class="method-note">
+                            {{ collect($gateways)->first()['description'] }}
+                        </p>
+                    @endif
                 </div>
 
                 <!-- Pay Button -->

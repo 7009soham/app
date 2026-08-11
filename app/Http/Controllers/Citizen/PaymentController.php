@@ -36,9 +36,23 @@ class PaymentController extends Controller
         $this->razorpayService = $razorpayService;
     }
 
-    protected function activeGateway(): string
+    /**
+     * The gateway that will process this payment.
+     *
+     * Honours the citizen's selection only when that gateway is genuinely
+     * available, so a tampered or stale form value cannot route a payment to a
+     * gateway that is switched off or unimplemented. Otherwise falls back to
+     * the configured default.
+     */
+    protected function activeGateway(?string $requested = null, ?string $taxType = null): string
     {
-        return SiteSetting::get('active_payment_gateway', 'phonepe');
+        $registry = app(\App\Services\PaymentGatewayRegistry::class);
+
+        if ($registry->isSelectable($requested, $taxType)) {
+            return $requested;
+        }
+
+        return $registry->default($taxType) ?? SiteSetting::get('active_payment_gateway', 'phonepe');
     }
 
     /**
@@ -51,6 +65,8 @@ class PaymentController extends Controller
             'record_id' => 'required|integer',
             'amount' => 'required|numeric|min:1',
             'convenience_fee' => 'nullable|numeric|min:0',
+            // Validated against what is actually available in activeGateway().
+            'payment_method' => 'nullable|string|max:32',
         ]);
 
         $citizenId = Auth::guard('citizen')->id();
@@ -98,7 +114,7 @@ class PaymentController extends Controller
         }
 
         // Determine active gateway and check it is ready
-        $gateway = $this->activeGateway();
+        $gateway = $this->activeGateway($validated['payment_method'] ?? null, $validated['tax_type']);
         if ($gateway === 'razorpay') {
             if (!$this->razorpayService->isEnabled()) {
                 return back()->with('error', 'Payment gateway is currently not available. Please try again later.');
