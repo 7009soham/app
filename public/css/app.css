@@ -631,7 +631,7 @@ ul {
 
 .icon-chip--danger {
     background-color: #fdecec;
-    color: #dc2626;
+    color: var(--color-error);
 }
 
 .quick-actions {
