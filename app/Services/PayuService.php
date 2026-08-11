@@ -46,12 +46,12 @@ class PayuService
 
         $prefix = "payu_{$this->taxType}_";
 
-        $this->merchantKey = SiteSetting::get($prefix . 'merchant_key', '');
-        $this->salt = SiteSetting::get($prefix . 'merchant_salt', '');
-        $this->merchantId = SiteSetting::get($prefix . 'merchant_id', '');
+        $this->merchantKey = (string) SiteSetting::get($prefix . 'merchant_key', '');
+        $this->salt = (string) SiteSetting::get($prefix . 'merchant_salt', '');
+        $this->merchantId = (string) SiteSetting::get($prefix . 'merchant_id', '');
 
         // Sandbox/production is an account-wide choice, not a per-head one.
-        $this->environment = SiteSetting::get('payu_env', 'sandbox');
+        $this->environment = (string) SiteSetting::get('payu_env', 'sandbox');
     }
 
     public static function forTaxType(string $taxType): self

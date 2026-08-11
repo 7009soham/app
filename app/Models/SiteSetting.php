@@ -18,7 +18,17 @@ class SiteSetting extends Model
     {
         return Cache::remember("setting_{$key}", 3600, function () use ($key, $default) {
             $setting = self::where('key', $key)->first();
-            return $setting ? $setting->value : $default;
+
+            // A row that exists with a NULL value must still yield the default.
+            // Returning null here crashed any caller with a typed string
+            // property - RazorpayService::$keyId threw a TypeError on the
+            // citizen pay-bill page because razorpay_key_id was saved as NULL
+            // rather than removed.
+            if (!$setting || $setting->value === null) {
+                return $default;
+            }
+
+            return $setting->value;
         });
     }
 

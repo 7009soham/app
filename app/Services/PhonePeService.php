@@ -17,10 +17,10 @@ class PhonePeService
 
     public function __construct()
     {
-        $this->merchantId = SiteSetting::get('phonepe_merchant_id', '');
-        $this->saltKey = SiteSetting::get('phonepe_salt_key', '');
-        $this->saltIndex = SiteSetting::get('phonepe_salt_index', '1');
-        $this->environment = SiteSetting::get('phonepe_env', 'sandbox');
+        $this->merchantId = (string) SiteSetting::get('phonepe_merchant_id', '');
+        $this->saltKey = (string) SiteSetting::get('phonepe_salt_key', '');
+        $this->saltIndex = (string) SiteSetting::get('phonepe_salt_index', '1');
+        $this->environment = (string) SiteSetting::get('phonepe_env', 'sandbox');
         
         $this->baseUrl = $this->environment === 'production'
             ? 'https://api.phonepe.com/apis/hermes'

@@ -14,8 +14,8 @@ class RazorpayService
 
     public function __construct()
     {
-        $this->keyId = SiteSetting::get('razorpay_key_id', '');
-        $this->keySecret = SiteSetting::get('razorpay_key_secret', '');
+        $this->keyId = (string) SiteSetting::get('razorpay_key_id', '');
+        $this->keySecret = (string) SiteSetting::get('razorpay_key_secret', '');
     }
 
     public function isEnabled(): bool
