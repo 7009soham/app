@@ -222,8 +222,26 @@ ul {
     left: 0;
     right: 0;
     z-index: 1000;
-    background-color: var(--color-white);
-    box-shadow: var(--shadow);
+    background-color: var(--surface-frost);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(30, 58, 95, 0.08);
+}
+
+.logo-emblem {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: var(--radius-lg);
+    background: var(--gradient-primary);
+    color: var(--color-white);
+}
+
+.logo-emblem i {
+    font-size: var(--font-size-lg);
 }
 
 .nav {
@@ -240,10 +258,6 @@ ul {
     font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--color-primary);
-}
-
-.logo i {
-    font-size: var(--font-size-2xl);
 }
 
 .logo:hover {
@@ -304,15 +318,18 @@ ul {
     font-size: var(--font-size-sm);
     font-weight: 500;
     color: var(--color-gray-600);
-    padding: var(--spacing-2) 0;
-    border-bottom: 2px solid transparent;
     transition: all var(--transition-base);
 }
 
-.nav-links a:hover,
-.nav-links a.active {
+.nav-links a:not(.btn) {
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-full);
+}
+
+.nav-links a:not(.btn):hover,
+.nav-links a:not(.btn).active {
     color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+    background-color: var(--tint-primary);
 }
 
 .nav-links .btn {
@@ -1034,6 +1051,15 @@ ul {
     }
 }
 
+@keyframes navItemIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-links.active li { animation: none; }
+}
+
 /* ============================================
    RESPONSIVE DESIGN
    ============================================ */
@@ -1063,7 +1089,9 @@ ul {
         right: 0;
         background-color: var(--color-white);
         flex-direction: column;
-        padding: var(--spacing-4);
+        border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+        padding: var(--spacing-5) var(--spacing-4) var(--spacing-6);
+        border-top: 1px solid var(--color-gray-100);
         gap: var(--spacing-4);
         box-shadow: var(--shadow-lg);
         transform: translateY(-100%);
@@ -1079,9 +1107,23 @@ ul {
     }
 
     .nav-links a {
-        display: block;
-        padding: var(--spacing-3);
+        min-height: 44px;
+        display: flex;
+        align-items: center;
     }
+
+    .nav-links .btn {
+        width: 100%;
+    }
+
+    .nav-links.active li {
+        animation: navItemIn 0.35s ease both;
+    }
+
+    .nav-links.active li:nth-child(2) { animation-delay: 0.05s; }
+    .nav-links.active li:nth-child(3) { animation-delay: 0.1s; }
+    .nav-links.active li:nth-child(4) { animation-delay: 0.15s; }
+    .nav-links.active li:nth-child(5) { animation-delay: 0.2s; }
 
     .hero-slider {
         height: 500px;

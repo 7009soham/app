@@ -351,7 +351,7 @@
                         <img src="{{ asset('storage/' . $settings['site_logo']) }}"
                              alt="{{ $settings['site_name'] ?? 'Gram Panchayat' }}" class="logo-mark">
                     @else
-                        <i class="fas fa-landmark"></i>
+                        <span class="logo-emblem"><i class="fas fa-landmark"></i></span>
                     @endif
                     <span class="logo-text">
                         {{ $settings['site_name'] ?? 'Gram Panchayat' }}
