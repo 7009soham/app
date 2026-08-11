@@ -34,4 +34,9 @@ class HomePageEnhancementsTest extends TestCase
             ->assertSee(route('digital-services'), false)
             ->assertSee('Certificates');
     }
+
+    public function test_stats_render_as_a_strip_with_icon_chips(): void
+    {
+        $this->get('/')->assertOk()->assertSee('stats-strip', false);
+    }
 }

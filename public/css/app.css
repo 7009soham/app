@@ -694,29 +694,29 @@ ul {
    STATS SECTION
    ============================================ */
 .stats-section {
-    padding: var(--spacing-12) 0;
+    padding: var(--spacing-10) 0 var(--spacing-12);
     background-color: var(--color-gray-50);
 }
 
-.stats-grid {
+.stats-strip {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-6);
+    background-color: var(--color-white);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+    padding: var(--spacing-2) 0;
 }
 
 .stat-card {
     display: flex;
     align-items: center;
-    gap: var(--spacing-4);
-    padding: var(--spacing-6);
-    background-color: var(--color-white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
+    gap: var(--spacing-3);
+    padding: var(--spacing-4) var(--spacing-5);
+    border-right: 1px solid var(--color-gray-100);
 }
 
-.stat-card i {
-    font-size: 2.5rem;
-    color: var(--color-primary);
+.stat-card:last-child {
+    border-right: none;
 }
 
 .stat-content {
@@ -726,12 +726,13 @@ ul {
 
 .stat-number {
     font-size: var(--font-size-2xl);
-    font-weight: 700;
-    color: var(--color-gray-900);
+    font-weight: 800;
+    color: var(--color-primary);
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
     color: var(--color-gray-500);
 }
 
@@ -1236,10 +1237,6 @@ ul {
    RESPONSIVE DESIGN
    ============================================ */
 @media (max-width: 1024px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .features-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1313,6 +1310,18 @@ ul {
         font-size: var(--font-size-base);
     }
 
+    .stats-strip {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-card:nth-child(2n) {
+        border-right: none;
+    }
+
+    .stat-card:nth-child(-n+2) {
+        border-bottom: 1px solid var(--color-gray-100);
+    }
+
     .form-row {
         grid-template-columns: 1fr;
     }
@@ -1332,10 +1341,6 @@ ul {
 }
 
 @media (max-width: 480px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
     .features-grid {
         grid-template-columns: 1fr;
     }

@@ -75,30 +75,30 @@
     <!-- Quick Stats -->
     <section class="stats-section">
         <div class="container">
-            <div class="stats-grid">
+            <div class="stats-grid stats-strip" data-reveal>
                 <div class="stat-card">
-                    <i class="fas fa-users"></i>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-users"></i></span>
                     <div class="stat-content">
                         <span class="stat-number" data-target="5000">0</span>
                         <span class="stat-label">{{ __('messages.citizens_served') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-file-invoice-dollar"></i></span>
                     <div class="stat-content">
                         <span class="stat-number" data-target="10000">0</span>
                         <span class="stat-label">{{ __('messages.payments_processed') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-check-circle"></i>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-check-circle"></i></span>
                     <div class="stat-content">
                         <span class="stat-number" data-target="100">0</span>
                         <span class="stat-label">% {{ __('messages.secure') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-headset"></i>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-headset"></i></span>
                     <div class="stat-content">
                         <span class="stat-number">24/7</span>
                         <span class="stat-label">{{ __('messages.support_available') }}</span>
