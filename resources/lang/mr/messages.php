@@ -10,6 +10,7 @@ return [
     'profile' => 'प्रोफाइल',
     
     // Hero Section
+    'official_digital_portal' => 'अधिकृत डिजिटल पोर्टल',
     'welcome_to' => 'स्वागत आहे',
     'serving_community' => 'आमच्या समुदायाच्या सेवेत',
     'login_to_pay_tax' => 'कर भरण्यासाठी लॉगिन करा',

@@ -7,9 +7,11 @@
     <section class="hero-slider" id="heroSlider">
         <div class="slider-container">
             @forelse($sliders as $index => $slider)
-                <div class="slide {{ $index === 0 ? 'active' : '' }}" style="background-image: url('{{ $slider->image_url }}');">
+                <div class="slide {{ $index === 0 ? 'active' : '' }}">
+                    <div class="slide-bg" style="background-image: url('{{ $slider->image_url }}');"></div>
                     <div class="slide-overlay"></div>
                     <div class="slide-content">
+                        <span class="slide-kicker">{{ __('messages.official_digital_portal') }}</span>
                         @if($slider->title)
                             <h1>{{ $slider->title }}</h1>
                         @endif
@@ -17,16 +19,17 @@
                             <p>{{ $slider->subtitle }}</p>
                         @endif
                         @if($slider->link && $slider->button_text)
-                            <a href="{{ $slider->link }}" class="btn btn-primary btn-lg">{{ $slider->button_text }}</a>
+                            <a href="{{ $slider->link }}" class="btn btn-hero btn-lg">{{ $slider->button_text }} <span class="btn-arrow"><i class="fas fa-arrow-right"></i></span></a>
                         @endif
                     </div>
                 </div>
             @empty
-                <div class="slide active" style="background: linear-gradient(135deg, #1a365d 0%, #2d5a87 100%);">
+                <div class="slide active">
                     <div class="slide-content">
+                        <span class="slide-kicker">{{ __('messages.official_digital_portal') }}</span>
                         <h1>{{ __('messages.welcome_to') }} {{ $settings['site_name'] ?? 'Gram Panchayat' }}</h1>
                         <p>{{ $settings['site_tagline'] ?: __('messages.serving_community') }}</p>
-                        <a href="{{ route('citizen.login') }}" class="btn btn-primary btn-lg">{{ __('messages.login_to_pay_tax') }}</a>
+                        <a href="{{ route('citizen.login') }}" class="btn btn-hero btn-lg">{{ __('messages.login_to_pay_tax') }} <span class="btn-arrow"><i class="fas fa-arrow-right"></i></span></a>
                     </div>
                 </div>
             @endforelse
@@ -199,6 +202,17 @@
         
         // Auto-play
         setInterval(() => showSlide(currentSlide + 1), 5000);
+
+        // Touch swipe (arrows are hidden on mobile)
+        const sliderEl = document.getElementById('heroSlider');
+        let touchStartX = 0;
+        sliderEl.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        sliderEl.addEventListener('touchend', (e) => {
+            const dx = e.changedTouches[0].screenX - touchStartX;
+            if (Math.abs(dx) > 50) showSlide(currentSlide + (dx < 0 ? 1 : -1));
+        }, { passive: true });
     }
     
     // Counter animation

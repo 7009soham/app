@@ -383,16 +383,41 @@ ul {
    ============================================ */
 .hero-slider {
     position: relative;
-    height: 600px;
+    height: 560px;
     margin-top: 70px;
     overflow: hidden;
-    background-color: var(--color-primary);
+    background: var(--gradient-hero);
+}
+
+.hero-slider::before,
+.hero-slider::after {
+    content: '';
+    position: absolute;
+    border-radius: var(--radius-full);
+    pointer-events: none;
+}
+
+.hero-slider::before {
+    top: -80px;
+    right: -80px;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.09), transparent 65%);
+}
+
+.hero-slider::after {
+    bottom: -40px;
+    left: -60px;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(45, 90, 142, 0.5), transparent 70%);
 }
 
 .slider-container {
     position: relative;
     width: 100%;
     height: 100%;
+    z-index: 1;
 }
 
 .slide {
@@ -401,8 +426,7 @@ ul {
     left: 0;
     width: 100%;
     height: 100%;
-    background-size: cover;
-    background-position: center;
+    overflow: hidden;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.6s ease, visibility 0.6s ease;
@@ -416,13 +440,26 @@ ul {
     visibility: visible;
 }
 
+.slide-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+}
+
+.slide.active .slide-bg {
+    animation: kenburns 14s ease-out forwards;
+}
+
+@keyframes kenburns {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+}
+
 .slide-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: transparent;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15, 31, 51, 0.25) 0%, rgba(15, 31, 51, 0.55) 100%);
 }
 
 .slide-content {
@@ -432,27 +469,44 @@ ul {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    /* height: 100%; Remove height 100% to allow dynamic sizing */
     width: fit-content;
     max-width: 90%;
     text-align: center;
     color: var(--color-white);
     padding: var(--spacing-8);
-    
-    /* Glassmorphism Effect */
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-    border-radius: var(--radius-xl);
+    background: rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(15, 31, 51, 0.35);
+    border-radius: var(--radius-2xl);
+}
+
+.slide-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #f5b04c;
+    margin-bottom: var(--spacing-3);
+}
+
+.slide-kicker::before {
+    content: '';
+    width: 16px;
+    height: 2px;
+    background: #f5b04c;
 }
 
 .slide-content h1 {
     font-size: var(--font-size-5xl);
-    font-weight: 700;
+    font-weight: 800;
     margin-bottom: var(--spacing-4);
     max-width: 800px;
+    text-wrap: balance;
 }
 
 .slide-content p {
@@ -460,6 +514,31 @@ ul {
     max-width: 600px;
     margin-bottom: var(--spacing-8);
     opacity: 0.9;
+}
+
+.btn-hero {
+    background: var(--gradient-primary);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 22px rgba(15, 31, 51, 0.45);
+}
+
+.btn-hero:hover {
+    transform: translateY(-2px);
+    color: var(--color-white);
+    box-shadow: 0 12px 28px rgba(15, 31, 51, 0.55);
+}
+
+.btn-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 0.7rem;
 }
 
 .slider-nav {
@@ -515,7 +594,14 @@ ul {
 .dot.active,
 .dot:hover {
     background-color: var(--color-white);
-    transform: scale(1.2);
+}
+
+.dot.active {
+    width: 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .slide.active .slide-bg { animation: none; }
 }
 
 /* ============================================
@@ -1126,7 +1212,11 @@ ul {
     .nav-links.active li:nth-child(5) { animation-delay: 0.2s; }
 
     .hero-slider {
-        height: 500px;
+        height: 440px;
+    }
+
+    .slider-nav {
+        display: none;
     }
 
     .slide-content h1 {
@@ -1170,10 +1260,6 @@ ul {
 
     .cta-buttons .btn {
         width: 100%;
-    }
-
-    .hero-slider {
-        height: 450px;
     }
 
     .slide-content h1 {

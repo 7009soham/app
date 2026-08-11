@@ -10,6 +10,7 @@ return [
     'profile' => 'Profile',
     
     // Hero Section
+    'official_digital_portal' => 'Official Digital Portal',
     'welcome_to' => 'Welcome to',
     'serving_community' => 'Serving Our Community',
     'login_to_pay_tax' => 'Login to Pay Tax',
