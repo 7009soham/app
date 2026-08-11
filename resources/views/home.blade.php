@@ -111,35 +111,39 @@
     <!-- Services Section -->
     <section class="services-section" id="services">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header" data-reveal>
+                <span class="section-eyebrow">{{ __('messages.services') }}</span>
                 <h2>{{ __('messages.our_services') }}</h2>
                 <p>{{ __('messages.services_description') }}</p>
+                <a href="{{ route('digital-services') }}" class="section-link">{{ __('messages.view_all') }} <i class="fas fa-arrow-right"></i></a>
             </div>
-            
+
             <div class="services-grid">
                 @foreach($taxTypes as $taxType)
                     @if(strtolower(trim($taxType->name)) === 'house tax')
                         @continue
                     @endif
-                    <div class="service-card">
-                        <div class="service-icon">
-                            <i class="fas {{ $taxType->icon ?? 'fa-receipt' }}"></i>
+                    <a href="{{ route('citizen.login') }}" class="service-card" data-reveal>
+                        <span class="icon-chip icon-chip--gradient"><i class="fas {{ $taxType->icon ?? 'fa-receipt' }}"></i></span>
+                        <div class="service-body">
+                            <h3>{{ $taxType->name }}</h3>
+                            <p>{{ $taxType->description }}</p>
                         </div>
-                        <h3>{{ $taxType->name }}</h3>
-                        <p>{{ $taxType->description }}</p>
-                        <a href="{{ route('citizen.login') }}" class="btn btn-outline">{{ __('messages.login_to_pay') }}</a>
-                    </div>
+                        <span class="service-cta">{{ __('messages.login_to_pay') }}</span>
+                        <span class="service-go"><i class="fas fa-chevron-right"></i></span>
+                    </a>
                 @endforeach
 
                 <!-- Grievance Redressal Card -->
-                <div class="service-card grievance-card">
-                    <div class="service-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">
-                        <i class="fas fa-bullhorn"></i>
+                <a href="{{ route('grievance.create') }}" class="service-card" data-reveal>
+                    <span class="icon-chip icon-chip--danger"><i class="fas fa-bullhorn"></i></span>
+                    <div class="service-body">
+                        <h3>{{ __('messages.grievance_redressal') }}</h3>
+                        <p>{{ __('messages.grievance_description') }}</p>
                     </div>
-                    <h3>{{ __('messages.grievance_redressal') }}</h3>
-                    <p>{{ __('messages.grievance_description') }}</p>
-                    <a href="{{ route('grievance.create') }}" class="btn btn-outline">{{ __('messages.report_issue') }}</a>
-                </div>
+                    <span class="service-cta">{{ __('messages.report_issue') }}</span>
+                    <span class="service-go"><i class="fas fa-chevron-right"></i></span>
+                </a>
             </div>
         </div>
     </section>

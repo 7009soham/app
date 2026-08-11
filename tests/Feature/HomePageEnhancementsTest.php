@@ -39,4 +39,11 @@ class HomePageEnhancementsTest extends TestCase
     {
         $this->get('/')->assertOk()->assertSee('stats-strip', false);
     }
+
+    public function test_services_section_has_eyebrow_and_view_all_link(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('section-eyebrow', false)
+            ->assertSee(__('messages.view_all'));
+    }
 }
