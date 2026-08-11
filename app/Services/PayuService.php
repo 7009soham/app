@@ -120,13 +120,55 @@ class PayuService
     }
 
     /**
-     * PayU can actually take a payment for this head. Always false until the
-     * checkout page and callback route exist, so callers never route a citizen
-     * to a dead end.
+     * The signed-form checkout and return handler exist, so a configured head
+     * can take a payment. Kept separate from isEnabled() so the registry can
+     * tell "not set up" apart from "not implemented".
      */
     public function isReady(): bool
     {
-        return false;
+        return true;
+    }
+
+    /**
+     * The exact amount string that is both posted to PayU and signed.
+     *
+     * PayU compares the amount byte for byte against the hash, so the value
+     * must be formatted once and reused - not formatted twice.
+     */
+    public function formatAmount(float $amount): string
+    {
+        return number_format($amount, 2, '.', '');
+    }
+
+    /**
+     * Complete field set for the checkout form, hash included.
+     *
+     * udf1/udf2 carry the tax head and record id back to us, but they are not
+     * trusted on return: they are part of the signed sequence, so the reverse
+     * hash is what actually proves they were not altered.
+     */
+    public function buildCheckoutFields(array $params): array
+    {
+        $fields = [
+            'key' => $this->merchantKey,
+            'txnid' => $this->sanitizeTransactionId($params['txnid']),
+            'amount' => $this->formatAmount((float) $params['amount']),
+            'productinfo' => $params['productinfo'],
+            'firstname' => $params['firstname'],
+            'email' => $params['email'],
+            'phone' => $params['phone'] ?? '',
+            'surl' => $params['return_url'],
+            'furl' => $params['return_url'],
+            'udf1' => $this->taxType,
+            'udf2' => (string) ($params['record_id'] ?? ''),
+            'udf3' => '',
+            'udf4' => '',
+            'udf5' => '',
+        ];
+
+        $fields['hash'] = $this->generateRequestHash($fields);
+
+        return $fields;
     }
 
     public function getMerchantKey(): string

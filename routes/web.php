@@ -263,6 +263,8 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
     // Razorpay
     Route::get('/payment/razorpay-checkout', [\App\Http\Controllers\Citizen\PaymentController::class, 'razorpayCheckout'])->name('payment.razorpay-checkout');
     Route::post('/payment/razorpay-return', [\App\Http\Controllers\Citizen\PaymentController::class, 'razorpayReturn'])->name('payment.razorpay-return');
+    // PayU
+    Route::get('/payment/payu-checkout', [\App\Http\Controllers\Citizen\PaymentController::class, 'payuCheckout'])->name('payment.payu-checkout');
 
     // Profile
     Route::get('/profile', [CitizenDashboardController::class, 'profile'])->name('profile');
@@ -294,4 +296,14 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
 // Payment Callback (No auth required - S2S callback from PhonePe)
 Route::post('/citizen/payment/callback', [\App\Http\Controllers\Citizen\PaymentController::class, 'callback'])
     ->name('citizen.payment.callback')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+// PayU posts the outcome here from its own domain, so this route cannot sit
+// behind citizen.auth or CSRF: the session cookie is SameSite=lax and is not
+// sent on a cross-site POST, and PayU has no CSRF token. The handler trusts
+// nothing in the body until the reverse hash validates against a stored salt.
+// The redirect it issues is a same-site GET, so the citizen's session is intact
+// on the page they land on.
+Route::post('/citizen/payment/payu-return', [\App\Http\Controllers\Citizen\PaymentController::class, 'payuReturn'])
+    ->name('citizen.payment.payu-return')
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);

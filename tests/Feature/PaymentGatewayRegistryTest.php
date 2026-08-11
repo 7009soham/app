@@ -66,18 +66,37 @@ class PaymentGatewayRegistryTest extends TestCase
     }
 
     /**
-     * The whole point of the registry: a configured-but-unimplemented gateway
-     * must never be shown, or the citizen reaches a checkout that does not
-     * exist and the payment is lost.
+     * PayU became available once its signed-form checkout and return handler
+     * were built. Before that the registry deliberately hid it, so a citizen
+     * could not be sent to a checkout that did not exist.
      */
-    public function test_payu_is_not_offered_while_its_checkout_flow_is_unimplemented(): void
+    public function test_payu_is_offered_for_a_head_that_has_credentials(): void
     {
-        $this->configurePayu();
+        $this->configurePayu(); // property only
 
         $all = $this->registry()->all('property');
 
-        $this->assertFalse($all['payu']['available']);
-        $this->assertStringContainsString('not implemented', $all['payu']['reason']);
+        $this->assertTrue($all['payu']['available']);
+        $this->assertNull($all['payu']['reason']);
+        $this->assertArrayHasKey('payu', $this->registry()->available('property'));
+    }
+
+    /**
+     * The registry must stay per-head: property being live says nothing about
+     * water, which settles into a different bank account.
+     */
+    public function test_payu_stays_hidden_for_a_head_with_no_credentials(): void
+    {
+        $this->configurePayu(); // property only
+
+        $this->assertArrayNotHasKey('payu', $this->registry()->available('water'));
+    }
+
+    public function test_payu_is_hidden_entirely_when_switched_off(): void
+    {
+        $this->configurePayu();
+        SiteSetting::set('payu_enabled', '0', 'payment', 'boolean');
+
         $this->assertArrayNotHasKey('payu', $this->registry()->available('property'));
     }
 
@@ -115,13 +134,16 @@ class PaymentGatewayRegistryTest extends TestCase
     public function test_a_citizen_may_only_select_an_available_gateway(): void
     {
         $this->enablePhonePe();
-        $this->configurePayu();
+        $this->configurePayu(); // property only
 
         $registry = $this->registry();
 
         $this->assertTrue($registry->isSelectable('phonepe'));
-        // Tampering with the form must not route a payment to PayU.
-        $this->assertFalse($registry->isSelectable('payu', 'property'));
+        $this->assertTrue($registry->isSelectable('payu', 'property'));
+
+        // Tampering with the form must not route a water payment through the
+        // property merchant account, nor reach a gateway that is switched off.
+        $this->assertFalse($registry->isSelectable('payu', 'water'));
         $this->assertFalse($registry->isSelectable('razorpay'));
         $this->assertFalse($registry->isSelectable(null));
         $this->assertFalse($registry->isSelectable('nonsense'));

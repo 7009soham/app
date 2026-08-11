@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\PropertyTaxRecord;
 use App\Models\PropertyTaxAnnualBill;
 use App\Models\TaxType;
+use App\Services\PayuService;
 use App\Services\PhonePeService;
 use App\Services\RazorpayService;
 use Carbon\Carbon;
@@ -204,6 +205,16 @@ class PaymentController extends Controller
             return back()->with('error', $this->mapFailureReason('UNKNOWN'));
         }
 
+        // --- PayU flow ---
+        // No create-order API: the citizen's browser posts a signed form
+        // straight to PayU, so all we do here is stash the payment and hand
+        // over to the checkout page that renders it.
+        if ($gateway === 'payu') {
+            Session::put('pending_payment_id', $payment->id);
+
+            return redirect()->route('citizen.payment.payu-checkout');
+        }
+
         // --- PhonePe flow (default) ---
         $result = $this->phonePeService->initiatePayment([
             'transaction_id' => $transactionId,
@@ -344,6 +355,139 @@ class PaymentController extends Controller
     /**
      * Show the Razorpay checkout page
      */
+    /**
+     * Renders the signed PayU form and auto-submits it.
+     *
+     * The transaction id and amount come from the stored payment, never from
+     * the request, so a citizen cannot re-open this page with a cheaper amount.
+     */
+    public function payuCheckout()
+    {
+        $payment = TaxPayment::find(Session::get('pending_payment_id'));
+
+        // Cast both sides: the id arrives as an int from the model but as a
+        // string from some drivers, and a strict comparison silently fails.
+        // PaymentHistoryController guards ownership the same way.
+        if (!$payment || (string) $payment->citizen_id !== (string) Auth::guard('citizen')->id()) {
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment session expired. Please start again.');
+        }
+
+        if ($payment->payment_status === 'completed') {
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'This payment has already been completed.');
+        }
+
+        try {
+            $payu = PayuService::forTaxType($payment->tax_type);
+        } catch (\InvalidArgumentException $e) {
+            Log::error('PayU checkout: unknown tax type', ['payment_id' => $payment->id]);
+
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment could not be started. Please contact the Gram Panchayat office.');
+        }
+
+        if (!$payu->isEnabled()) {
+            $this->markPaymentFailed($payment, 'PayU not configured for ' . $payment->tax_type);
+
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment gateway is currently not available. Please try again later.');
+        }
+
+        $citizen = Citizen::find($payment->citizen_id);
+
+        $fields = $payu->buildCheckoutFields([
+            'txnid' => $payment->transaction_id,
+            'amount' => $payment->amount,
+            'productinfo' => $payu->getLabel(),
+            // PayU rejects some punctuation in firstname; keep it simple.
+            'firstname' => preg_replace('/[^a-zA-Z0-9 ]/', '', $citizen?->name ?: 'Citizen') ?: 'Citizen',
+            'email' => $citizen?->email ?: 'noreply@' . request()->getHost(),
+            'phone' => $citizen?->phone ?? '',
+            'record_id' => $payment->record_id,
+            'return_url' => route('citizen.payment.payu-return'),
+        ]);
+
+        return view('citizen.payment.payu-checkout', [
+            'action' => $payu->getPaymentUrl(),
+            'fields' => $fields,
+            'amount' => $fields['amount'],
+            'label' => $payu->getLabel(),
+        ]);
+    }
+
+    /**
+     * PayU posts the outcome back here, to both the success and failure URLs.
+     *
+     * Which tax head - and therefore which merchant account - the payment
+     * belongs to is decided by whichever configured salt validates the reverse
+     * hash. The body is attacker-controlled, so nothing in it is trusted until
+     * that signature checks out.
+     */
+    public function payuReturn(Request $request)
+    {
+        $response = $request->all();
+
+        Log::info('PayU return received', [
+            'txnid' => $response['txnid'] ?? null,
+            'status' => $response['status'] ?? null,
+        ]);
+
+        $payu = PayuService::resolveFromResponse($response);
+
+        if (!$payu) {
+            Log::warning('PayU return rejected: reverse hash did not validate', [
+                'txnid' => $response['txnid'] ?? null,
+            ]);
+
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment could not be verified. If money was debited it will be refunded automatically.');
+        }
+
+        $payment = TaxPayment::where('transaction_id', $response['txnid'] ?? '')->first();
+
+        if (!$payment) {
+            Log::error('PayU return: no matching payment', ['txnid' => $response['txnid'] ?? null]);
+
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment record not found. Please contact the Gram Panchayat office.');
+        }
+
+        // The signature covers the amount, so a mismatch means the payment we
+        // hold is not the one PayU processed.
+        if ($payu->formatAmount((float) $payment->amount) !== (string) ($response['amount'] ?? '')) {
+            Log::error('PayU return: amount mismatch', [
+                'transaction_id' => $payment->transaction_id,
+                'expected' => $payu->formatAmount((float) $payment->amount),
+                'received' => $response['amount'] ?? null,
+            ]);
+
+            $this->markPaymentFailed($payment, 'Amount mismatch on PayU return');
+
+            return redirect()->route('citizen.payment-history')
+                ->with('error', 'Payment amount did not match our records. Please contact the Gram Panchayat office.');
+        }
+
+        $status = strtolower((string) ($response['status'] ?? ''));
+
+        // updatePaymentStatus locks the row and credits the ledger in one
+        // transaction, so a repeated return post cannot double-credit.
+        $this->updatePaymentStatus(
+            $payment,
+            $status === 'success' ? 'SUCCESS' : 'FAILED',
+            ['payu_response' => $response],
+            $status === 'success'
+        );
+
+        if ($status === 'success') {
+            return redirect()->route('citizen.transactions.show', $payment->fresh())
+                ->with('success', 'Payment successful.');
+        }
+
+        return redirect()->route('citizen.payment-history')
+            ->with('error', $this->mapFailureReason($this->resolveFailureCode($status, $response)));
+    }
+
     public function razorpayCheckout()
     {
         $paymentId = Session::get('pending_payment_id');

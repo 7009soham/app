@@ -160,12 +160,54 @@ class PayuSettingsTest extends TestCase
         );
     }
 
-    public function test_payu_is_never_ready_while_checkout_flow_is_unimplemented(): void
+    /**
+     * isReady() reports whether the checkout flow exists in the code, which it
+     * now does. It stays separate from isEnabled() so the registry can
+     * distinguish "not set up by the admin" from "not built yet".
+     */
+    public function test_the_checkout_flow_is_implemented(): void
     {
         SiteSetting::set('payu_enabled', '1', 'payment', 'boolean');
         $this->configureProperty();
 
-        $this->assertFalse(PayuService::forTaxType('property')->isReady());
+        $this->assertTrue(PayuService::forTaxType('property')->isReady());
+    }
+
+    public function test_amount_is_formatted_once_so_it_matches_the_signed_value(): void
+    {
+        $this->configureProperty();
+
+        // PayU compares the posted amount byte for byte against the hash.
+        $service = PayuService::forTaxType('property');
+
+        $this->assertSame('400.00', $service->formatAmount(400));
+        $this->assertSame('400.50', $service->formatAmount(400.5));
+        $this->assertSame('1000.00', $service->formatAmount(1000.004));
+    }
+
+    public function test_checkout_fields_carry_the_tax_head_and_are_self_consistent(): void
+    {
+        $this->configureWater();
+
+        $fields = PayuService::forTaxType('water')->buildCheckoutFields([
+            'txnid' => 'TXN-1',
+            'amount' => 250,
+            'productinfo' => 'Water Tax',
+            'firstname' => 'Asha',
+            'email' => 'asha@example.com',
+            'record_id' => 42,
+            'return_url' => 'https://example.test/return',
+        ]);
+
+        $this->assertSame('WATERKEY', $fields['key']);
+        $this->assertSame('water', $fields['udf1']);
+        $this->assertSame('42', $fields['udf2']);
+        // Success and failure both come back to the same handler.
+        $this->assertSame($fields['surl'], $fields['furl']);
+        $this->assertSame(
+            PayuService::forTaxType('water')->generateRequestHash($fields),
+            $fields['hash']
+        );
     }
 
     public function test_environment_is_shared_and_selects_the_right_endpoints(): void
