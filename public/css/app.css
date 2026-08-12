@@ -1741,3 +1741,25 @@ ul {
         padding-bottom: calc(var(--spacing-8) + 70px + env(safe-area-inset-bottom, 0px));
     }
 }
+
+/* ============================================
+   SCROLL REVEALS
+   ============================================ */
+html.reveal-ready [data-reveal] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+html.reveal-ready [data-reveal].revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.reveal-ready [data-reveal] {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}

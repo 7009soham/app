@@ -15,7 +15,7 @@
  * fails with no connection.
  */
 
-const VERSION = 'neralgov-v1';
+const VERSION = 'neralgov-v2';
 const STATIC_CACHE = `${VERSION}-static`;
 const OFFLINE_URL = '/offline.html';
 

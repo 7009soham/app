@@ -263,7 +263,26 @@
     }, observerOptions);
     
     counters.forEach(counter => counterObserver.observe(counter));
-    
+
+    // Scroll reveals (gated so content is never hidden without JS)
+    const revealEls = document.querySelectorAll('[data-reveal]');
+    if (revealEls.length && 'IntersectionObserver' in window
+        && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('reveal-ready');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -5% 0px' });
+        revealEls.forEach((el, i) => {
+            el.style.transitionDelay = `${(i % 4) * 60}ms`;
+            revealObserver.observe(el);
+        });
+    }
+
     // Mobile menu
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const navLinks = document.getElementById('navLinks');
