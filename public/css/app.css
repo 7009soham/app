@@ -493,8 +493,19 @@ ul {
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: #f5b04c;
+    /* Sits over an admin-uploaded photo behind only a 0.25-alpha scrim, so the
+       background is unknowable. White with a shadow stays legible on any image;
+       the amber did not clear 4.5:1 on a light one. */
+    color: var(--color-white);
+    text-shadow: 0 1px 3px rgba(15, 31, 51, 0.6);
     margin-bottom: var(--spacing-3);
+}
+
+/* Uppercase tracking is a Latin device; it breaks Devanagari apart. */
+html[lang="hi"] .slide-kicker,
+html[lang="mr"] .slide-kicker {
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .slide-kicker::before {
@@ -650,7 +661,10 @@ ul {
 
 .quick-actions {
     position: relative;
-    z-index: 2;
+    /* Above .slider-dots (z-index 10). The dots sit in the root stacking
+       context, and the card is pulled up over the hero, so at z-index 2 they
+       painted white-on-white across the top of the card and stayed clickable. */
+    z-index: 20;
 }
 
 .qa-card {
@@ -691,13 +705,24 @@ ul {
     position: absolute;
     top: -6px;
     right: 12%;
-    padding: 2px 6px;
-    background-color: var(--color-accent);
+    padding: 2px 7px;
+    /* --color-accent (#d97706) on white is 3.1:1 — below the 4.5:1 that small
+       text needs. The darker amber clears it without leaving the palette. */
+    background-color: #b45309;
     color: var(--color-white);
-    font-size: 0.55rem;
-    font-weight: 800;
+    /* 0.55rem is 8.8px. Latin survives that; Devanagari conjuncts do not, and
+       the hi/mr builds render this same badge. */
+    font-size: var(--font-size-xs);
+    font-weight: 700;
     letter-spacing: 0.04em;
+    line-height: 1.4;
     border-radius: var(--radius-full);
+}
+
+/* Devanagari has no case, so uppercase tracking only fragments it. */
+html[lang="hi"] .qa-item--new::after,
+html[lang="mr"] .qa-item--new::after {
+    letter-spacing: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -714,7 +739,10 @@ ul {
 
 .stats-strip {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* minmax(0, 1fr), not 1fr: a plain 1fr track has an auto minimum, so the
+       counter numbers ("10,000" is unbreakable) set a content-based floor the
+       track cannot shrink below, and the whole page scrolls sideways. */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     background-color: var(--color-white);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-card);
@@ -736,6 +764,9 @@ ul {
 .stat-content {
     display: flex;
     flex-direction: column;
+    /* Lets the flex item shrink past its content so long labels wrap instead
+       of widening the grid track. */
+    min-width: 0;
 }
 
 .stat-number {
@@ -1298,9 +1329,10 @@ ul {
     to { opacity: 1; transform: translateY(0); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .nav-links.active li { animation: none; }
-}
+/* The reduced-motion guard for this animation lives at the end of the file:
+   the rule that applies it sits inside a later @media (max-width: 768px)
+   block, and at equal specificity source order decides, so a guard here would
+   simply be overridden. */
 
 /* ============================================
    RESPONSIVE DESIGN
@@ -1380,7 +1412,7 @@ ul {
     }
 
     .stats-strip {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .stat-card:nth-child(2n) {
@@ -1457,6 +1489,23 @@ ul {
 }
 
 @media (max-width: 480px) {
+    /* Two columns of icon chip + unbreakable number do not fit a 320px
+       viewport, which is the width WCAG 2.1 AA (1.4.10 Reflow) is tested at.
+       The pre-redesign stylesheet stacked these and the rule was lost. */
+    .stats-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: var(--spacing-3) var(--spacing-4);
+        border-right: none;
+        border-bottom: 1px solid var(--color-gray-100);
+    }
+
+    .stat-card:last-child {
+        border-bottom: none;
+    }
+
     .features-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1773,5 +1822,16 @@ html.reveal-ready [data-reveal].revealed {
         opacity: 1;
         transform: none;
         transition: none;
+    }
+
+    /* Last in the file on purpose: the staggered mobile-menu animation is
+       declared inside a later media block than the earlier guard, so only a
+       rule down here actually wins. */
+    .nav-links.active li {
+        animation: none;
+    }
+
+    .slide-bg {
+        animation: none;
     }
 }

@@ -15,7 +15,7 @@
  */
 
 const MASTER = 1024;
-const NAVY = [0x1a, 0x36, 0x5d];
+const NAVY = [0x1e, 0x3a, 0x5f];
 
 /**
  * @param float $glyphScale fraction of the canvas the building occupies.

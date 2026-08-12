@@ -3,7 +3,7 @@
 @section('title', 'Design Exploration - Variation 2 - ' . ($settings['site_name'] ?? 'Gram Panchayat'))
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/design-exploration.css') }}">
+<link rel="stylesheet" href="{{ \App\Helpers\Asset::versioned('css/design-exploration.css') }}">
 <style>
     .preview-v2 .hero-slider {
         min-height: 68vh;

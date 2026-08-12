@@ -3,7 +3,7 @@
 @section('title', 'Homepage Design Exploration - ' . ($settings['site_name'] ?? 'Gram Panchayat'))
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/design-exploration.css') }}">
+<link rel="stylesheet" href="{{ \App\Helpers\Asset::versioned('css/design-exploration.css') }}">
 @endpush
 
 @section('content')

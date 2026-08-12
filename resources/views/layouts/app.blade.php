@@ -503,7 +503,7 @@
     </footer>
 
     <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ \App\Helpers\Asset::versioned('js/app.js') }}"></script>
     
     <!-- Language Selection Script -->
     <script>
