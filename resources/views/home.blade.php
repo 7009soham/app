@@ -151,36 +151,28 @@
     <!-- Why Choose Us -->
     <section class="why-us-section">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header" data-reveal>
                 <h2>{{ __('messages.seamless_experience') }}</h2>
             </div>
-            
+
             <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-bolt"></i>
-                    </div>
+                <div class="feature-card" data-reveal>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-bolt"></i></span>
                     <h3>{{ __('messages.quick_easy') }}</h3>
                     <p>{{ __('messages.quick_easy_desc') }}</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
+                <div class="feature-card" data-reveal>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-shield-alt"></i></span>
                     <h3>{{ __('messages.secure_100') }}</h3>
                     <p>{{ __('messages.secure_100_desc') }}</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-receipt"></i>
-                    </div>
+                <div class="feature-card" data-reveal>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-receipt"></i></span>
                     <h3>{{ __('messages.instant_receipt') }}</h3>
                     <p>{{ __('messages.instant_receipt_desc') }}</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-history"></i>
-                    </div>
+                <div class="feature-card" data-reveal>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-history"></i></span>
                     <h3>{{ __('messages.payment_history') }}</h3>
                     <p>{{ __('messages.payment_history_desc') }}</p>
                 </div>
