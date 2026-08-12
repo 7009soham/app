@@ -18,7 +18,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Admin CSS (loaded after Bootstrap to override) -->
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <link rel="stylesheet" href="{{ \App\Helpers\Asset::versioned('css/admin.css') }}">
     
     @stack('styles')
 </head>

@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ \App\Helpers\Asset::versioned('css/app.css') }}">
     
     <!-- Language Selector Styles -->
     <style>
@@ -601,7 +601,14 @@
         // Registered after load so it never competes with the page's own requests.
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('{{ asset('sw.js') }}', { scope: '/' })
+                // updateViaCache:'none' because nginx serves sw.js with a
+                // ten-year max-age. Without it the browser can keep serving the
+                // old worker, and the cache-version bump that clears stale
+                // assets never runs.
+                navigator.serviceWorker.register('{{ asset('sw.js') }}', {
+                    scope: '/',
+                    updateViaCache: 'none',
+                })
                     .catch(function (error) {
                         console.warn('Service worker registration failed:', error);
                     });
