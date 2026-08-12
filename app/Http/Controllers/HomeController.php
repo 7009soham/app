@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PropertyTaxRecord;
 use App\Models\QuickLink;
 use App\Models\SiteSetting;
 use App\Models\Slider;
 use App\Models\TaxType;
+use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
@@ -138,7 +140,43 @@ class HomeController extends Controller
         $data = $this->getCommonData();
         $data['sliders'] = Slider::active()->ordered()->get();
         $data['taxTypes'] = TaxType::active()->get();
+        $data['stats'] = $this->getPublicStats();
 
         return $data;
+    }
+
+    /**
+     * Figures for the homepage strip.
+     *
+     * These were previously hard-coded as "5,000 Citizens Served" and "10,000
+     * Payments Processed" in the Blade template. Neither was true, and on a
+     * government tax portal an invented figure is worse than no figure: a
+     * citizen who checks loses the trust the strip was there to build.
+     *
+     * So the strip now carries things that are either counted or structural. The
+     * property roll is a real count and a genuinely substantial number; the rest
+     * describe the service rather than its usage, because usage is still small
+     * enough that quoting it would say the opposite of what is intended.
+     *
+     * Cached for an hour: the roll only changes when the office imports records.
+     */
+    protected function getPublicStats(): array
+    {
+        $properties = 0;
+
+        try {
+            $properties = Cache::remember(
+                'home.stats.property_records',
+                now()->addHour(),
+                fn () => PropertyTaxRecord::count()
+            );
+        } catch (\Throwable $e) {
+            // The strip degrades to hiding the count rather than taking the page down.
+        }
+
+        return [
+            'properties_on_roll' => $properties,
+            'services_online' => TaxType::active()->count() + 1, // the tax heads, plus grievances
+        ];
     }
 }

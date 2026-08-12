@@ -75,6 +75,35 @@
     --transition-base: 200ms ease;
     --transition-slow: 300ms ease;
 
+    /* Masthead metrics. The fixed header stacks a tricolour rule, a government
+       utility strip and the nav row, and four separate rules used to hard-code
+       70px to clear it. Everything now derives from these so the stack can grow
+       without the hero and the static page heroes sliding under it. */
+    --tricolour-h: 6px;
+    /* In rem, not px, so the A-/A/A+ control scales the masthead along with the
+       type inside it. In px the nav row kept its 70px while its contents grew
+       and the links overflowed it. 2.125rem = 34px, 4.375rem = 70px. */
+    --gov-bar-h: 2.125rem;
+    --nav-h: 4.375rem;
+    /* The header's own border-bottom occupies space too, so it belongs in the
+       offset or every page sits 1px under the rule. */
+    --header-border: 1px;
+    --header-h: calc(var(--tricolour-h) + var(--gov-bar-h) + var(--nav-h) + var(--header-border));
+
+    /* Indian tricolour, per the Flag Code of India. */
+    --saffron: #ff9933;
+    --india-green: #138808;
+
+    /* How far the bill-lookup card rides up over the hero. The hero's bottom
+       padding and the slider dots both have to clear it, and all three used to
+       carry their own unrelated number, so the card covered the Pay Now button
+       and hid the pagination dots completely. */
+    --hero-overlap: var(--spacing-12);
+
+    /* The mobile tab bar. Was written as a bare 70px in the two rules that have
+       to clear it. */
+    --bottom-nav-h: 70px;
+
     /* Civic Indigo additions */
     --gradient-hero: linear-gradient(150deg, #0f1f33 0%, #1e3a5f 55%, #2d5a8e 100%);
     --gradient-primary: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);
@@ -96,6 +125,22 @@
 
 html {
     scroll-behavior: smooth;
+    /* Driven by the A-/A/A+ control in the masthead. Every size token is in rem,
+       so scaling the root scales the whole page including the header metrics. */
+    font-size: calc(100% * var(--text-scale, 1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+/* Every in-page jump used to land under the fixed header, hiding the heading it
+   was aimed at: the bottom nav's #services link and the skip link both did it. */
+:target,
+[id] {
+    scroll-margin-top: calc(var(--header-h) + var(--spacing-4));
 }
 
 body {
@@ -216,6 +261,175 @@ ul {
 }
 
 /* ============================================
+   GOVERNMENT MASTHEAD
+   The tricolour rule, the parent-government attribution and the GIGW
+   accessibility controls. This is the furniture that makes a citizen read the
+   page as a state organ rather than a brand, so it lives inside the fixed
+   header and its height feeds --header-h.
+   ============================================ */
+.skip-link {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    /* Must clear the header (1000) and the bottom nav (1100). */
+    z-index: 2000;
+    transform: translate(-50%, -120%);
+    padding: var(--spacing-3) var(--spacing-6);
+    background: var(--color-primary-dark);
+    color: var(--color-white);
+    font-weight: 600;
+    border-radius: 0 0 var(--radius) var(--radius);
+    transition: transform var(--transition-fast);
+}
+
+.skip-link:focus {
+    transform: translate(-50%, 0);
+    color: var(--color-white);
+    outline: 3px solid var(--saffron);
+    outline-offset: 2px;
+}
+
+/* The skip target should accept focus without ringing the entire page. */
+.main-content:focus {
+    outline: none;
+}
+
+/* Horizontal bands, in flag order. Thin enough to read as a rule rather than
+   as a flag, which is the convention on Indian government portals and avoids
+   any suggestion of displaying the flag itself. */
+.tricolour {
+    height: var(--tricolour-h);
+    background: linear-gradient(
+        to bottom,
+        var(--saffron) 0 33.333%,
+        #ffffff 33.333% 66.666%,
+        var(--india-green) 66.666% 100%);
+}
+
+.gov-bar {
+    background: var(--color-primary-dark);
+    /* 11.5:1 on the navy. */
+    color: #cdd8e6;
+    font-size: 0.75rem;
+}
+
+.gov-bar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-4);
+    min-height: var(--gov-bar-h);
+}
+
+.gov-bar__attrib {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    /* Lets the flex child shrink instead of pushing the tools off-screen. */
+    min-width: 0;
+    margin: 0;
+    font-size: inherit;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gov-bar__attrib [lang="mr"] {
+    font-weight: 600;
+    color: var(--color-white);
+}
+
+.gov-bar__rule {
+    flex-shrink: 0;
+    width: 1px;
+    height: 11px;
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.gov-bar__tools {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    flex-shrink: 0;
+}
+
+.text-size {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.text-size__btn,
+.gov-bar__contrast {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    min-width: 26px;
+    padding: 3px var(--spacing-2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.text-size__btn:hover,
+.gov-bar__contrast:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--color-white);
+}
+
+/* 8.2:1 on the saffron. Only the contrast control is a real toggle. */
+.gov-bar__contrast[aria-pressed="true"] {
+    background: var(--saffron);
+    border-color: var(--saffron);
+    color: #23180a;
+}
+
+/* A-/A/A+ disable at the ends of the range. Kept above 4.5:1 on the navy so the
+   limit reads as "already there" rather than as broken chrome. */
+.text-size__btn:disabled {
+    color: #8b9ab0;
+    border-color: rgba(255, 255, 255, 0.14);
+    cursor: default;
+}
+
+.text-size__btn:disabled:hover {
+    background: transparent;
+    color: #8b9ab0;
+}
+
+.text-size__btn:focus-visible,
+.gov-bar__contrast:focus-visible,
+.gov-bar a:focus-visible {
+    outline: 2px solid var(--saffron);
+    outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+    /* The English attribution and the jurisdiction are both repeated in the
+       footer, so they give way first and the Marathi lockup plus the
+       accessibility controls survive down to 320px. */
+    .gov-bar__en,
+    .gov-bar__rule {
+        display: none;
+    }
+}
+
+@media (max-width: 380px) {
+    .gov-bar__contrast-label {
+        display: none;
+    }
+}
+
+/* ============================================
    HEADER
    ============================================ */
 .header {
@@ -224,7 +438,10 @@ ul {
     left: 0;
     right: 0;
     z-index: 1000;
-    background-color: var(--surface-frost);
+    /* Was --surface-frost at 0.85 alpha, which let the hero photograph tint the
+       nav row and dropped the tagline to 3.6:1 as it scrolled under. Near-opaque
+       keeps the frosted look without making contrast depend on the image. */
+    background-color: rgba(255, 255, 255, 0.97);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(30, 58, 95, 0.08);
@@ -250,7 +467,8 @@ ul {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 70px;
+    gap: var(--spacing-4);
+    height: var(--nav-h);
 }
 
 .logo {
@@ -260,6 +478,13 @@ ul {
     font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--color-primary);
+    /* Between 769px and about 960px the Devanagari nav labels are single
+       unbreakable words that could not fit beside a full-width site name, and
+       .nav has a fixed height that cannot absorb a wrap. The logo is the
+       flexible part, so it truncates and the row stays one line - which also
+       keeps --nav-h honest for --header-h. */
+    min-width: 0;
+    overflow: hidden;
 }
 
 .logo:hover {
@@ -280,6 +505,10 @@ ul {
     display: flex;
     flex-direction: column;
     line-height: 1.15;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .logo-tagline {
@@ -290,12 +519,13 @@ ul {
 }
 
 .footer-logo-mark {
+    /* vertical-align and margin-right were inert / duplicated: the parent h3 is
+       a flex container with its own gap. */
     height: 30px;
     width: auto;
     max-width: 120px;
     object-fit: contain;
-    vertical-align: middle;
-    margin-right: var(--spacing-2);
+    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
@@ -385,8 +615,10 @@ ul {
    ============================================ */
 .hero-slider {
     position: relative;
-    height: 560px;
-    margin-top: 70px;
+    /* 35rem is the old 560px, but in rem it grows with the A+ control and with
+       text-only zoom instead of clipping the heading. */
+    height: 35rem;
+    margin-top: var(--header-h);
     overflow: hidden;
     background: var(--gradient-hero);
 }
@@ -469,9 +701,9 @@ ul {
     background:
         linear-gradient(180deg,
             rgba(15, 31, 51, 0.30) 0%,
-            rgba(15, 31, 51, 0.12) 28%,
-            rgba(15, 31, 51, 0.58) 72%,
-            rgba(15, 31, 51, 0.80) 100%);
+            rgba(15, 31, 51, 0.15) 22%,
+            rgba(15, 31, 51, 0.62) 40%,
+            rgba(15, 31, 51, 0.82) 100%);
 }
 
 /* The type sits straight on the photograph. The frosted panel that used to
@@ -485,15 +717,26 @@ ul {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
+    /* Was flex-end. When a column flex container's content exceeds its definite
+       height, flex-end throws the negative free space out the START edge, so
+       overflow:hidden was eating the kicker and the top of the h1 - the two
+       things that must survive. flex-start plus an auto margin on the first
+       child keeps the block bottom-weighted when there is room, and overflows
+       downward when there is not. */
+    justify-content: flex-start;
     width: 100%;
     max-width: 760px;
     margin: 0 auto;
-    padding: 0 var(--spacing-6) var(--spacing-10);
+    /* The bottom padding has to clear the bill-lookup card that rides up over
+       the hero, or the card covers the Pay Now button. */
+    padding: var(--spacing-8) var(--spacing-6) calc(var(--spacing-10) + var(--hero-overlap));
     text-align: center;
     color: var(--color-white);
-    /* Pushes the block to the lower third, where the scrim is heaviest. */
     height: 100%;
+}
+
+.slide-content > *:first-child {
+    margin-top: auto;
 }
 
 .slide-kicker {
@@ -582,15 +825,24 @@ html[lang="mr"] .slide-kicker {
     padding: 0 var(--spacing-4);
     transform: translateY(-50%);
     z-index: 10;
+    /* left:0/right:0 makes this transparent box span the whole hero, and a
+       transparent box is still hit-tested. At z-index 10 over .slide-content's
+       1, a 48px band across the middle of the hero was swallowing clicks on the
+       heading. Only the two buttons should be interactive. */
+    pointer-events: none;
 }
 
 .slider-btn {
+    pointer-events: auto;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 48px;
     height: 48px;
-    background-color: rgba(255, 255, 255, 0.2);
+    /* Was 0.2 alpha white with a white chevron, which composites to about 1:1
+       over a bright region of an unknowable photograph. The navy scrim keeps the
+       control visible whatever the image does. */
+    background-color: rgba(15, 31, 51, 0.55);
     border: none;
     border-radius: var(--radius-full);
     color: var(--color-white);
@@ -599,17 +851,43 @@ html[lang="mr"] .slide-kicker {
 }
 
 .slider-btn:hover {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(15, 31, 51, 0.75);
 }
 
 .slider-dots {
     position: absolute;
-    bottom: var(--spacing-6);
+    /* Must clear the top edge of the bill-lookup card, which rides up over
+       the hero by --hero-overlap. At --spacing-6 the dots were behind it. */
+    bottom: calc(var(--hero-overlap) + var(--spacing-3));
     left: 50%;
     transform: translateX(-50%);
     display: flex;
+    align-items: center;
     gap: var(--spacing-2);
     z-index: 10;
+}
+
+.slider-pause {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-left: var(--spacing-2);
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: var(--radius-full);
+    background: rgba(15, 31, 51, 0.55);
+    color: var(--color-white);
+    font-size: 0.6rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.slider-pause:hover {
+    background: rgba(15, 31, 51, 0.8);
+    color: var(--color-white);
 }
 
 .dot {
@@ -667,13 +945,21 @@ html[lang="mr"] .slide-kicker {
     color: var(--color-error);
 }
 
-/* Focus ring for the new card-level links and actions */
+/* Focus ring for the card-level links and actions. --color-primary-light measured
+   1.62:1 against .btn-hero's own navy gradient, and with a 3px offset the ring is
+   drawn onto the admin-uploaded photograph, whose colour is unknowable. Saffron
+   with a navy halo survives both: the saffron is 7.8:1 on navy and the halo
+   separates it from anything light behind. */
 .qa-item:focus-visible,
 .service-card:focus-visible,
 .section-link:focus-visible,
-.btn-hero:focus-visible {
-    outline: 3px solid var(--color-primary-light);
-    outline-offset: 3px;
+.btn-hero:focus-visible,
+.slider-btn:focus-visible,
+.slider-pause:focus-visible,
+.dot:focus-visible {
+    outline: 3px solid var(--saffron);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(15, 31, 51, 0.85);
 }
 
 /* ============================================
@@ -696,7 +982,12 @@ html[lang="mr"] .slide-kicker {
 .bill-lookup {
     position: relative;
     z-index: 20;
-    margin-top: calc(-1 * var(--spacing-12));
+    margin-top: calc(-1 * var(--hero-overlap));
+    /* The quick-actions card below pulls itself up by --spacing-10. With no
+       padding here that pull came straight out of this section's content and
+       painted over the "we send a one-time code" privacy note. Now it eats
+       padding instead. */
+    padding-bottom: var(--spacing-10);
 }
 
 .lookup-card {
@@ -734,9 +1025,12 @@ html[lang="mr"] .slide-kicker {
     transition: border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
+/* The field clips its children with overflow:hidden, so the ring has to live
+   here rather than on the input. The old 0.15-alpha halo was the only focus cue
+   on the entry point to the whole payment flow, and it was barely visible. */
 .lookup-field:focus-within {
-    border-color: var(--color-primary-light);
-    box-shadow: 0 0 0 4px rgba(45, 90, 142, 0.15);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--saffron), 0 0 0 6px rgba(15, 31, 51, 0.35);
 }
 
 .lookup-prefix {
@@ -866,7 +1160,10 @@ html[lang="mr"] .slide-kicker {
     content: attr(data-badge);
     position: absolute;
     top: -6px;
-    right: 12%;
+    /* Was right: 12%, a percentage of a flex track whose width is unknown. At
+       320px the four tracks are narrow enough that 12% put the badge on top of
+       the icon chip. A fixed offset cannot drift with the track. */
+    right: 4px;
     padding: 2px 7px;
     /* --color-accent (#d97706) on white is 3.1:1 — below the 4.5:1 that small
        text needs. The darker amber clears it without leaving the palette. */
@@ -938,6 +1235,14 @@ html[lang="mr"] .qa-item--new::after {
     font-variant-numeric: tabular-nums;
 }
 
+/* "-bit" and "/7" are qualifiers, not part of the figure, so they sit back a
+   step and stop the numeral reading as 256-bit-sized. */
+.stat-unit {
+    font-size: 0.62em;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
 .stat-label {
     font-size: var(--font-size-xs);
     color: var(--color-gray-500);
@@ -973,6 +1278,15 @@ html[lang="mr"] .qa-item--new::after {
     text-transform: uppercase;
     color: var(--color-primary-light);
     margin-bottom: var(--spacing-2);
+}
+
+/* Same reason as .slide-kicker: tracking and casing are Latin devices that
+   fragment Devanagari conjuncts. This rule was carrying a translated string
+   without the override its two siblings already had. */
+html[lang="hi"] .section-eyebrow,
+html[lang="mr"] .section-eyebrow {
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .section-link {
@@ -1064,9 +1378,13 @@ html[lang="mr"] .qa-item--new::after {
     color: var(--color-white);
 }
 
+/* Was --color-gray-400, which is 2.56:1 on white — under the 3:1 that SC 1.4.11
+   requires of a graphic conveying function. Below 768px this chevron replaces the
+   "Login to pay" label entirely, so on the traffic this site actually gets it is
+   the only affordance shown. */
 .service-go {
     display: none;
-    color: var(--color-gray-400);
+    color: var(--color-primary);
 }
 
 /* ============================================
@@ -1353,17 +1671,45 @@ html[lang="mr"] .qa-item--new::after {
 /* ============================================
    FOOTER
    ============================================ */
+/* Dedicated tokens rather than the grey ramp. The ramp is tuned for dark text on
+   light surfaces, so reusing it here both failed contrast on the navy and made
+   the high-contrast mode impossible to implement: flipping --color-gray-500 for
+   the light surfaces would have broken the footer that also used it.
+   Ratios against #0f1f33: text 11.2:1, muted 6.5:1, icon 6.6:1. */
 .footer {
+    --footer-heading: #ffffff;
+    --footer-text: #cbd5e1;
+    --footer-muted: #94a3b8;
+    --footer-icon: #7ea6d8;
+    --footer-rule: rgba(255, 255, 255, 0.1);
+
     padding: var(--spacing-16) 0 var(--spacing-8);
     background-color: var(--color-primary-dark);
-    color: var(--color-gray-300);
+    color: var(--footer-text);
 }
 
+/* Was `2fr repeat(auto-fit, minmax(0, 1fr))`, which is invalid: inside an
+   <auto-track-list> every non-repeat track must be a <fixed-size>, and 2fr is a
+   <flex>. The whole declaration was therefore dropped and the footer collapsed
+   to a single column with a large void beside it. auto-fit also cannot be used
+   with an fr track, so the columns are declared explicitly. */
 .footer-grid {
     display: grid;
-    grid-template-columns: 2fr repeat(auto-fit, minmax(0, 1fr));
-    gap: var(--spacing-12);
-    margin-bottom: var(--spacing-12);
+    grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr));
+    gap: var(--spacing-10) var(--spacing-8);
+    margin-bottom: var(--spacing-10);
+}
+
+@media (max-width: 1024px) {
+    .footer-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .footer-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .footer-section h3 {
@@ -1372,21 +1718,24 @@ html[lang="mr"] .qa-item--new::after {
     gap: var(--spacing-2);
     font-size: var(--font-size-xl);
     font-weight: 700;
-    color: var(--color-white);
+    color: var(--footer-heading);
     margin-bottom: var(--spacing-4);
 }
 
 .footer-section h4 {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
     font-weight: 600;
-    color: var(--color-white);
+    color: var(--footer-heading);
     margin-bottom: var(--spacing-4);
+    /* Reads as a column label rather than a second-tier heading. */
+    letter-spacing: 0.02em;
 }
 
 .footer-section p {
     font-size: var(--font-size-sm);
     line-height: 1.7;
     margin-bottom: var(--spacing-4);
+    color: var(--footer-text);
 }
 
 .footer-section ul li {
@@ -1395,12 +1744,14 @@ html[lang="mr"] .qa-item--new::after {
 
 .footer-section ul li a {
     font-size: var(--font-size-sm);
-    color: var(--color-gray-400);
+    color: var(--footer-muted);
     transition: color var(--transition-fast);
 }
 
-.footer-section ul li a:hover {
-    color: var(--color-white);
+.footer-section ul li a:hover,
+.footer-section ul li a:focus-visible {
+    color: var(--footer-heading);
+    text-decoration: underline;
 }
 
 .social-links {
@@ -1431,28 +1782,80 @@ html[lang="mr"] .qa-item--new::after {
     font-size: var(--font-size-sm);
 }
 
+/* Was --color-primary-light at 2.35:1 on the navy, under the 3:1 that SC
+   1.4.11 requires. These glyphs are the only thing distinguishing the address
+   row from the phone row, so they are not decorative. */
 .contact-info li i {
-    color: var(--color-primary-light);
+    color: var(--footer-icon);
     width: 16px;
+    flex-shrink: 0;
+}
+
+.contact-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--footer-muted);
+}
+
+html[lang="hi"] .contact-label,
+html[lang="mr"] .contact-label {
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .contact-info li a {
-    color: var(--color-gray-400);
+    color: var(--footer-muted);
 }
 
-.contact-info li a:hover {
-    color: var(--color-white);
+.contact-info li a:hover,
+.contact-info li a:focus-visible {
+    color: var(--footer-heading);
+    text-decoration: underline;
+}
+
+.footer-external {
+    font-size: 0.65em;
+    /* Keeps the glyph off the text baseline without nudging line height. */
+    vertical-align: super;
+    opacity: 0.75;
+}
+
+.footer-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--spacing-2) var(--spacing-6);
+    padding: var(--spacing-4) 0;
+    border-top: 1px solid var(--footer-rule);
+}
+
+.footer-meta p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--footer-muted);
+}
+
+.footer-updated time {
+    color: var(--footer-text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
 }
 
 .footer-bottom {
     padding-top: var(--spacing-6);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--footer-rule);
     text-align: center;
 }
 
+/* --color-gray-500 measured 3.49:1 on the navy against the 4.5:1 that 14px
+   normal-weight text requires. */
 .footer-bottom p {
     font-size: var(--font-size-sm);
-    color: var(--color-gray-500);
+    color: var(--footer-muted);
 }
 
 .footer-legal ul {
@@ -1468,7 +1871,7 @@ html[lang="mr"] .qa-item--new::after {
 
 .footer-legal a {
     font-size: var(--font-size-sm);
-    color: var(--color-gray-300);
+    color: var(--footer-text);
     text-decoration: none;
     transition: color 0.2s ease;
 }
@@ -1516,7 +1919,7 @@ html[lang="mr"] .qa-item--new::after {
 
     .nav-links {
         position: fixed;
-        top: 70px;
+        top: var(--header-h);
         left: 0;
         right: 0;
         background-color: var(--color-white);
@@ -1530,6 +1933,12 @@ html[lang="mr"] .qa-item--new::after {
         opacity: 0;
         visibility: hidden;
         transition: all var(--transition-base);
+        /* Fixed with no scroll: in landscape the panel is taller than what is
+           left of the viewport and the Login button at the bottom was
+           unreachable, because the document cannot scroll a fixed box. */
+        max-height: calc(100vh - var(--header-h));
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .nav-links.active {
@@ -1712,7 +2121,7 @@ html[lang="mr"] .qa-item--new::after {
    STATIC PAGES (Privacy, Terms, About, Contact)
    ============================================ */
 .page-hero {
-    margin-top: 70px;
+    margin-top: var(--header-h);
     padding: var(--spacing-16) 0;
     background-color: var(--color-primary);
     color: var(--color-white);
@@ -1957,26 +2366,20 @@ html[lang="mr"] .qa-item--new::after {
     .bottom-nav-item i { transition: none; }
 }
 
-/* Add bottom padding to main content to avoid overlap */
-.main-content {
-    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
-}
-
-/* On desktop, hide bottom nav and remove extra padding */
+/* The bottom nav is cleared by the footer rule below, not here. <footer> is a
+   sibling of <main> and the layout always renders it, so main is never the last
+   thing on the page: this padding only ever drew a white band between the navy
+   CTA section and the navy footer on mobile. */
 @media (min-width: 769px) {
     .bottom-nav {
         display: none;
-    }
-
-    .main-content {
-        padding-bottom: 0;
     }
 }
 
 /* Ensure footer doesn't get cut off on mobile */
 @media (max-width: 768px) {
     .footer {
-        padding-bottom: calc(var(--spacing-8) + 70px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(var(--spacing-8) + var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -2011,4 +2414,97 @@ html.reveal-ready [data-reveal].revealed {
     .slide-bg {
         animation: none;
     }
+}
+
+/* ============================================
+   HIGH CONTRAST MODE
+   Toggled from the masthead and remembered in localStorage. Every selector here
+   is more specific than the rule it overrides, so this block can sit last
+   without relying on source order.
+
+   The point of the mode is to remove anything whose contrast cannot be
+   guaranteed: the admin-uploaded hero photograph above all, then the decorative
+   gradients, tints and shadows. Colour is never the only cue afterwards, so
+   links also take an underline.
+   ============================================ */
+html.high-contrast {
+    /* Light-surface greys pushed toward black. Only safe because the footer no
+       longer borrows this ramp for its on-navy text. #4b5563 is 7.6:1 on white. */
+    --color-gray-400: #4b5563;
+    --color-gray-500: #1f2937;
+    --color-gray-600: #111827;
+    --color-gray-700: #0b0f16;
+    --color-gray-800: #000000;
+    --color-gray-900: #000000;
+    --color-primary: #10243c;
+    --color-primary-light: #10243c;
+    --tint-primary: #ffffff;
+    --shadow-card: none;
+    --shadow-card-lg: none;
+}
+
+html.high-contrast .gov-bar {
+    background: #000000;
+    color: #ffffff;
+}
+
+html.high-contrast .header {
+    background-color: #ffffff;
+    border-bottom: 2px solid #000000;
+}
+
+/* The photograph is the single largest source of unknowable contrast on the
+   page, which is the whole reason this mode exists. */
+html.high-contrast .slide-bg {
+    display: none;
+}
+
+html.high-contrast .hero-slider,
+html.high-contrast .slide-overlay,
+html.high-contrast .cta-section {
+    background: #0b1a2b;
+}
+
+html.high-contrast .hero-slider::before,
+html.high-contrast .hero-slider::after,
+html.high-contrast .cta-section::before,
+html.high-contrast .cta-section::after {
+    display: none;
+}
+
+html.high-contrast .footer {
+    --footer-heading: #ffffff;
+    --footer-text: #ffffff;
+    --footer-muted: #eaf0f8;
+    --footer-icon: #ffffff;
+    --footer-rule: rgba(255, 255, 255, 0.45);
+
+    background-color: #08131f;
+}
+
+/* Hard edges instead of soft shadows, so card boundaries survive. */
+html.high-contrast .lookup-card,
+html.high-contrast .qa-card,
+html.high-contrast .stats-strip,
+html.high-contrast .service-card,
+html.high-contrast .feature-card {
+    border: 2px solid #10243c;
+    box-shadow: none;
+    background: #ffffff;
+}
+
+html.high-contrast .icon-chip {
+    background: #10243c;
+    color: #ffffff;
+}
+
+/* Colour alone must not carry link identity. Buttons keep their own affordance. */
+html.high-contrast .main-content a:not(.btn):not(.qa-item):not(.service-card),
+html.high-contrast .footer a {
+    text-decoration: underline;
+}
+
+html.high-contrast :focus-visible {
+    outline: 3px solid #b34700;
+    outline-offset: 2px;
 }

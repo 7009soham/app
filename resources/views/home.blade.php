@@ -44,13 +44,26 @@
         
         @if(count($sliders) > 1)
             <div class="slider-nav">
-                <button class="slider-btn prev" id="prevSlide"><i class="fas fa-chevron-left"></i></button>
-                <button class="slider-btn next" id="nextSlide"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" class="slider-btn prev" id="prevSlide" aria-label="{{ __('messages.previous') }}">
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="slider-btn next" id="nextSlide" aria-label="{{ __('messages.next') }}">
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </button>
             </div>
             <div class="slider-dots">
                 @foreach($sliders as $index => $slider)
-                    <button class="dot {{ $index === 0 ? 'active' : '' }}" data-index="{{ $index }}"></button>
+                    <button type="button" class="dot {{ $index === 0 ? 'active' : '' }}" data-index="{{ $index }}"
+                            aria-label="{{ __('messages.go_to_slide', ['number' => $index + 1]) }}"
+                            @if($index === 0) aria-current="true" @endif></button>
                 @endforeach
+                {{-- WCAG 2.2.2: the slides start moving on their own and last longer
+                     than five seconds, so a mechanism to stop them is a Level A
+                     requirement, not a nicety. --}}
+                <button type="button" class="slider-pause" id="sliderPause" aria-pressed="false">
+                    <i class="fas fa-pause" aria-hidden="true"></i>
+                    <span class="sr-only">{{ __('messages.pause_slideshow') }}</span>
+                </button>
             </div>
         @endif
     </section>
@@ -116,33 +129,39 @@
     <!-- Quick Stats -->
     <section class="stats-section">
         <div class="container">
+            {{-- These were hard-coded as 5,000 citizens served and 10,000 payments
+                 processed. Both were invented, and on a tax portal an invented
+                 figure costs more trust than it buys. The roll is a real count;
+                 the other three describe the service rather than its usage. --}}
             <div class="stats-strip" data-reveal>
+                @if(!empty($stats['properties_on_roll']))
+                    <div class="stat-card">
+                        <span class="icon-chip icon-chip--tint"><i class="fas fa-house-chimney" aria-hidden="true"></i></span>
+                        <div class="stat-content">
+                            <span class="stat-number" data-target="{{ $stats['properties_on_roll'] }}">0</span>
+                            <span class="stat-label">{{ __('messages.properties_on_roll') }}</span>
+                        </div>
+                    </div>
+                @endif
                 <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-users" aria-hidden="true"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-list-check" aria-hidden="true"></i></span>
                     <div class="stat-content">
-                        <span class="stat-number" data-target="5000">0</span>
-                        <span class="stat-label">{{ __('messages.citizens_served') }}</span>
+                        <span class="stat-number" data-target="{{ $stats['services_online'] ?? 3 }}">0</span>
+                        <span class="stat-label">{{ __('messages.services_online') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-lock" aria-hidden="true"></i></span>
                     <div class="stat-content">
-                        <span class="stat-number" data-target="10000">0</span>
-                        <span class="stat-label">{{ __('messages.payments_processed') }}</span>
+                        <span class="stat-number">256<span class="stat-unit">-bit</span></span>
+                        <span class="stat-label">{{ __('messages.payment_security') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-check-circle" aria-hidden="true"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-clock" aria-hidden="true"></i></span>
                     <div class="stat-content">
-                        <span class="stat-number" data-target="100">0</span>
-                        <span class="stat-label">% {{ __('messages.secure') }}</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-headset" aria-hidden="true"></i></span>
-                    <div class="stat-content">
-                        <span class="stat-number">24/7</span>
-                        <span class="stat-label">{{ __('messages.support_available') }}</span>
+                        <span class="stat-number">24<span class="stat-unit">/7</span></span>
+                        <span class="stat-label">{{ __('messages.online_always') }}</span>
                     </div>
                 </div>
             </div>
@@ -249,23 +268,61 @@
     
     function showSlide(index) {
         slides.forEach(slide => slide.classList.remove('active'));
-        dots.forEach(dot => dot.classList.remove('active'));
-        
+        dots.forEach(dot => {
+            dot.classList.remove('active');
+            dot.removeAttribute('aria-current');
+        });
+
         currentSlide = (index + slides.length) % slides.length;
         slides[currentSlide].classList.add('active');
-        if (dots[currentSlide]) dots[currentSlide].classList.add('active');
+        if (dots[currentSlide]) {
+            dots[currentSlide].classList.add('active');
+            dots[currentSlide].setAttribute('aria-current', 'true');
+        }
     }
-    
+
     if (slides.length > 1) {
         document.getElementById('prevSlide')?.addEventListener('click', () => showSlide(currentSlide - 1));
         document.getElementById('nextSlide')?.addEventListener('click', () => showSlide(currentSlide + 1));
         dots.forEach((dot, index) => dot.addEventListener('click', () => showSlide(index)));
-        
-        // Auto-play
-        setInterval(() => showSlide(currentSlide + 1), 5000);
+
+        // Auto-play, but stoppable. WCAG 2.2.2 requires a pause mechanism for
+        // motion that starts on its own and runs longer than five seconds, and
+        // anyone who has asked the OS for reduced motion never gets it started.
+        const pauseBtn = document.getElementById('sliderPause');
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let timer = null;
+
+        function play() {
+            if (timer === null) {
+                timer = setInterval(() => showSlide(currentSlide + 1), 5000);
+            }
+            pauseBtn?.setAttribute('aria-pressed', 'false');
+            pauseBtn?.querySelector('i')?.classList.replace('fa-play', 'fa-pause');
+        }
+
+        function pause() {
+            clearInterval(timer);
+            timer = null;
+            pauseBtn?.setAttribute('aria-pressed', 'true');
+            pauseBtn?.querySelector('i')?.classList.replace('fa-pause', 'fa-play');
+        }
+
+        pauseBtn?.addEventListener('click', () => (timer === null ? play() : pause()));
+
+        if (reduceMotion) {
+            pause();
+        } else {
+            play();
+        }
+
+        // Advancing the hero under someone who is reading it or tabbing through
+        // it is the same problem the pause button solves, so stop on both.
+        const sliderEl = document.getElementById('heroSlider');
+        sliderEl.addEventListener('mouseenter', () => timer !== null && pause());
+        sliderEl.addEventListener('focusin', () => timer !== null && pause());
 
         // Touch swipe (arrows are hidden on mobile)
-        const sliderEl = document.getElementById('heroSlider');
         let touchStartX = 0;
         sliderEl.addEventListener('touchstart', (e) => {
             touchStartX = e.changedTouches[0].screenX;

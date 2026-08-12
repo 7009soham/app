@@ -236,4 +236,31 @@ return [
     'find_my_bills_hint' => 'ग्राम पंचायत में पंजीकृत मोबाइल नंबर दर्ज करें।',
     'find_my_bills_secure' => 'पुष्टि के लिए हम एक बार का कोड भेजते हैं। उससे पहले कोई जानकारी नहीं दिखाई जाती।',
     'find' => 'खोजें',
+
+    // Government utility strip. GIGW 3.0 expects the accessibility controls and
+    // the parent-government attribution to sit above the masthead.
+    'skip_to_main' => 'मुख्य सामग्री पर जाएँ',
+    'govt_of_maharashtra' => 'महाराष्ट्र शासन',
+    'jurisdiction' => 'कर्जत तालुका, रायगड जिला',
+    'text_size' => 'अक्षर आकार',
+    'decrease_text_size' => 'अक्षर आकार घटाएँ',
+    'reset_text_size' => 'सामान्य अक्षर आकार',
+    'increase_text_size' => 'अक्षर आकार बढ़ाएँ',
+    'high_contrast' => 'उच्च कॉन्ट्रास्ट',
+    'official_portal' => 'आधिकारिक पोर्टल',
+
+    // Footer furniture
+    'important_links' => 'महत्वपूर्ण लिंक',
+    'helpline' => 'हेल्पलाइन',
+    'office_hours' => 'कार्यालय समय',
+    'office_hours_value' => 'सोमवार से शुक्रवार, 10:00 से 17:45',
+    'last_updated' => 'अंतिम अद्यतन',
+    'content_owned_by' => 'यह वेबसाइट नेरल ग्राम पंचायत द्वारा संचालित एवं अनुरक्षित है।',
+    'properties_on_roll' => 'कर सूची में संपत्तियाँ',
+    'services_online' => 'ऑनलाइन सेवाएँ',
+    'payment_security' => 'एन्क्रिप्टेड भुगतान',
+    'online_always' => 'ऑनलाइन उपलब्धता',
+    'opens_new_window' => 'नई विंडो में खुलता है',
+    'pause_slideshow' => 'स्लाइडशो रोकें',
+    'go_to_slide' => 'स्लाइड :number पर जाएँ',
 ];

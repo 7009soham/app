@@ -236,4 +236,31 @@ return [
     'find_my_bills_hint' => 'ग्रामपंचायतीत नोंदणीकृत मोबाइल क्रमांक टाका.',
     'find_my_bills_secure' => 'खात्रीसाठी आम्ही एक-वेळ कोड पाठवतो. त्याआधी कोणतीही माहिती दाखवली जात नाही.',
     'find' => 'शोधा',
+
+    // Government utility strip. GIGW 3.0 expects the accessibility controls and
+    // the parent-government attribution to sit above the masthead.
+    'skip_to_main' => 'मुख्य मजकुराकडे जा',
+    'govt_of_maharashtra' => 'महाराष्ट्र शासन',
+    'jurisdiction' => 'कर्जत तालुका, रायगड जिल्हा',
+    'text_size' => 'अक्षर आकार',
+    'decrease_text_size' => 'अक्षर आकार कमी करा',
+    'reset_text_size' => 'सामान्य अक्षर आकार',
+    'increase_text_size' => 'अक्षर आकार वाढवा',
+    'high_contrast' => 'उच्च कॉन्ट्रास्ट',
+    'official_portal' => 'अधिकृत पोर्टल',
+
+    // Footer furniture
+    'important_links' => 'महत्त्वाच्या लिंक',
+    'helpline' => 'हेल्पलाइन',
+    'office_hours' => 'कार्यालय वेळ',
+    'office_hours_value' => 'सोमवार ते शुक्रवार, 10:00 ते 17:45',
+    'last_updated' => 'शेवटचे अद्यतन',
+    'content_owned_by' => 'ही वेबसाइट नेरळ ग्रामपंचायतीच्या मालकीची असून तीच ती देखभाल करते.',
+    'properties_on_roll' => 'कर यादीतील मिळकती',
+    'services_online' => 'ऑनलाइन सेवा',
+    'payment_security' => 'एन्क्रिप्टेड देयके',
+    'online_always' => 'ऑनलाइन उपलब्धता',
+    'opens_new_window' => 'नवीन विंडोमध्ये उघडते',
+    'pause_slideshow' => 'स्लाइडशो थांबवा',
+    'go_to_slide' => 'स्लाइड :number वर जा',
 ];

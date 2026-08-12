@@ -73,12 +73,15 @@
             <div class="ds-cta">
                 <h2>Need Assistance?</h2>
                 <p>If you face any difficulty using our digital services, please contact our office.</p>
+                {{-- btn-primary and btn-outline both carry navy on a navy card, so the
+                     outline variant rendered navy-on-navy at roughly 1.6:1. The
+                     -white pair is the on-dark set the home CTA already uses. --}}
                 <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px;">
-                    <a href="{{ route('contact') }}" class="btn btn-primary">
-                        <i class="fas fa-envelope"></i> Contact Us
+                    <a href="{{ route('contact') }}" class="btn btn-white">
+                        <i class="fas fa-envelope"></i> {{ __('messages.contact_us') }}
                     </a>
-                    <a href="{{ route('about') }}" class="btn btn-outline">
-                        <i class="fas fa-info-circle"></i> About Us
+                    <a href="{{ route('about') }}" class="btn btn-outline-white">
+                        <i class="fas fa-info-circle"></i> {{ __('messages.about') }}
                     </a>
                 </div>
             </div>

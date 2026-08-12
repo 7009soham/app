@@ -12,7 +12,12 @@
     <meta name="theme-color" content="#1e3a5f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    {{-- "default", not "black-translucent". Translucent asks iOS to run content
+         under a transparent status bar, and the only way to compensate is
+         env(safe-area-inset-top), which stays 0 without viewport-fit=cover. The
+         installed app was therefore drawing the fixed masthead underneath the
+         clock. Letting iOS reserve the bar is the cheaper correct answer. --}}
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Neral GP">
     <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('icons/favicon-32.png') }}">
@@ -28,6 +33,25 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ \App\Helpers\Asset::versioned('css/app.css') }}">
+
+    <script>
+        // Runs before first paint so a citizen who has chosen larger text or high
+        // contrast does not watch the page render at the default and then jump.
+        // Deliberately inline and synchronous for that reason.
+        (function () {
+            try {
+                var scale = localStorage.getItem('gpTextScale');
+                if (scale && /^1(\.\d+)?$/.test(scale)) {
+                    document.documentElement.style.setProperty('--text-scale', scale);
+                }
+                if (localStorage.getItem('gpHighContrast') === '1') {
+                    document.documentElement.classList.add('high-contrast');
+                }
+            } catch (e) {
+                // Private browsing can throw on localStorage access. Defaults are fine.
+            }
+        })();
+    </script>
     
     <!-- Language Selector Styles -->
     <style>
@@ -220,7 +244,7 @@
             list-style: none;
         }
 
-        /* Switcher */
+        /* Switcher. A real <button> now, so it needs the font reset. */
         .language-switcher {
             display: flex;
             align-items: center;
@@ -228,10 +252,29 @@
             cursor: pointer;
             padding: 6px 12px;
             background: #ffffff;
-            color: #000000;
-            border: 1px solid #ccc;
+            /* #595959 is the lightest grey that still clears 4.5:1 on white; the
+               chevron and label both use it. */
+            color: #1f2937;
+            border: 1px solid #6b7280;
             border-radius: 6px;
+            font-family: inherit;
+            font-size: inherit;
             font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .language-switcher:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .language-switcher i {
+            font-size: 0.7em;
+            transition: transform var(--transition-fast);
+        }
+
+        .language-switcher[aria-expanded="true"] i {
+            transform: rotate(180deg);
         }
 
         /* Dropdown menu */
@@ -269,13 +312,23 @@
         }
 
         .lang-dropdown-menu a:hover,
-        .lang-dropdown-menu a.active {
-            background: #f0f0f0;
-            font-weight: 600;
+        .lang-dropdown-menu a:focus-visible {
+            background: #e8eef6;
         }
 
-        /* Show on hover */
-        .lang-dropdown:hover .lang-dropdown-menu {
+        /* "You are here" was a #f0f0f0 tint at 1.14:1 on white, which is not a
+           visible indicator. A left rule and the weight carry it instead. */
+        .lang-dropdown-menu a.active {
+            font-weight: 700;
+            box-shadow: inset 3px 0 0 var(--color-primary);
+            background: #eef3f9;
+        }
+
+        /* Opened by the button, so it works on touch where there is no hover.
+           Hover is kept as a convenience for a mouse. */
+        .lang-dropdown-menu.open,
+        .lang-dropdown:hover .lang-dropdown-menu,
+        .lang-dropdown:focus-within .lang-dropdown-menu {
             display: block;
         }
 
@@ -302,6 +355,11 @@
     @stack('styles')
 </head>
 <body>
+    {{-- First focusable thing on the page. WCAG 2.4.1: without it a keyboard user
+         crosses the logo, three nav links, the language menu and the login button
+         on all twenty public pages before reaching content. --}}
+    <a class="skip-link" href="#main">{{ __('messages.skip_to_main') }}</a>
+
     <!-- Language Selection Modal (First Visit) -->
     <div class="language-modal-overlay" id="languageModal">
         <div class="language-modal">
@@ -344,8 +402,45 @@
 
     <!-- Header -->
     <header class="header">
+        {{-- The tricolour and the parent-government line are what make a citizen
+             read this as a state organ rather than a brand, inside about a second.
+             Deliberately NOT the State Emblem of India: its use is restricted by
+             the State Emblem of India (Prohibition of Improper Use) Act 2005. --}}
+        <div class="tricolour" aria-hidden="true"></div>
+
+        <div class="gov-bar">
+            <div class="container gov-bar__inner">
+                {{-- The official name is a proper noun, so both scripts are shown
+                     always rather than translated, each tagged for screen readers
+                     (WCAG 3.1.2). --}}
+                <p class="gov-bar__attrib">
+                    <span lang="mr">महाराष्ट्र शासन</span>
+                    <span class="gov-bar__rule" aria-hidden="true"></span>
+                    <span class="gov-bar__en" lang="en">Government of Maharashtra</span>
+                    <span class="gov-bar__rule gov-bar__rule--wide" aria-hidden="true"></span>
+                    <span class="gov-bar__en">{{ __('messages.jurisdiction') }}</span>
+                </p>
+
+                <div class="gov-bar__tools">
+                    <div class="text-size" role="group" aria-label="{{ __('messages.text_size') }}">
+                        <button type="button" class="text-size__btn" data-text-scale="down"
+                                aria-label="{{ __('messages.decrease_text_size') }}">A&minus;</button>
+                        <button type="button" class="text-size__btn" data-text-scale="reset"
+                                aria-label="{{ __('messages.reset_text_size') }}">A</button>
+                        <button type="button" class="text-size__btn" data-text-scale="up"
+                                aria-label="{{ __('messages.increase_text_size') }}">A+</button>
+                    </div>
+
+                    <button type="button" class="gov-bar__contrast" data-contrast-toggle aria-pressed="false">
+                        <i class="fas fa-circle-half-stroke" aria-hidden="true"></i>
+                        <span class="gov-bar__contrast-label">{{ __('messages.high_contrast') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="container">
-            <nav class="nav">
+            <nav class="nav" aria-label="{{ __('messages.official_portal') }}">
                 <a href="{{ route('home') }}" class="logo">
                     @if(!empty($settings['site_logo']))
                         <img src="{{ asset('storage/' . $settings['site_logo']) }}"
@@ -372,27 +467,29 @@
                     <li><a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'active' : '' }}">{{ __('messages.about') }}</a></li>
                     <li><a href="{{ route('digital-services') }}" class="{{ request()->routeIs('digital-services') ? 'active' : '' }}">{{ __('messages.services') }}</a></li>
                     
+                    {{-- Was a <div> opened purely by :hover, which made the three
+                         languages unreachable by keyboard and unreachable by touch,
+                         where there is no hover at all. Now a real button with real
+                         links: the locale route is a plain GET, so this works with
+                         JavaScript off too. --}}
                     <li class="lang-dropdown">
-                        <div class="language-switcher">
+                        <button type="button" class="language-switcher" id="langToggle"
+                                aria-expanded="false" aria-controls="langMenu">
                             <span class="current-lang">
                                 {{ app()->getLocale() == 'hi' ? 'हिंदी' : (app()->getLocale() == 'mr' ? 'मराठी' : 'EN') }}
                             </span>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
+                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                        </button>
 
-                        <div class="lang-dropdown-menu">
-                            <a href="#" onclick="event.preventDefault(); switchLanguage('en');"
-                               class="{{ app()->getLocale() == 'en' ? 'active' : '' }}">
-                                🇮🇳 English
-                            </a>
-                            <a href="#" onclick="event.preventDefault(); switchLanguage('hi');"
-                               class="{{ app()->getLocale() == 'hi' ? 'active' : '' }}">
-                                🇮🇳 हिंदी
-                            </a>
-                            <a href="#" onclick="event.preventDefault(); switchLanguage('mr');"
-                               class="{{ app()->getLocale() == 'mr' ? 'active' : '' }}">
-                                🇮🇳 मराठी
-                            </a>
+                        <div class="lang-dropdown-menu" id="langMenu">
+                            @foreach(['en' => 'English', 'hi' => 'हिंदी', 'mr' => 'मराठी'] as $locale => $label)
+                                <a href="{{ route('language.switch-param', $locale) }}"
+                                   lang="{{ $locale }}"
+                                   class="{{ app()->getLocale() === $locale ? 'active' : '' }}"
+                                   @if(app()->getLocale() === $locale) aria-current="true" @endif>
+                                    {{ $label }}
+                                </a>
+                            @endforeach
                         </div>
                     </li>
                     
@@ -403,7 +500,8 @@
     </header>
 
     <!-- Main Content -->
-    <main class="main-content">
+    {{-- tabindex="-1" so the skip link can actually place focus here. --}}
+    <main class="main-content" id="main" tabindex="-1">
         @yield('content')
     </main>
 
@@ -438,6 +536,8 @@
                     </div>
                 </div>
                 
+                {{-- Peer columns, so they are all h4. Quick Links used to be an
+                     h3 beside an h4, which mis-stated the outline. --}}
                 @if(!empty($quickLinks) && count($quickLinks))
                     <div class="footer-section">
                         <h4>{{ __('messages.quick_links') }}</h4>
@@ -452,6 +552,29 @@
                         </ul>
                     </div>
                 @endif
+
+                {{-- Outbound links to the parent governments. On an Indian portal
+                     this column is a recognition signal in itself: a citizen reads
+                     "this sits inside a real hierarchy" from it. --}}
+                <div class="footer-section">
+                    <h4>{{ __('messages.important_links') }}</h4>
+                    <ul>
+                        @foreach([
+                            'https://www.india.gov.in/' => 'India.gov.in',
+                            'https://www.maharashtra.gov.in/' => 'Maharashtra.gov.in',
+                            'https://raigad.gov.in/' => 'Raigad District',
+                            'https://www.digitalindia.gov.in/' => 'Digital India',
+                        ] as $url => $label)
+                            <li>
+                                <a href="{{ $url }}" target="_blank" rel="noopener noreferrer">
+                                    {{ $label }}
+                                    <i class="fas fa-arrow-up-right-from-square footer-external" aria-hidden="true"></i>
+                                    <span class="sr-only">({{ __('messages.opens_new_window') }})</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 @php
                     $footerAddress = $settings['address'] ?? null;
@@ -480,11 +603,34 @@
                                     <a href="mailto:{{ $footerEmail }}">{{ $footerEmail }}</a>
                                 </li>
                             @endif
+                            {{-- When the counter is actually open is one of the two
+                                 things a citizen most often needs from a Panchayat
+                                 site, and it was nowhere on the portal. --}}
+                            <li>
+                                <i class="fas fa-clock" aria-hidden="true"></i>
+                                <span>
+                                    <span class="contact-label">{{ __('messages.office_hours') }}</span>
+                                    {{ __('messages.office_hours_value') }}
+                                </span>
+                            </li>
                         </ul>
                     </div>
                 @endif
             </div>
             
+            {{-- Names the accountable office and states when the content actually
+                 changed, both of which GIGW expects and neither of which the
+                 footer carried. The stamp is a real value, not today's date. --}}
+            <div class="footer-meta">
+                <p class="footer-owner">{{ __('messages.content_owned_by') }}</p>
+                @if(!empty($contentUpdatedAt))
+                    <p class="footer-updated">
+                        {{ __('messages.last_updated') }}:
+                        <time datetime="{{ $contentUpdatedAt->toDateString() }}">{{ $contentUpdatedAt->translatedFormat('d M Y') }}</time>
+                    </p>
+                @endif
+            </div>
+
             <div class="footer-bottom">
                 <nav class="footer-legal" aria-label="{{ __('messages.legal_policies') }}">
                     <ul>

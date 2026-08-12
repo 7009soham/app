@@ -236,4 +236,31 @@ return [
     'find_my_bills_hint' => 'Enter the mobile number registered with the Gram Panchayat.',
     'find_my_bills_secure' => 'We send a one-time code to confirm it is you. Nothing is shown before that.',
     'find' => 'Find',
+
+    // Government utility strip. GIGW 3.0 expects the accessibility controls and
+    // the parent-government attribution to sit above the masthead.
+    'skip_to_main' => 'Skip to main content',
+    'govt_of_maharashtra' => 'Government of Maharashtra',
+    'jurisdiction' => 'Karjat Taluka, Raigad District',
+    'text_size' => 'Text size',
+    'decrease_text_size' => 'Decrease text size',
+    'reset_text_size' => 'Normal text size',
+    'increase_text_size' => 'Increase text size',
+    'high_contrast' => 'High contrast',
+    'official_portal' => 'Official portal',
+
+    // Footer furniture
+    'important_links' => 'Important Links',
+    'helpline' => 'Helpline',
+    'office_hours' => 'Office hours',
+    'office_hours_value' => 'Monday to Friday, 10:00 to 17:45',
+    'last_updated' => 'Last updated',
+    'content_owned_by' => 'This website is owned and maintained by Neral Gram Panchayat.',
+    'properties_on_roll' => 'Properties on the tax roll',
+    'services_online' => 'Services online',
+    'payment_security' => 'Encrypted payments',
+    'online_always' => 'Online access',
+    'opens_new_window' => 'opens in a new window',
+    'pause_slideshow' => 'Pause the slideshow',
+    'go_to_slide' => 'Go to slide :number',
 ];
