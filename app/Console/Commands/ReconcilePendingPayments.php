@@ -62,7 +62,7 @@ class ReconcilePendingPayments extends Command
                     'transaction_id' => $payment->transaction_id,
                     'exception' => $e->getMessage(),
                 ]);
-                $this->warn("  {$payment->transaction_id}: error — {$e->getMessage()}");
+                $this->warn("  {$payment->transaction_id}: error: {$e->getMessage()}");
                 $failed++;
                 continue;
             }
@@ -87,7 +87,7 @@ class ReconcilePendingPayments extends Command
         $this->info("Resolved: {$resolved}   Still pending: {$stillPending}   Unresolved: {$failed}");
 
         if ($dryRun) {
-            $this->comment('Dry run — nothing was written.');
+            $this->comment('Dry run. Nothing was written.');
         }
 
         return self::SUCCESS;

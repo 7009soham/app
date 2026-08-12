@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {{-- Signed, single-outcome page: never cache or index it. --}}
     <meta name="robots" content="noindex, nofollow">
-    <title>Payment {{ ucfirst($outcome) }} — {{ \App\Models\SiteSetting::get('site_name', 'Gram Panchayat') }}</title>
+    <title>Payment {{ ucfirst($outcome) }} | {{ \App\Models\SiteSetting::get('site_name', 'Gram Panchayat') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">

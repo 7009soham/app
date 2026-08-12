@@ -75,7 +75,7 @@
     <li class="nav-item" role="presentation">
         <button class="nav-link {{ !$canViewWater ? 'active' : '' }}" id="property-tab" data-bs-toggle="tab"
             data-bs-target="#property-pane" type="button" role="tab">
-            <i class="fas fa-home me-1 text-success"></i> Property Tax (Annual – FY {{ $fy }})
+            <i class="fas fa-home me-1 text-success"></i> Property Tax (Annual FY {{ $fy }})
             <span class="badge bg-success ms-1">{{ $propertyBills instanceof \Illuminate\Pagination\LengthAwarePaginator ? $propertyBills->total() : $propertyBills->count() }}</span>
         </button>
     </li>
@@ -90,7 +90,7 @@
         <div class="p-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="mb-0 fw-bold text-info">
                 <i class="fas fa-tint me-1"></i>
-                Water Tax Bills – {{ date('F Y', mktime(0, 0, 0, $month, 1, $year)) }}
+                Water Tax Bills for {{ date('F Y', mktime(0, 0, 0, $month, 1, $year)) }}
             </h6>
             <div class="d-flex gap-2">
                 <select id="waterBulkAction" class="form-select form-select-sm" style="width: auto;">
@@ -152,7 +152,7 @@
                                 <span class="text-danger fw-bold">₹{{ number_format($bill->penalty_amount, 2) }}</span>
                                 <br><small class="text-muted">{{ $bill->penalty_percentage }}%</small>
                             @else
-                                <span class="text-muted">—</span>
+                                <span class="text-muted">-</span>
                             @endif
                         </td>
                         <td>
@@ -186,11 +186,11 @@
                                         <form action="{{ route('admin.tax-collection.pay', $bill) }}" method="POST">
                                             @csrf
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Record Payment – {{ $bill->customer_name }}</h5>
+                                                <h5 class="modal-title">Record Payment: {{ $bill->customer_name }}</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <p class="text-muted small mb-3">Water Tax – {{ $bill->month_name }} {{ $bill->bill_year }}</p>
+                                                <p class="text-muted small mb-3">Water Tax for {{ $bill->month_name }} {{ $bill->bill_year }}</p>
                                                 <div class="mb-3">
                                                     <label class="form-label">Payment Amount <span class="text-danger">*</span></label>
                                                     <div class="input-group">
@@ -278,8 +278,8 @@
         <div class="p-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="mb-0 fw-bold text-success">
                 <i class="fas fa-home me-1"></i>
-                Property Tax Annual Bills – FY {{ $fy }}
-                <small class="text-muted fw-normal">(1 Apr {{ substr($fy,0,4) }} – 31 Mar {{ (int)substr($fy,0,4)+1 }})</small>
+                Property Tax Annual Bills for FY {{ $fy }}
+                <small class="text-muted fw-normal">(1 Apr {{ substr($fy,0,4) }} to 31 Mar {{ (int)substr($fy,0,4)+1 }})</small>
             </h6>
             <div class="d-flex gap-2">
                 <select id="propertyBulkAction" class="form-select form-select-sm" style="width: auto;">
@@ -325,15 +325,15 @@
                             <div class="fw-bold">{{ $bill->customer_name }}</div>
                             <div class="small text-muted">{{ $bill->customer_no }}</div>
                         </td>
-                        <td class="small">{{ $bill->propertyTaxRecord->property_no ?? '—' }}</td>
-                        <td><span class="badge bg-light text-dark border">{{ $bill->bill_no ?? '—' }}</span></td>
+                        <td class="small">{{ $bill->propertyTaxRecord->property_no ?? '-' }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ $bill->bill_no ?? '-' }}</span></td>
                         <td>₹{{ number_format($bill->house_tax, 2) }}</td>
                         <td>₹{{ number_format($bill->electricity_tax, 2) }}</td>
                         <td>₹{{ number_format($bill->health_tax, 2) }}</td>
                         <td class="fw-bold">₹{{ number_format($bill->bill_amount, 2) }}</td>
                         <td class="text-success">₹{{ number_format($bill->paid_amount, 2) }}</td>
                         <td class="text-danger fw-bold">₹{{ number_format($bill->balance, 2) }}</td>
-                        <td class="small">{{ $bill->due_date ? $bill->due_date->format('d M Y') : '—' }}</td>
+                        <td class="small">{{ $bill->due_date ? $bill->due_date->format('d M Y') : '-' }}</td>
                         <td>
                             <span class="badge
                                 {{ $bill->status == 'paid' ? 'bg-success' : '' }}
@@ -361,7 +361,7 @@
                                         <form action="{{ route('admin.tax-collection.property-annual.pay', $bill) }}" method="POST">
                                             @csrf
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Record Payment – {{ $bill->customer_name }}</h5>
+                                                <h5 class="modal-title">Record Payment: {{ $bill->customer_name }}</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">

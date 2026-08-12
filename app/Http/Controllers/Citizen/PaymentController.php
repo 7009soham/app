@@ -606,7 +606,7 @@ class PaymentController extends Controller
             'success' => 'Payment successful. Your balance has been updated.',
             'cancelled' => $this->mapFailureReason('USER_CANCELLED'),
             'deferred' => 'Your payment went through, but we could not update your record immediately. '
-                . 'Please do not pay again — it will appear within a few minutes.',
+                . 'Please do not pay again. It will appear within a few minutes.',
             default => $payment->failure_reason ?: $this->mapFailureReason('UNKNOWN'),
         };
 
@@ -719,7 +719,7 @@ class PaymentController extends Controller
             return redirect()->route('citizen.payment-history')->with(
                 'error',
                 'Your payment went through but we could not update your record immediately. '
-                . 'Please do not pay again — it will appear shortly. Reference: ' . $payment->transaction_id
+                . 'Please do not pay again. It will appear shortly. Reference: ' . $payment->transaction_id
             );
         }
 
@@ -984,13 +984,13 @@ class PaymentController extends Controller
     protected function mapFailureReason(string $failureCode): string
     {
         return match ($failureCode) {
-            'USER_CANCELLED' => 'Payment cancelled. Nothing has been charged — you can try again whenever you are ready.',
+            'USER_CANCELLED' => 'Payment cancelled. Nothing has been charged, so you can try again whenever you are ready.',
             'INSUFFICIENT_FUNDS' => 'The payment was declined for insufficient funds. Nothing has been charged.',
             'DECLINED' => 'Your bank declined the payment. Nothing has been charged. Please try another method or contact your bank.',
-            'EXPIRED' => 'The payment session expired before it completed. Nothing has been charged — please start again.',
+            'EXPIRED' => 'The payment session expired before it completed. Nothing has been charged, so please start again.',
             'TIMEOUT' => 'The payment gateway did not respond in time. If money was debited it will be reversed automatically within a few days.',
             'NETWORK' => 'A network problem interrupted the payment. If money was debited it will be reversed automatically.',
-            'VERIFY_FAIL' => 'We could not verify this payment. Please do not pay again — contact the Gram Panchayat office with your transaction number.',
+            'VERIFY_FAIL' => 'We could not verify this payment. Please do not pay again. Contact the Gram Panchayat office with your transaction number.',
             default => 'The payment did not complete. If money was debited, please contact the Gram Panchayat office before trying again.',
         };
     }

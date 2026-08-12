@@ -44,7 +44,7 @@
     <input type="text" id="url" name="url" class="form-control"
            value="{{ old('url', $link && !$link->ownsItsPage() ? $link->url : '') }}"
            placeholder="e.g., /digital-services or https://example.com">
-    <small class="text-muted">Check the address works before saving — a wrong path shows citizens a 404.</small>
+    <small class="text-muted">Check the address works before saving. A wrong path shows citizens a 404.</small>
 </div>
 
 <div class="form-group" id="page-field" style="display: {{ $mode === 'page' ? 'block' : 'none' }};">

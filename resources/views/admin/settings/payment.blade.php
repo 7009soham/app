@@ -155,7 +155,7 @@
                                 <label for="phonepe_salt_key">Salt Key *</label>
                                 <input type="password" id="phonepe_salt_key" name="phonepe_salt_key" class="form-control"
                                        value=""
-                                       placeholder="{{ !empty($paymentSettings->firstWhere('key', 'phonepe_salt_key')?->value) ? 'Salt key is set — leave blank to keep it' : 'Enter your Salt Key' }}">
+                                       placeholder="{{ !empty($paymentSettings->firstWhere('key', 'phonepe_salt_key')?->value) ? 'Salt key is set, leave blank to keep it' : 'Enter your Salt Key' }}">
                                 <small style="color: #64748b;">Leave blank to keep the existing key. Used to generate the SHA256 checksum for API calls.</small>
                             </div>
     
@@ -283,7 +283,7 @@
                                 <i class="fas fa-university"></i>
                                 <strong>One merchant ID per bank account.</strong> PayU settles each MID into exactly one
                                 account, so property tax and water tax each need their own MID, key and salt. A payment is
-                                routed by the tax the citizen selected — credentials are never shared between the two.
+                                routed by the tax the citizen selected. Credentials are never shared between the two.
                             </div>
 
                             @php
@@ -302,7 +302,7 @@
                                 @endphp
                                 <div style="border: 1px solid {{ $meta['border'] }}; background: {{ $meta['bg'] }}; border-radius: 10px; padding: 18px; margin-bottom: 18px;">
                                     <h4 style="margin: 0 0 4px; font-size: 15px; color: {{ $meta['accent'] }};">
-                                        <i class="{{ $meta['icon'] }}"></i> {{ $meta['label'] }} — merchant account
+                                        <i class="{{ $meta['icon'] }}"></i> {{ $meta['label'] }} merchant account
                                     </h4>
                                     <p style="font-size: 12px; color: #64748b; margin: 0 0 14px;">
                                         Settles into the {{ strtolower($meta['label']) }} bank account.

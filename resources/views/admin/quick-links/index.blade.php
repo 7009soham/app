@@ -110,7 +110,7 @@
         <i class="fas fa-circle-info"></i>
         <span>
             Links marked <span class="badge badge-info badge-sm">page</span> have their content written
-            in the link form. Others point at an existing address — check those still resolve.
+            in the link form. Others point at an existing address, so check those still resolve.
         </span>
     </div>
 @endif

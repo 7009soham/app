@@ -111,7 +111,7 @@ class PropertyTaxAnnualBill extends Model
     {
         return 'FY ' . $this->financial_year
             . ' (' . $this->bill_period_start->format('M Y')
-            . ' – ' . $this->bill_period_end->format('M Y') . ')';
+            . ' to ' . $this->bill_period_end->format('M Y') . ')';
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────

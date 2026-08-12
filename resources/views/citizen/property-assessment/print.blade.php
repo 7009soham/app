@@ -279,11 +279,11 @@
                     </th>
                     <th>
                         <span class="col-label-mr">रेडी रेकनर दर - जमीन</span>
-                        <span class="col-label-en">RR Rate – Land</span>
+                        <span class="col-label-en">RR Rate (Land)</span>
                     </th>
                     <th>
                         <span class="col-label-mr">रेडी रेकनर दर - बांधकाम</span>
-                        <span class="col-label-en">RR Rate – Building</span>
+                        <span class="col-label-en">RR Rate (Building)</span>
                     </th>
                     <th>
                         <span class="col-label-mr">घसारा रक्कम</span>

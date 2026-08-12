@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('customer_no'); // Customer number
             $table->string('customer_name');
             $table->decimal('monthly_bill', 10, 2)->default(0); // Monthly Property Bill (Rs.)
-            $table->string('period')->nullable(); // Period (e.g., "July 23–March 24")
+            $table->string('period')->nullable(); // Period (e.g., "July 23 to March 24")
             $table->decimal('balance', 10, 2)->default(0); // Balance amount
             $table->decimal('oversize_charge', 10, 2)->default(0); // Oversize 10%
             $table->string('bill_no')->nullable();

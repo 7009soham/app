@@ -103,8 +103,8 @@
                 <div class="form-group"><label>Width</label><input type="number" step="0.01" name="width[]" class="calc-dimension" data-row="{{ $i }}" value="{{ $row->width }}"></div>
                 <div class="form-group"><label>Square Foot</label><input type="number" step="0.01" name="square_foot[]" class="sq-foot" data-row="{{ $i }}" value="{{ $row->square_foot }}"></div>
                 <div class="form-group"><label>Square Meter</label><input type="number" step="0.01" name="square_meter[]" class="sq-meter" data-row="{{ $i }}" value="{{ $row->square_meter }}"></div>
-                <div class="form-group"><label>RR Rate – Land</label><input type="number" step="0.01" name="rr_rate_land[]" value="{{ $row->rr_rate_land }}"></div>
-                <div class="form-group"><label>RR Rate – Building</label><input type="number" step="0.01" name="rr_rate_building[]" value="{{ $row->rr_rate_building }}"></div>
+                <div class="form-group"><label>RR Rate (Land)</label><input type="number" step="0.01" name="rr_rate_land[]" value="{{ $row->rr_rate_land }}"></div>
+                <div class="form-group"><label>RR Rate (Building)</label><input type="number" step="0.01" name="rr_rate_building[]" value="{{ $row->rr_rate_building }}"></div>
                 <div class="form-group"><label>Amount with Depreciation</label><input type="number" step="0.01" name="amount_with_depreciation[]" value="{{ $row->amount_with_depreciation }}"></div>
                 <div class="form-group"><label>Total</label><input type="number" step="0.01" name="total[]" value="{{ $row->total }}"></div>
                 <div class="form-group"><label>Rate of Education</label><input type="number" step="0.0001" name="rate_of_education[]" value="{{ $row->rate_of_education }}"></div>

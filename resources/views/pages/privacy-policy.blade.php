@@ -66,19 +66,19 @@
             <p>We process your personal data in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>. Under this Act, {{ $settings['site_name'] ?? 'Gram Panchayat' }} acts as a <strong>Data Fiduciary</strong> and you are the <strong>Data Principal</strong>.</p>
             <p>Your data is processed on the following lawful bases:</p>
             <ul>
-                <li><strong>Consent</strong> — where you voluntarily provide information to register an account, submit a grievance, or subscribe to notifications. Consent is sought in clear language and you may withdraw it at any time.</li>
-                <li><strong>Legitimate use for State functions</strong> — the assessment, collection and record-keeping of house tax and water tax is a statutory function of the Gram Panchayat. Processing necessary for this purpose is permitted under the Act without separate consent.</li>
+                <li><strong>Consent:</strong> where you voluntarily provide information to register an account, submit a grievance, or subscribe to notifications. Consent is sought in clear language and you may withdraw it at any time.</li>
+                <li><strong>Legitimate use for State functions:</strong> the assessment, collection and record-keeping of house tax and water tax is a statutory function of the Gram Panchayat. Processing necessary for this purpose is permitted under the Act without separate consent.</li>
             </ul>
             <p>Withdrawing consent will not affect the lawfulness of processing carried out before withdrawal, and does not remove your statutory obligation to pay taxes due, or our obligation to retain payment records as required by law.</p>
 
             <h2>8. Your Rights as a Data Principal</h2>
             <p>Under the DPDP Act, 2023 you have the right to:</p>
             <ul>
-                <li><strong>Access</strong> — obtain a summary of the personal data we hold about you and how it is being processed</li>
-                <li><strong>Correction and completion</strong> — have inaccurate or misleading data corrected, and incomplete data completed</li>
-                <li><strong>Erasure</strong> — request deletion of your personal data, except where retention is required by law or for a statutory purpose such as tax records</li>
-                <li><strong>Grievance redressal</strong> — raise a complaint with our Grievance Officer regarding any act or omission in our handling of your data</li>
-                <li><strong>Nominate</strong> — nominate another individual to exercise these rights on your behalf in the event of your death or incapacity</li>
+                <li><strong>Access:</strong> obtain a summary of the personal data we hold about you and how it is being processed</li>
+                <li><strong>Correction and completion:</strong> have inaccurate or misleading data corrected, and incomplete data completed</li>
+                <li><strong>Erasure:</strong> request deletion of your personal data, except where retention is required by law or for a statutory purpose such as tax records</li>
+                <li><strong>Grievance redressal:</strong> raise a complaint with our Grievance Officer regarding any act or omission in our handling of your data</li>
+                <li><strong>Nominate:</strong> nominate another individual to exercise these rights on your behalf in the event of your death or incapacity</li>
             </ul>
             <p>To exercise any of these rights, contact our Grievance Officer using the details in Section 11. We will respond to your request within the period prescribed under the Act.</p>
 

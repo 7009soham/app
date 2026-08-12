@@ -144,11 +144,11 @@
 
                 <!-- Row 3: Rates & Valuation -->
                 <div class="form-group">
-                    <label>RR Rate – Land</label>
+                    <label>RR Rate (Land)</label>
                     <input type="number" step="0.01" name="rr_rate_land[]" placeholder="0.00">
                 </div>
                 <div class="form-group">
-                    <label>RR Rate – Building</label>
+                    <label>RR Rate (Building)</label>
                     <input type="number" step="0.01" name="rr_rate_building[]" placeholder="0.00">
                 </div>
                 <div class="form-group">

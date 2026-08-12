@@ -222,7 +222,7 @@
             @php
                 $now = \Carbon\Carbon::now();
                 $fyStart = $now->month > 3 ? $now->year : $now->year - 1;
-                $periodLabel = '1 Apr ' . $fyStart . ' – 31 Mar ' . ($fyStart + 1);
+                $periodLabel = '1 Apr ' . $fyStart . ' to 31 Mar ' . ($fyStart + 1);
                 $fy = $fyStart . '-' . substr($fyStart + 1, -2);
             @endphp
             <div class="summary-value" style="font-size:14px; padding-top:4px;">{{ $periodLabel }}</div>
@@ -236,7 +236,7 @@
         <h3 class="records-title">{{ __('messages.property_tax_records') }}</h3>
         <div style="font-size:13px; color: var(--text-secondary);">
             <i class="fas fa-info-circle me-1"></i>
-            Annual billing cycle – one bill per financial year
+            Annual billing cycle, one bill per financial year
         </div>
     </div>
 
