@@ -183,7 +183,7 @@
     <!-- Contact CTA -->
     <section class="cta-section">
         <div class="container">
-            <div class="cta-content">
+            <div class="cta-content" data-reveal>
                 <h2>{{ __('messages.need_help') }}</h2>
                 <p>{{ __('messages.support_team') }}</p>
                 <div class="cta-buttons">
