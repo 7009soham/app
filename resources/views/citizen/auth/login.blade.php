@@ -494,11 +494,13 @@
                         <label class="form-label">{{ __('messages.mobile_number') }}</label>
                         <div class="input-group">
                             <span class="input-prefix">+91</span>
-                            <input type="tel" id="phoneInput" class="form-input" 
-                                   placeholder="Enter 10 digit number" 
-                                   maxlength="10" 
+                            <input type="tel" id="phoneInput" class="form-input"
+                                   value="{{ $prefillPhone ?? '' }}"
+                                   placeholder="Enter 10 digit number"
+                                   maxlength="10"
                                    pattern="[0-9]{10}"
-                                   autocomplete="tel">
+                                   autocomplete="tel"
+                                   {{ !empty($prefillPhone) ? 'autofocus' : '' }}>
                         </div>
                     </div>
 

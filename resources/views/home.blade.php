@@ -3,6 +3,13 @@
 @section('title', ($settings['site_name'] ?? 'Gram Panchayat') . (!empty($settings['site_tagline']) ? ' - ' . $settings['site_tagline'] : ''))
 
 @section('content')
+    @php
+        // Nothing is looked up here. The number is handed to the OTP login and
+        // the citizen sees their own bills only after verifying the phone, so
+        // no name, address or amount is disclosed to whoever types it.
+        $lookupAction = route('citizen.login');
+    @endphp
+
     <!-- Hero Slider -->
     <section class="hero-slider" id="heroSlider">
         <div class="slider-container">
@@ -46,6 +53,40 @@
                 @endforeach
             </div>
         @endif
+    </section>
+
+    <!-- Find my bill -->
+    <section class="bill-lookup" aria-labelledby="billLookupHeading">
+        <div class="container">
+            <form class="lookup-card" method="GET" action="{{ $lookupAction }}" data-reveal>
+                <h2 class="lookup-heading" id="billLookupHeading">{{ __('messages.find_my_bills') }}</h2>
+                <p class="lookup-hint">{{ __('messages.find_my_bills_hint') }}</p>
+
+                <div class="lookup-field">
+                    <span class="lookup-prefix" aria-hidden="true">+91</span>
+                    <label class="sr-only" for="lookupPhone">{{ __('messages.mobile_number') }}</label>
+                    <input type="tel"
+                           id="lookupPhone"
+                           name="phone"
+                           class="lookup-input"
+                           inputmode="numeric"
+                           autocomplete="tel-national"
+                           maxlength="10"
+                           pattern="[6-9][0-9]{9}"
+                           placeholder="{{ __('messages.mobile_number') }}"
+                           required>
+                    <button type="submit" class="lookup-submit">
+                        <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                        <span>{{ __('messages.find') }}</span>
+                    </button>
+                </div>
+
+                <p class="lookup-note">
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                    {{ __('messages.find_my_bills_secure') }}
+                </p>
+            </form>
+        </div>
     </section>
 
     <!-- Quick Actions -->

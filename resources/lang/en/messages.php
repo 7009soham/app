@@ -231,4 +231,9 @@ return [
     'completed' => 'Completed',
     'failed' => 'Failed',
     'processing' => 'Processing',
+    // Homepage bill lookup
+    'find_my_bills' => 'Find my tax bills',
+    'find_my_bills_hint' => 'Enter the mobile number registered with the Gram Panchayat.',
+    'find_my_bills_secure' => 'We send a one-time code to confirm it is you. Nothing is shown before that.',
+    'find' => 'Find',
 ];

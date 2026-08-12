@@ -104,13 +104,19 @@ class AuthController extends Controller
     /**
      * Show the citizen login form
      */
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
         if (Auth::guard('citizen')->check()) {
             return redirect()->route('citizen.dashboard');
         }
-        
-        return view('citizen.auth.login');
+
+        // Pre-filled from the homepage lookup. Digits only, and only when a
+        // full Indian mobile number was typed - anything else is dropped rather
+        // than echoed back into the field.
+        $prefill = preg_replace('/\D/', '', (string) $request->query('phone'));
+        $prefill = strlen($prefill) === 10 && $prefill[0] >= '6' ? $prefill : '';
+
+        return view('citizen.auth.login', ['prefillPhone' => $prefill]);
     }
 
     /**
