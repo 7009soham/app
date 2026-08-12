@@ -167,3 +167,21 @@
     font-size: 2rem;
     color: var(--color-primary);
 }
+
+/* Restored for original-home-sections partial: app.css dropped .feature-icon
+   when the live homepage moved to icon chips (Civic Indigo Task 7). */
+.feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    background-color: var(--color-primary);
+    border-radius: var(--radius-full);
+    margin-bottom: var(--spacing-4);
+}
+
+.feature-icon i {
+    font-size: 1.5rem;
+    color: var(--color-white);
+}
