@@ -263,4 +263,5 @@ return [
     'opens_new_window' => 'opens in a new window',
     'pause_slideshow' => 'Pause the slideshow',
     'go_to_slide' => 'Go to slide :number',
+    'close' => 'Close',
 ];

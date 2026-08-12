@@ -65,12 +65,17 @@
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(8px);
             display: flex;
-            align-items: center;
             justify-content: center;
             z-index: 10000;
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
+            /* A fixed box overflows where the document cannot scroll, so without
+               these the tail of the dialog is simply unreachable. flex-start
+               rather than center because centring spills out of BOTH edges. */
+            align-items: flex-start;
+            overflow-y: auto;
+            padding: var(--spacing-4);
         }
 
         .language-modal-overlay.active {
@@ -83,13 +88,15 @@
             border-radius: 24px;
             padding: 40px;
             max-width: 480px;
-            width: 90%;
+            width: 100%;
+            margin: auto;
+            max-height: calc(100vh - 2 * var(--spacing-4));
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
             transform: scale(0.8) translateY(20px);
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
             position: relative;
-            overflow: hidden;
+            overflow-y: auto;
         }
 
         .language-modal::before {
@@ -99,6 +106,9 @@
             left: 0;
             right: 0;
             height: 6px;
+            /* Was clipped by the dialog's overflow:hidden, which had to go so the
+               dialog could scroll. */
+            border-radius: 24px 24px 0 0;
             background: linear-gradient(90deg, #f97316, #ea580c, #c2410c);
         }
 
@@ -128,17 +138,53 @@
         }
 
         .language-modal-header h2 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: #1e293b;
             margin-bottom: 8px;
             font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+            line-height: 1.3;
         }
 
-        .language-modal-header p {
-            color: #64748b;
-            font-size: 15px;
-            font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+        /* Two scripts stacked rather than three joined by slashes: the old
+           "Select Your Language / अपनी भाषा चुनें / तुमची भाषा निवडा"
+           ran to three lines on a phone and the languages are named on the
+           buttons anyway. */
+        .language-modal-header h2 span {
+            display: block;
+        }
+
+        .language-modal-header h2 [lang="mr"] {
+            font-size: 17px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .language-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: #475569;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .language-modal-close:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .language-modal-close:focus-visible {
+            outline: 3px solid #b45309;
+            outline-offset: 2px;
         }
 
         .language-options {
@@ -149,49 +195,32 @@
         }
 
         .language-option {
-            border: 2px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            border: 2px solid #94a3b8;
             border-radius: 16px;
-            padding: 24px 16px;
+            /* 44px minimum target, and a submit button now rather than a div. */
+            padding: 18px 12px;
+            min-height: 44px;
             cursor: pointer;
             transition: all 0.3s ease;
             background: white;
-            position: relative;
+            color: #1e293b;
+            font-family: inherit;
+            text-align: center;
+        }
+
+        .language-option:focus-visible {
+            outline: 3px solid #b45309;
+            outline-offset: 2px;
         }
 
         .language-option:hover {
             border-color: #f97316;
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(249, 115, 22, 0.15);
-        }
-
-        .language-option.selected {
-            border-color: #f97316;
-            background: linear-gradient(145deg, #fff7ed, #ffedd5);
-            box-shadow: 0 8px 20px rgba(249, 115, 22, 0.2);
-        }
-
-        .language-option.selected::after {
-            content: '\f00c';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 24px;
-            height: 24px;
-            background: #f97316;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        .language-option .flag {
-            font-size: 36px;
-            margin-bottom: 12px;
-            display: block;
         }
 
         .language-option .lang-name {
@@ -206,36 +235,6 @@
             font-size: 14px;
             color: #64748b;
             font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
-        }
-
-        .language-modal .btn-continue {
-            display: block !important;
-            visibility: visible !important;
-            width: 100%;
-            padding: 16px 32px;
-            background: linear-gradient(135deg, #f97316, #ea580c) !important;
-            color: #ffffff !important;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
-            font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
-            text-align: center;
-            opacity: 1 !important;
-        }
-
-        .language-modal .btn-continue:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
-        }
-
-        .language-modal .btn-continue:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
         }
 
         /* Wrapper */
@@ -360,42 +359,44 @@
          on all twenty public pages before reaching content. --}}
     <a class="skip-link" href="#main">{{ __('messages.skip_to_main') }}</a>
 
-    <!-- Language Selection Modal (First Visit) -->
+    {{-- First-visit language chooser. This is the first screen a new citizen
+         meets and it blocks the page, so it was also the worst thing on it: the
+         three options were <div>s with an onclick and no tabindex, so there was
+         no keyboard path at all; there was no Escape, backdrop or close
+         dismissal; and the stack measured about 950px against a 667px phone with
+         no scroll, which put the Continue button off-screen. A first-time mobile
+         visitor was hard-blocked behind an opaque overlay.
+
+         Each language is now its own submit button carrying its own locale, so
+         choosing is one tap instead of select-then-confirm, it works with the
+         keyboard and with JavaScript off, and dropping the confirm step plus the
+         three identical flag glyphs takes about 300px out of the height. --}}
     <div class="language-modal-overlay" id="languageModal">
-        <div class="language-modal">
+        <div class="language-modal" role="dialog" aria-modal="true" aria-labelledby="languageModalHeading">
+            <button type="button" class="language-modal-close" id="languageModalClose" aria-label="{{ __('messages.close') }}">
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+            </button>
+
             <div class="language-modal-header">
-                <div class="icon">
+                <div class="icon" aria-hidden="true">
                     <i class="fas fa-globe"></i>
                 </div>
-                <h2>Select Your Language / अपनी भाषा चुनें / तुमची भाषा निवडा</h2>
-                <p>Choose your preferred language / अपनी पसंदीदा भाषा चुनें / तुमची पसंतीची भाषा निवडा</p>
+                <h2 id="languageModalHeading">
+                    <span lang="en">Select your language</span>
+                    <span lang="mr">तुमची भाषा निवडा</span>
+                </h2>
             </div>
-            
-            <form id="languageForm" action="{{ route('language.switch') }}" method="POST">
+
+            <form action="{{ route('language.switch') }}" method="POST">
                 @csrf
-                <input type="hidden" name="locale" id="selectedLocale" value="en">
-                
                 <div class="language-options">
-                    <div class="language-option selected" data-locale="en" onclick="selectLanguage('en')">
-                        <span class="flag">🇮🇳</span>
-                        <span class="lang-name">English</span>
-                        <span class="lang-native">English</span>
-                    </div>
-                    <div class="language-option" data-locale="hi" onclick="selectLanguage('hi')">
-                        <span class="flag">🇮🇳</span>
-                        <span class="lang-name">हिंदी</span>
-                        <span class="lang-native">Hindi</span>
-                    </div>
-                    <div class="language-option" data-locale="mr" onclick="selectLanguage('mr')">
-                        <span class="flag">🇮🇳</span>
-                        <span class="lang-name">मराठी</span>
-                        <span class="lang-native">Marathi</span>
-                    </div>
+                    @foreach(['en' => ['English', 'English'], 'hi' => ['हिंदी', 'Hindi'], 'mr' => ['मराठी', 'Marathi']] as $locale => $labels)
+                        <button type="submit" name="locale" value="{{ $locale }}" class="language-option" lang="{{ $locale }}">
+                            <span class="lang-name">{{ $labels[0] }}</span>
+                            <span class="lang-native" lang="en">{{ $labels[1] }}</span>
+                        </button>
+                    @endforeach
                 </div>
-                
-                <button type="submit" class="btn-continue">
-                    Continue / जारी रखें / पुढे जा <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
-                </button>
             </form>
         </div>
     </div>
@@ -653,45 +654,73 @@
     
     <!-- Language Selection Script -->
     <script>
-        // Check if language has been selected before
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check localStorage for language preference
-            const hasSelectedLanguage = localStorage.getItem('languageSelected');
+        document.addEventListener('DOMContentLoaded', function () {
             const modal = document.getElementById('languageModal');
-            
-            // Show modal only on first visit (check both localStorage and session)
+            const dialog = modal ? modal.querySelector('.language-modal') : null;
+
+            if (!modal || !dialog) {
+                return;
+            }
+
+            let lastFocused = null;
+
+            function remember() {
+                try {
+                    localStorage.setItem('languageSelected', 'true');
+                } catch (e) {
+                    // Private browsing. The session still carries the choice.
+                }
+            }
+
+            function close() {
+                modal.classList.remove('active');
+                remember();
+
+                if (lastFocused) {
+                    lastFocused.focus();
+                }
+            }
+
+            function open() {
+                lastFocused = document.activeElement;
+                modal.classList.add('active');
+                // Focus the dialog rather than the first language, so no option
+                // looks preselected and a screen reader reads the heading first.
+                dialog.querySelector('.language-option')?.focus();
+            }
+
+            // Choosing submits the form, so only mark it seen; the navigation does
+            // the rest. Escape, the close button and the backdrop all dismiss,
+            // because a modal with no exit on the first screen a citizen sees is
+            // a trap rather than a chooser.
+            modal.addEventListener('submit', remember);
+            document.getElementById('languageModalClose')?.addEventListener('click', close);
+
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) {
+                    close();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    close();
+                }
+            });
+
             @if(!session()->has('locale'))
-                if (!hasSelectedLanguage) {
-                    setTimeout(function() {
-                        modal.classList.add('active');
-                    }, 500);
+                let seen = null;
+                try {
+                    seen = localStorage.getItem('languageSelected');
+                } catch (e) {
+                    // Treated as a first visit.
+                }
+
+                if (!seen) {
+                    setTimeout(open, 500);
                 }
             @endif
         });
-
-        function selectLanguage(locale) {
-            // Remove selected class from all options
-            document.querySelectorAll('.language-option').forEach(function(option) {
-                option.classList.remove('selected');
-            });
-            
-            // Add selected class to clicked option
-            document.querySelector('[data-locale="' + locale + '"]').classList.add('selected');
-            
-            // Update hidden input
-            document.getElementById('selectedLocale').value = locale;
-        }
-
-        // Handle form submission
-        document.getElementById('languageForm').addEventListener('submit', function() {
-            // Mark language as selected in localStorage
-            localStorage.setItem('languageSelected', 'true');
-        });
-
-        // Function to switch language from dropdown
-        function switchLanguage(lang) {
-            window.location.href = "/language/" + lang;
-        }
     </script>
     
     @stack('scripts')

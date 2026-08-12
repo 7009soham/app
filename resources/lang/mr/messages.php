@@ -263,4 +263,5 @@ return [
     'opens_new_window' => 'नवीन विंडोमध्ये उघडते',
     'pause_slideshow' => 'स्लाइडशो थांबवा',
     'go_to_slide' => 'स्लाइड :number वर जा',
+    'close' => 'बंद करा',
 ];

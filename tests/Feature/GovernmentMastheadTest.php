@@ -240,4 +240,59 @@ class GovernmentMastheadTest extends TestCase
             ->assertSee('india.gov.in', false)
             ->assertSee('maharashtra.gov.in', false);
     }
+
+    /**
+     * The first screen a new citizen meets, and previously the worst thing on the
+     * site: div options with no keyboard path, no dismissal at all, and a stack
+     * measuring roughly 950px against a 667px phone with no scroll, which put the
+     * only submit control off-screen behind an opaque overlay.
+     */
+    public function test_each_language_is_its_own_submit_button(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // One tap per language, so it needs no JavaScript and no select-then-confirm.
+        foreach (['en', 'hi', 'mr'] as $locale) {
+            $this->assertStringContainsString(
+                'name="locale" value="' . $locale . '"',
+                $html,
+                "The {$locale} option is not a submit button."
+            );
+        }
+
+        $this->assertStringNotContainsString('onclick="selectLanguage', $html);
+        $this->assertStringNotContainsString('id="selectedLocale"', $html);
+    }
+
+    public function test_the_language_chooser_is_a_dialog_with_a_way_out(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('role="dialog" aria-modal="true"', $html);
+        $this->assertStringContainsString('id="languageModalClose"', $html);
+        $this->assertStringContainsString("e.key === 'Escape'", $html);
+    }
+
+    public function test_the_language_chooser_can_scroll_on_a_short_viewport(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // A fixed box overflows where the document cannot scroll, so without
+        // these the submit buttons are unreachable on a phone in portrait.
+        $this->assertMatchesRegularExpression('/\.language-modal-overlay\s*\{[^}]*overflow-y:\s*auto/s', $html);
+        $this->assertMatchesRegularExpression('/\.language-modal\s*\{[^}]*max-height:\s*calc\(100vh/s', $html);
+
+        // Three identical flag glyphs distinguished nothing and cost ~209px.
+        $this->assertStringNotContainsString('class="flag"', $html);
+    }
+
+    public function test_the_chooser_script_does_not_reference_removed_elements(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // getElementById('languageForm').addEventListener would throw a TypeError
+        // and take the rest of the inline script down with it.
+        $this->assertStringNotContainsString("getElementById('languageForm')", $html);
+        $this->assertStringNotContainsString('function switchLanguage', $html);
+    }
 }

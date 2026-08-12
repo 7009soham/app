@@ -678,8 +678,19 @@ ul {
     position: absolute;
     inset: 0;
     background-size: cover;
-    background-position: center;
+    /* Slightly above centre: these compositions put sky at the top and a road or
+       field at the bottom, and the type sits low. */
+    background-position: center 42%;
     transition: transform 0.6s ease;
+
+    /* This is what makes hero contrast deterministic instead of a property of
+       whatever the admin last uploaded. brightness(0.82) caps the brightest
+       pixel the browser can paint at about #d2d2d2, so behind the 0.62-alpha
+       scrim the worst case for white text is 6.1:1 rather than the 1.27:1 a
+       near-white signboard was giving. saturate(0.8) pulls the illustration
+       palette toward the navy and takes the edge off the fake lettering baked
+       into the artwork without blurring detail that is actually correct. */
+    filter: saturate(0.8) brightness(0.82);
 }
 
 .slide.active .slide-bg {
@@ -1089,8 +1100,11 @@ html[lang="mr"] .slide-kicker {
 }
 
 @media (max-width: 640px) {
-    .bill-lookup {
-        margin-top: calc(-1 * var(--spacing-8));
+    /* The card rides up less on a narrow screen. Overriding the token rather
+       than .bill-lookup keeps the hero padding and the pagination dots, which
+       both derive from it, in step. */
+    :root {
+        --hero-overlap: var(--spacing-8);
     }
 
     .lookup-card {
@@ -1971,7 +1985,7 @@ html[lang="mr"] .contact-label {
            cover discard most of the width, so only a centre slice survives.
            Sizing by viewport keeps the crop closer to the source proportions
            and lets more of the picture through on a phone. */
-        height: min(72vh, 460px);
+        height: min(72vh, 28.75rem);
     }
 
     /* Favour the upper-middle of the frame: buildings, faces and skylines sit
@@ -1982,7 +1996,9 @@ html[lang="mr"] .contact-label {
     }
 
     .slide-content {
-        padding-bottom: var(--spacing-8);
+        /* Still has to clear the lookup card, or the card lands back on top of
+           the Pay Now button on exactly the screens most citizens use. */
+        padding-bottom: calc(var(--spacing-8) + var(--hero-overlap));
     }
 
     .slider-nav {
