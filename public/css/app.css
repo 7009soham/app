@@ -1,6 +1,6 @@
 /* ============================================
    GRAM PANCHAYAT - Main Stylesheet
-   Minimalistic Design (No Gradients)
+   Civic Indigo Design System (Navy Tokens + Gradients)
    ============================================ */
 
 /* CSS Variables */
@@ -447,6 +447,7 @@ ul {
     inset: 0;
     background-size: cover;
     background-position: center;
+    transition: transform 0.6s ease;
 }
 
 .slide.active .slide-bg {
@@ -604,6 +605,8 @@ ul {
 
 @media (prefers-reduced-motion: reduce) {
     .slide.active .slide-bg { animation: none; }
+    .btn-hero:hover { transform: none; }
+    .section-link:hover i { transform: none; }
 }
 
 /* ============================================
@@ -634,6 +637,15 @@ ul {
 .icon-chip--danger {
     background-color: #fdecec;
     color: var(--color-error);
+}
+
+/* Focus ring for the new card-level links and actions */
+.qa-item:focus-visible,
+.service-card:focus-visible,
+.section-link:focus-visible,
+.btn-hero:focus-visible {
+    outline: 3px solid var(--color-primary-light);
+    outline-offset: 3px;
 }
 
 .quick-actions {

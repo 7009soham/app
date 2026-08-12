@@ -19,7 +19,7 @@
                             <p>{{ $slider->subtitle }}</p>
                         @endif
                         @if($slider->link && $slider->button_text)
-                            <a href="{{ $slider->link }}" class="btn btn-hero btn-lg">{{ $slider->button_text }} <span class="btn-arrow"><i class="fas fa-arrow-right"></i></span></a>
+                            <a href="{{ $slider->link }}" class="btn btn-hero btn-lg">{{ $slider->button_text }} <span class="btn-arrow"><i class="fas fa-arrow-right" aria-hidden="true"></i></span></a>
                         @endif
                     </div>
                 </div>
@@ -29,7 +29,7 @@
                         <span class="slide-kicker">{{ __('messages.official_digital_portal') }}</span>
                         <h1>{{ __('messages.welcome_to') }} {{ $settings['site_name'] ?? 'Gram Panchayat' }}</h1>
                         <p>{{ $settings['site_tagline'] ?: __('messages.serving_community') }}</p>
-                        <a href="{{ route('citizen.login') }}" class="btn btn-hero btn-lg">{{ __('messages.login_to_pay_tax') }} <span class="btn-arrow"><i class="fas fa-arrow-right"></i></span></a>
+                        <a href="{{ route('citizen.login') }}" class="btn btn-hero btn-lg">{{ __('messages.login_to_pay_tax') }} <span class="btn-arrow"><i class="fas fa-arrow-right" aria-hidden="true"></i></span></a>
                     </div>
                 </div>
             @endforelse
@@ -53,19 +53,19 @@
         <div class="container">
             <div class="qa-card" data-reveal>
                 <a href="{{ route('citizen.login') }}" class="qa-item">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-house"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-house" aria-hidden="true"></i></span>
                     <span>{{ __('messages.property_tax') }}</span>
                 </a>
                 <a href="{{ route('citizen.login') }}" class="qa-item">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-droplet"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-droplet" aria-hidden="true"></i></span>
                     <span>{{ __('messages.water_tax') }}</span>
                 </a>
                 <a href="{{ route('grievance.create') }}" class="qa-item qa-item--new" data-badge="{{ __('messages.new') }}">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-bullhorn"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-bullhorn" aria-hidden="true"></i></span>
                     <span>{{ __('messages.grievance') }}</span>
                 </a>
                 <a href="{{ route('digital-services') }}" class="qa-item">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-file-lines"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-file-lines" aria-hidden="true"></i></span>
                     <span>{{ __('messages.certificates') }}</span>
                 </a>
             </div>
@@ -75,30 +75,30 @@
     <!-- Quick Stats -->
     <section class="stats-section">
         <div class="container">
-            <div class="stats-grid stats-strip" data-reveal>
+            <div class="stats-strip" data-reveal>
                 <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-users"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-users" aria-hidden="true"></i></span>
                     <div class="stat-content">
                         <span class="stat-number" data-target="5000">0</span>
                         <span class="stat-label">{{ __('messages.citizens_served') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-file-invoice-dollar"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
                     <div class="stat-content">
                         <span class="stat-number" data-target="10000">0</span>
                         <span class="stat-label">{{ __('messages.payments_processed') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-check-circle"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-check-circle" aria-hidden="true"></i></span>
                     <div class="stat-content">
                         <span class="stat-number" data-target="100">0</span>
                         <span class="stat-label">% {{ __('messages.secure') }}</span>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <span class="icon-chip icon-chip--tint"><i class="fas fa-headset"></i></span>
+                    <span class="icon-chip icon-chip--tint"><i class="fas fa-headset" aria-hidden="true"></i></span>
                     <div class="stat-content">
                         <span class="stat-number">24/7</span>
                         <span class="stat-label">{{ __('messages.support_available') }}</span>
@@ -115,7 +115,7 @@
                 <span class="section-eyebrow">{{ __('messages.services') }}</span>
                 <h2>{{ __('messages.our_services') }}</h2>
                 <p>{{ __('messages.services_description') }}</p>
-                <a href="{{ route('digital-services') }}" class="section-link">{{ __('messages.view_all') }} <i class="fas fa-arrow-right"></i></a>
+                <a href="{{ route('digital-services') }}" class="section-link">{{ __('messages.view_all') }} <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
             </div>
 
             <div class="services-grid">
@@ -124,25 +124,25 @@
                         @continue
                     @endif
                     <a href="{{ route('citizen.login') }}" class="service-card" data-reveal>
-                        <span class="icon-chip icon-chip--gradient"><i class="fas {{ $taxType->icon ?? 'fa-receipt' }}"></i></span>
+                        <span class="icon-chip icon-chip--gradient"><i class="fas {{ $taxType->icon ?? 'fa-receipt' }}" aria-hidden="true"></i></span>
                         <div class="service-body">
                             <h3>{{ $taxType->name }}</h3>
                             <p>{{ $taxType->description }}</p>
                         </div>
                         <span class="service-cta">{{ __('messages.login_to_pay') }}</span>
-                        <span class="service-go"><i class="fas fa-chevron-right"></i></span>
+                        <span class="service-go"><i class="fas fa-chevron-right" aria-hidden="true"></i></span>
                     </a>
                 @endforeach
 
                 <!-- Grievance Redressal Card -->
                 <a href="{{ route('grievance.create') }}" class="service-card" data-reveal>
-                    <span class="icon-chip icon-chip--danger"><i class="fas fa-bullhorn"></i></span>
+                    <span class="icon-chip icon-chip--danger"><i class="fas fa-bullhorn" aria-hidden="true"></i></span>
                     <div class="service-body">
                         <h3>{{ __('messages.grievance_redressal') }}</h3>
                         <p>{{ __('messages.grievance_description') }}</p>
                     </div>
                     <span class="service-cta">{{ __('messages.report_issue') }}</span>
-                    <span class="service-go"><i class="fas fa-chevron-right"></i></span>
+                    <span class="service-go"><i class="fas fa-chevron-right" aria-hidden="true"></i></span>
                 </a>
             </div>
         </div>
@@ -157,22 +157,22 @@
 
             <div class="features-grid">
                 <div class="feature-card" data-reveal>
-                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-bolt"></i></span>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-bolt" aria-hidden="true"></i></span>
                     <h3>{{ __('messages.quick_easy') }}</h3>
                     <p>{{ __('messages.quick_easy_desc') }}</p>
                 </div>
                 <div class="feature-card" data-reveal>
-                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-shield-alt"></i></span>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-shield-alt" aria-hidden="true"></i></span>
                     <h3>{{ __('messages.secure_100') }}</h3>
                     <p>{{ __('messages.secure_100_desc') }}</p>
                 </div>
                 <div class="feature-card" data-reveal>
-                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-receipt"></i></span>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-receipt" aria-hidden="true"></i></span>
                     <h3>{{ __('messages.instant_receipt') }}</h3>
                     <p>{{ __('messages.instant_receipt_desc') }}</p>
                 </div>
                 <div class="feature-card" data-reveal>
-                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-history"></i></span>
+                    <span class="icon-chip icon-chip--tint feature-chip"><i class="fas fa-history" aria-hidden="true"></i></span>
                     <h3>{{ __('messages.payment_history') }}</h3>
                     <p>{{ __('messages.payment_history_desc') }}</p>
                 </div>
