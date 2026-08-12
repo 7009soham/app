@@ -153,4 +153,30 @@ class LandingPageResponsiveTest extends TestCase
     {
         $this->get('/')->assertOk();
     }
+
+    /**
+     * Every reference portal this hero was matched against — colorado.gov,
+     * hawaii.gov, occoquan, panvelmc.org — sets the type directly on the
+     * photograph. The frosted panel that used to sit here blurred the uploaded
+     * artwork by 8px exactly where its subject was, so the image survived only
+     * as a strip along the top edge.
+     */
+    public function test_the_hero_does_not_blur_the_uploaded_photograph(): void
+    {
+        preg_match('/\.slide-content\s*\{(.*?)\}/s', $this->css, $m);
+
+        $this->assertNotEmpty($m);
+        $this->assertStringNotContainsString('backdrop-filter', $m[1]);
+        $this->assertStringNotContainsString('rgba(255, 255, 255, 0.08)', $m[1]);
+    }
+
+    public function test_hero_text_carries_its_own_legibility_over_any_photo(): void
+    {
+        // The backdrop is an admin upload of unknown brightness, so the type
+        // cannot depend on the image behind it.
+        preg_match('/\.slide-content h1\s*\{(.*?)\}/s', $this->css, $h1);
+
+        $this->assertNotEmpty($h1);
+        $this->assertStringContainsString('text-shadow', $h1[1]);
+    }
 }

@@ -459,30 +459,41 @@ ul {
     to { transform: scale(1.08); }
 }
 
+/* Bottom-weighted scrim, in the manner of colorado.gov and panvelmc.org: the
+   top of the photo stays open so the subject is visible, and the weight
+   gathers under the text where legibility is actually needed. Replaces the
+   flat 0.25-0.55 wash that dimmed the whole image evenly. */
 .slide-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(15, 31, 51, 0.25) 0%, rgba(15, 31, 51, 0.55) 100%);
+    background:
+        linear-gradient(180deg,
+            rgba(15, 31, 51, 0.30) 0%,
+            rgba(15, 31, 51, 0.12) 28%,
+            rgba(15, 31, 51, 0.58) 72%,
+            rgba(15, 31, 51, 0.80) 100%);
 }
 
+/* The type sits straight on the photograph. The frosted panel that used to
+   live here blurred the artwork by 8px exactly where the subject was, so the
+   uploaded image only survived as a strip along the top edge. Every reference
+   portal - Colorado, Hawaii, Occoquan, Panvel - sets the words on the picture
+   and carries legibility with a gradient and a shadow instead. */
 .slide-content {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    width: fit-content;
-    max-width: 90%;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6) var(--spacing-10);
     text-align: center;
     color: var(--color-white);
-    padding: var(--spacing-8);
-    background: rgba(255, 255, 255, 0.08);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px 0 rgba(15, 31, 51, 0.35);
-    border-radius: var(--radius-2xl);
+    /* Pushes the block to the lower third, where the scrim is heaviest. */
+    height: 100%;
 }
 
 .slide-kicker {
@@ -521,13 +532,19 @@ html[lang="mr"] .slide-kicker {
     margin-bottom: var(--spacing-4);
     max-width: 800px;
     text-wrap: balance;
+    line-height: 1.12;
+    /* Carries the type over an admin-uploaded photograph whose brightness we
+       cannot know in advance. */
+    text-shadow: 0 2px 12px rgba(15, 31, 51, 0.55);
 }
 
 .slide-content p {
     font-size: var(--font-size-xl);
     max-width: 600px;
     margin-bottom: var(--spacing-8);
-    opacity: 0.9;
+    /* Was opacity 0.9, which lowers contrast against an unknown photo. Full
+       white with a shadow reads better and keeps the AA margin. */
+    text-shadow: 0 1px 8px rgba(15, 31, 51, 0.6);
 }
 
 .btn-hero {
@@ -1396,7 +1413,22 @@ html[lang="mr"] .qa-item--new::after {
     .nav-links.active li:nth-child(5) { animation-delay: 0.2s; }
 
     .hero-slider {
-        height: 440px;
+        /* A fixed tall hero against a 3:2 photograph makes background-size:
+           cover discard most of the width, so only a centre slice survives.
+           Sizing by viewport keeps the crop closer to the source proportions
+           and lets more of the picture through on a phone. */
+        height: min(72vh, 460px);
+    }
+
+    /* Favour the upper-middle of the frame: buildings, faces and skylines sit
+       above centre in most civic photography, and a plain centre crop cuts
+       them in half. */
+    .slide-bg {
+        background-position: center 35%;
+    }
+
+    .slide-content {
+        padding-bottom: var(--spacing-8);
     }
 
     .slider-nav {
