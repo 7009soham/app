@@ -878,29 +878,6 @@ html[lang="mr"] .slide-kicker {
     z-index: 10;
 }
 
-.slider-pause {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    margin-left: var(--spacing-2);
-    padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    border-radius: var(--radius-full);
-    background: rgba(15, 31, 51, 0.55);
-    color: var(--color-white);
-    font-size: 0.6rem;
-    line-height: 1;
-    cursor: pointer;
-    transition: background var(--transition-fast);
-}
-
-.slider-pause:hover {
-    background: rgba(15, 31, 51, 0.8);
-    color: var(--color-white);
-}
-
 .dot {
     width: 10px;
     height: 10px;
@@ -966,7 +943,6 @@ html[lang="mr"] .slide-kicker {
 .section-link:focus-visible,
 .btn-hero:focus-visible,
 .slider-btn:focus-visible,
-.slider-pause:focus-visible,
 .dot:focus-visible {
     outline: 3px solid var(--saffron);
     outline-offset: 2px;

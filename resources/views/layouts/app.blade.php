@@ -411,14 +411,16 @@
 
         <div class="gov-bar">
             <div class="container gov-bar__inner">
-                {{-- The official name is a proper noun, so both scripts are shown
-                     always rather than translated, each tagged for screen readers
-                     (WCAG 3.1.2). --}}
+                {{-- The Panchayat naming itself and stating where it sits. It must
+                     NOT claim "Government of Maharashtra" or any parent-government
+                     attribution: that is a badge the state grants, not something a
+                     village body may assert on its own, and the same reasoning that
+                     keeps the State Emblem off this page applies to the wordmark.
+                     The Marathi name is a proper noun, so it is not translated and
+                     is tagged for screen readers (WCAG 3.1.2). --}}
                 <p class="gov-bar__attrib">
-                    <span lang="mr">महाराष्ट्र शासन</span>
+                    <span lang="mr">नेरळ ग्रामपंचायत</span>
                     <span class="gov-bar__rule" aria-hidden="true"></span>
-                    <span class="gov-bar__en" lang="en">Government of Maharashtra</span>
-                    <span class="gov-bar__rule gov-bar__rule--wide" aria-hidden="true"></span>
                     <span class="gov-bar__en">{{ __('messages.jurisdiction') }}</span>
                 </p>
 

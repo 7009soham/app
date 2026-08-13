@@ -240,7 +240,6 @@ return [
     // Government utility strip. GIGW 3.0 expects the accessibility controls and
     // the parent-government attribution to sit above the masthead.
     'skip_to_main' => 'मुख्य मजकुराकडे जा',
-    'govt_of_maharashtra' => 'महाराष्ट्र शासन',
     'jurisdiction' => 'कर्जत तालुका, रायगड जिल्हा',
     'text_size' => 'अक्षर आकार',
     'decrease_text_size' => 'अक्षर आकार कमी करा',
@@ -261,7 +260,6 @@ return [
     'payment_security' => 'एन्क्रिप्टेड देयके',
     'online_always' => 'ऑनलाइन उपलब्धता',
     'opens_new_window' => 'नवीन विंडोमध्ये उघडते',
-    'pause_slideshow' => 'स्लाइडशो थांबवा',
     'go_to_slide' => 'स्लाइड :number वर जा',
     'close' => 'बंद करा',
 ];

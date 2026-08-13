@@ -240,7 +240,6 @@ return [
     // Government utility strip. GIGW 3.0 expects the accessibility controls and
     // the parent-government attribution to sit above the masthead.
     'skip_to_main' => 'Skip to main content',
-    'govt_of_maharashtra' => 'Government of Maharashtra',
     'jurisdiction' => 'Karjat Taluka, Raigad District',
     'text_size' => 'Text size',
     'decrease_text_size' => 'Decrease text size',
@@ -261,7 +260,6 @@ return [
     'payment_security' => 'Encrypted payments',
     'online_always' => 'Online access',
     'opens_new_window' => 'opens in a new window',
-    'pause_slideshow' => 'Pause the slideshow',
     'go_to_slide' => 'Go to slide :number',
     'close' => 'Close',
 ];

@@ -57,13 +57,6 @@
                             aria-label="{{ __('messages.go_to_slide', ['number' => $index + 1]) }}"
                             @if($index === 0) aria-current="true" @endif></button>
                 @endforeach
-                {{-- WCAG 2.2.2: the slides start moving on their own and last longer
-                     than five seconds, so a mechanism to stop them is a Level A
-                     requirement, not a nicety. --}}
-                <button type="button" class="slider-pause" id="sliderPause" aria-pressed="false">
-                    <i class="fas fa-pause" aria-hidden="true"></i>
-                    <span class="sr-only">{{ __('messages.pause_slideshow') }}</span>
-                </button>
             </div>
         @endif
     </section>
@@ -286,41 +279,12 @@
         document.getElementById('nextSlide')?.addEventListener('click', () => showSlide(currentSlide + 1));
         dots.forEach((dot, index) => dot.addEventListener('click', () => showSlide(index)));
 
-        // Auto-play, but stoppable. WCAG 2.2.2 requires a pause mechanism for
-        // motion that starts on its own and runs longer than five seconds, and
-        // anyone who has asked the OS for reduced motion never gets it started.
-        const pauseBtn = document.getElementById('sliderPause');
-        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        let timer = null;
-
-        function play() {
-            if (timer === null) {
-                timer = setInterval(() => showSlide(currentSlide + 1), 5000);
-            }
-            pauseBtn?.setAttribute('aria-pressed', 'false');
-            pauseBtn?.querySelector('i')?.classList.replace('fa-play', 'fa-pause');
-        }
-
-        function pause() {
-            clearInterval(timer);
-            timer = null;
-            pauseBtn?.setAttribute('aria-pressed', 'true');
-            pauseBtn?.querySelector('i')?.classList.replace('fa-pause', 'fa-play');
-        }
-
-        pauseBtn?.addEventListener('click', () => (timer === null ? play() : pause()));
-
-        if (reduceMotion) {
-            pause();
-        } else {
-            play();
-        }
-
-        // Advancing the hero under someone who is reading it or tabbing through
-        // it is the same problem the pause button solves, so stop on both.
+        // No auto-advance. WCAG 2.2.2 only bites on motion that starts by itself
+        // and runs past five seconds, so removing the timer satisfies it outright
+        // and removes the pause control the timer made necessary. The slides stay
+        // reachable by the arrows, the dots and a swipe, which is the whole of
+        // what the rotation was providing anyway.
         const sliderEl = document.getElementById('heroSlider');
-        sliderEl.addEventListener('mouseenter', () => timer !== null && pause());
-        sliderEl.addEventListener('focusin', () => timer !== null && pause());
 
         // Touch swipe (arrows are hidden on mobile)
         let touchStartX = 0;

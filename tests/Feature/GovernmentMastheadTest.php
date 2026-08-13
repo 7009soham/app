@@ -36,12 +36,31 @@ class GovernmentMastheadTest extends TestCase
         $this->assertLessThan($navAt, $skipAt, 'The skip link must precede the navigation.');
     }
 
-    public function test_the_parent_government_is_named_in_both_scripts_with_lang_attributes(): void
+    public function test_the_masthead_names_the_panchayat_itself(): void
     {
         $html = $this->get('/')->assertOk()->getContent();
 
-        $this->assertStringContainsString('<span lang="mr">महाराष्ट्र शासन</span>', $html);
-        $this->assertStringContainsString('Government of Maharashtra', $html);
+        // The body naming itself, tagged for screen readers (WCAG 3.1.2).
+        $this->assertStringContainsString('<span lang="mr">नेरळ ग्रामपंचायत</span>', $html);
+    }
+
+    /**
+     * A Gram Panchayat may not assert the State or Union government's name or
+     * insignia on its own initiative. That is a badge the state grants, and the
+     * same reasoning that keeps the State Emblem off the page applies to the
+     * wordmark: it is an unauthorised claim of attribution, not decoration.
+     */
+    public function test_no_unauthorised_parent_government_attribution(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        foreach (['महाराष्ट्र शासन', 'Government of Maharashtra', 'भारत सरकार', 'Government of India'] as $claim) {
+            $this->assertStringNotContainsString(
+                $claim,
+                $html,
+                'The portal claims "' . $claim . '" attribution, which needs written authorisation.'
+            );
+        }
     }
 
     public function test_the_tricolour_rule_is_present_and_decorative(): void
@@ -125,18 +144,22 @@ class GovernmentMastheadTest extends TestCase
     }
 
     /**
-     * The hero carousel starts on its own and each slide lasts longer than five
-     * seconds, which makes a stop mechanism a Level A requirement.
+     * WCAG 2.2.2 only bites on motion that starts by itself and runs past five
+     * seconds. The carousel does not auto-advance, which satisfies it outright
+     * and is why there is no pause control to provide.
      */
-    public function test_the_carousel_can_be_paused(): void
+    public function test_the_carousel_does_not_move_on_its_own(): void
     {
         $this->seedTwoSliders();
 
         $html = $this->get('/')->assertOk()->getContent();
 
-        $this->assertStringContainsString('id="sliderPause"', $html);
-        $this->assertStringContainsString('prefers-reduced-motion: reduce', $html);
-        $this->assertStringContainsString('clearInterval', $html);
+        $this->assertStringNotContainsString('setInterval', $html);
+        $this->assertStringNotContainsString('sliderPause', $html);
+
+        // The slides still have to be reachable by hand.
+        $this->assertStringContainsString('id="prevSlide"', $html);
+        $this->assertStringContainsString('class="dot', $html);
     }
 
     public function test_the_slider_controls_have_accessible_names(): void
