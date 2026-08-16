@@ -1,112 +1,241 @@
 @extends('citizen.layout')
 
 @section('title', 'Billing & Invoices')
-@section('page-title', 'Billing History')
+@section('page-title', __('messages.billing_history'))
+
+@php
+    // The controller normalises water monthly bills and property annual bills
+    // into one shape, so the two taxes cannot drift apart in the markup again.
+    $statusStyles = [
+        'paid'    => ['bg' => '#dcfce7', 'fg' => '#166534'],
+        'partial' => ['bg' => '#fef3c7', 'fg' => '#92400e'],
+        'overdue' => ['bg' => '#fee2e2', 'fg' => '#b91c1c'],
+        'pending' => ['bg' => '#e2e8f0', 'fg' => '#334155'],
+    ];
+@endphp
 
 @section('content')
 <div class="row">
     <div class="col-12">
-        <div class="card" style="background: white; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
-            <div class="card-header" style="padding: 20px; border-bottom: 1px solid var(--border);">
-                <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">
-                    {{ app()->getLocale() == 'hi' ? 'मेरे बिल' : (app()->getLocale() == 'mr' ? 'माझी बिले' : 'My Bills') }}
-                </h3>
+        <div class="card billing-card">
+            <div class="card-header">
+                <h3>{{ __('messages.my_bills') }}</h3>
             </div>
+
             <div class="card-body" style="padding: 0;">
                 @if($bills->isEmpty())
-                    <div style="padding: 40px; text-align: center; color: var(--text-secondary);">
-                        <i class="fas fa-file-invoice" style="font-size: 48px; margin-bottom: 16px; opacity: 0.2;"></i>
-                        <p>{{ app()->getLocale() == 'hi' ? 'कोई बिल उपलब्ध नहीं है।' : (app()->getLocale() == 'mr' ? 'कोणतीही बिले उपलब्ध नाहीत.' : 'No bills available.') }}</p>
+                    <div class="billing-empty">
+                        <i class="fas fa-file-invoice" aria-hidden="true"></i>
+                        <p>{{ __('messages.no_bills_yet') }}</p>
                     </div>
                 @else
-                    {{-- Desktop Table --}}
                     <div class="billing-table-wrap">
-                        <table style="width: 100%; border-collapse: collapse;">
+                        <table>
                             <thead>
-                                <tr style="background: var(--surface-secondary); text-align: left;">
-                                    <th style="padding: 12px 20px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">{{ app()->getLocale() == 'hi' ? 'बिल क्र.' : (app()->getLocale() == 'mr' ? 'बिल क्र.' : 'Bill No') }}</th>
-                                    <th style="padding: 12px 20px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">{{ app()->getLocale() == 'hi' ? 'अवधि' : (app()->getLocale() == 'mr' ? 'कालावधी' : 'Period') }}</th>
-                                    <th style="padding: 12px 20px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">{{ app()->getLocale() == 'hi' ? 'राशि' : (app()->getLocale() == 'mr' ? 'रक्कम' : 'Amount') }}</th>
-                                    <th style="padding: 12px 20px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">{{ app()->getLocale() == 'hi' ? 'स्थिति' : (app()->getLocale() == 'mr' ? 'स्थिती' : 'Status') }}</th>
-                                    <th style="padding: 12px 20px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">{{ app()->getLocale() == 'hi' ? 'कार्रवाई' : (app()->getLocale() == 'mr' ? 'कृती' : 'Action') }}</th>
+                                <tr>
+                                    <th>{{ __('messages.bill_no') }}</th>
+                                    <th>{{ __('messages.tax_type') }}</th>
+                                    <th>{{ __('messages.period') }}</th>
+                                    <th>{{ __('messages.amount') }}</th>
+                                    <th>{{ __('messages.outstanding') }}</th>
+                                    <th>{{ __('messages.status') }}</th>
+                                    <th>{{ __('messages.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($bills as $bill)
-                                <tr style="border-bottom: 1px solid var(--border);">
-                                    <td style="padding: 16px 20px;">
-                                        <div style="font-weight: 500;">#{{ $bill->bill_no ?? '-' }}</div>
-                                        <div style="font-size: 12px; color: var(--text-secondary);">{{ $bill->payment_date ? $bill->payment_date->format('d M Y') : '' }}</div>
-                                    </td>
-                                    <td style="padding: 16px 20px;">
-                                        {{ $bill->period ?? '-' }}
-                                    </td>
-                                    <td style="padding: 16px 20px; font-weight: 600;">
-                                        ₹{{ number_format($bill->monthly_bill, 2) }}
-                                    </td>
-                                    <td style="padding: 16px 20px;">
-                                        @if($bill->hasPendingBalance())
-                                            <span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: #fee2e2; color: #dc2626;">{{ app()->getLocale() == 'hi' ? 'लंबित' : (app()->getLocale() == 'mr' ? 'प्रलंबित' : 'Pending') }}</span>
-                                        @else
-                                            <span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: #dcfce7; color: #166534;">{{ app()->getLocale() == 'hi' ? 'भुगतान किया' : (app()->getLocale() == 'mr' ? 'भरले' : 'Paid') }}</span>
-                                        @endif
-                                    </td>
-                                    <td style="padding: 16px 20px;">
-                                        <a href="{{ route('citizen.billing.invoice', $bill->id) }}" class="btn-invoice" target="_blank">
-                                            <i class="fas fa-print"></i> {{ app()->getLocale() == 'hi' ? 'इनवॉइस देखें' : (app()->getLocale() == 'mr' ? 'इनव्हॉइस पहा' : 'View Invoice') }}
-                                        </a>
-                                    </td>
-                                </tr>
+                                    @php $s = $statusStyles[$bill['status']] ?? $statusStyles['pending']; @endphp
+                                    <tr>
+                                        <td>
+                                            <div style="font-weight: 500;">#{{ $bill['bill_no'] }}</div>
+                                            @if($bill['paid_date'])
+                                                <div class="billing-sub">{{ \Carbon\Carbon::parse($bill['paid_date'])->translatedFormat('d M Y') }}</div>
+                                            @endif
+                                        </td>
+                                        <td>{{ $bill['tax'] }}</td>
+                                        <td>{{ $bill['period'] }}</td>
+                                        <td style="font-weight: 600;">₹{{ number_format($bill['amount'], 2) }}</td>
+                                        <td style="font-weight: 600;">₹{{ number_format($bill['balance'], 2) }}</td>
+                                        <td>
+                                            <span class="billing-pill" style="background: {{ $s['bg'] }}; color: {{ $s['fg'] }};">
+                                                {{ __('messages.' . $bill['status']) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ $bill['invoice_url'] }}" class="btn-invoice" target="_blank" rel="noopener">
+                                                <i class="fas fa-print" aria-hidden="true"></i> {{ __('messages.view_invoice') }}
+                                            </a>
+                                        </td>
+                                    </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
 
-                    {{-- Mobile Cards --}}
                     <div class="billing-mobile-cards">
                         @foreach($bills as $bill)
-                        <div class="billing-mobile-card">
-                            <div class="bmc-row">
-                                <span class="bmc-label">{{ app()->getLocale() == 'hi' ? 'बिल क्र.' : (app()->getLocale() == 'mr' ? 'बिल क्र.' : 'Bill No') }}</span>
-                                <span class="bmc-value" style="font-weight:600;">#{{ $bill->bill_no ?? '-' }}
-                                    @if($bill->payment_date)
-                                    <small style="font-weight:400; color:var(--text-secondary); display:block;">{{ $bill->payment_date->format('d M Y') }}</small>
-                                    @endif
-                                </span>
+                            @php $s = $statusStyles[$bill['status']] ?? $statusStyles['pending']; @endphp
+                            <div class="billing-mobile-card">
+                                <div class="bmc-head">
+                                    <span style="font-weight:700;">#{{ $bill['bill_no'] }}</span>
+                                    <span class="billing-pill" style="background: {{ $s['bg'] }}; color: {{ $s['fg'] }};">
+                                        {{ __('messages.' . $bill['status']) }}
+                                    </span>
+                                </div>
+                                <div class="bmc-row">
+                                    <span class="bmc-label">{{ __('messages.tax_type') }}</span>
+                                    <span class="bmc-value">{{ $bill['tax'] }}</span>
+                                </div>
+                                <div class="bmc-row">
+                                    <span class="bmc-label">{{ __('messages.period') }}</span>
+                                    <span class="bmc-value">{{ $bill['period'] }}</span>
+                                </div>
+                                <div class="bmc-row">
+                                    <span class="bmc-label">{{ __('messages.amount') }}</span>
+                                    <span class="bmc-value" style="font-weight:600;">₹{{ number_format($bill['amount'], 2) }}</span>
+                                </div>
+                                <div class="bmc-row">
+                                    <span class="bmc-label">{{ __('messages.outstanding') }}</span>
+                                    <span class="bmc-value" style="font-weight:600;">₹{{ number_format($bill['balance'], 2) }}</span>
+                                </div>
+                                <div style="margin-top:12px;">
+                                    <a href="{{ $bill['invoice_url'] }}" class="btn-invoice" target="_blank" rel="noopener" style="width:100%; justify-content:center;">
+                                        <i class="fas fa-print" aria-hidden="true"></i> {{ __('messages.view_invoice') }}
+                                    </a>
+                                </div>
                             </div>
-                            <div class="bmc-row">
-                                <span class="bmc-label">{{ app()->getLocale() == 'hi' ? 'अवधि' : (app()->getLocale() == 'mr' ? 'कालावधी' : 'Period') }}</span>
-                                <span class="bmc-value">{{ $bill->period ?? '-' }}</span>
-                            </div>
-                            <div class="bmc-row">
-                                <span class="bmc-label">{{ app()->getLocale() == 'hi' ? 'राशि' : (app()->getLocale() == 'mr' ? 'रक्कम' : 'Amount') }}</span>
-                                <span class="bmc-value" style="font-weight:600;">₹{{ number_format($bill->monthly_bill, 2) }}</span>
-                            </div>
-                            <div class="bmc-row">
-                                <span class="bmc-label">{{ app()->getLocale() == 'hi' ? 'स्थिति' : (app()->getLocale() == 'mr' ? 'स्थिती' : 'Status') }}</span>
-                                <span class="bmc-value">
-                                    @if($bill->hasPendingBalance())
-                                        <span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: #fee2e2; color: #dc2626;">{{ app()->getLocale() == 'hi' ? 'लंबित' : (app()->getLocale() == 'mr' ? 'प्रलंबित' : 'Pending') }}</span>
-                                    @else
-                                        <span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: #dcfce7; color: #166534;">{{ app()->getLocale() == 'hi' ? 'भुगतान किया' : (app()->getLocale() == 'mr' ? 'भरले' : 'Paid') }}</span>
-                                    @endif
-                                </span>
-                            </div>
-                            <div style="margin-top:12px;">
-                                <a href="{{ route('citizen.billing.invoice', $bill->id) }}" class="btn-invoice" target="_blank" style="width:100%; justify-content:center;">
-                                    <i class="fas fa-print"></i> {{ app()->getLocale() == 'hi' ? 'इनवॉइस देखें' : (app()->getLocale() == 'mr' ? 'इनव्हॉइस पहा' : 'View Invoice') }}
-                                </a>
-                            </div>
-                        </div>
                         @endforeach
                     </div>
                 @endif
             </div>
         </div>
+
+        {{-- Bills are generated by the office by hand, so a citizen can have
+             real successful payments and still have no bill row. Showing only an
+             empty table in that case reads as "my payment vanished", which is
+             the complaint that surfaced this whole defect. --}}
+        @if($payments->isNotEmpty())
+            <div class="card billing-card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <h3>{{ __('messages.payments_received') }}</h3>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="billing-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>{{ __('messages.transaction_id') }}</th>
+                                    <th>{{ __('messages.tax_type') }}</th>
+                                    <th>{{ __('messages.amount') }}</th>
+                                    <th>{{ __('messages.date') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($payments as $payment)
+                                    <tr>
+                                        <td style="font-family: ui-monospace, monospace; font-size: 12px;">{{ $payment->transaction_id }}</td>
+                                        <td>{{ $payment->tax_type === 'water_tax' ? __('messages.water_tax') : __('messages.property_tax') }}</td>
+                                        <td style="font-weight: 600;">₹{{ number_format($payment->amount, 2) }}</td>
+                                        <td>{{ $payment->paid_at ? $payment->paid_at->translatedFormat('d M Y, g:i A') : '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="billing-mobile-cards">
+                        @foreach($payments as $payment)
+                            <div class="billing-mobile-card">
+                                <div class="bmc-row">
+                                    <span class="bmc-label">{{ __('messages.transaction_id') }}</span>
+                                    <span class="bmc-value" style="font-family: ui-monospace, monospace; font-size:11px;">{{ $payment->transaction_id }}</span>
+                                </div>
+                                <div class="bmc-row">
+                                    <span class="bmc-label">{{ __('messages.amount') }}</span>
+                                    <span class="bmc-value" style="font-weight:600;">₹{{ number_format($payment->amount, 2) }}</span>
+                                </div>
+                                <div class="bmc-row">
+                                    <span class="bmc-label">{{ __('messages.date') }}</span>
+                                    <span class="bmc-value">{{ $payment->paid_at ? $payment->paid_at->translatedFormat('d M Y') : '-' }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 </div>
 
 <style>
+    .billing-card {
+        background: white;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .billing-card .card-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .billing-card .card-header h3 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-primary);
+    }
+
+    .billing-empty {
+        padding: 40px;
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .billing-empty i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.2;
+        display: block;
+    }
+
+    .billing-table-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .billing-table-wrap thead tr {
+        background: var(--surface-secondary);
+        text-align: left;
+    }
+
+    .billing-table-wrap th {
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .billing-table-wrap td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .billing-sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .billing-pill {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
     .btn-invoice {
         display: inline-flex;
         align-items: center;
@@ -120,6 +249,7 @@
         font-size: 13px;
         font-weight: 500;
         transition: all 0.2s;
+        white-space: nowrap;
     }
 
     .btn-invoice:hover {
@@ -128,11 +258,11 @@
         color: var(--primary);
     }
 
-    /* Desktop table visible, mobile cards hidden */
-    .billing-table-wrap { display: block; }
+    /* The table scrolls inside its own box so the page never scrolls sideways. */
+    .billing-table-wrap { display: block; overflow-x: auto; }
     .billing-mobile-cards { display: none; }
 
-    @media (max-width: 640px) {
+    @media (max-width: 720px) {
         .billing-table-wrap { display: none; }
         .billing-mobile-cards { display: block; padding: 12px; }
 
@@ -142,6 +272,16 @@
             border-radius: 10px;
             padding: 14px;
             margin-bottom: 12px;
+        }
+
+        .bmc-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid var(--border);
         }
 
         .bmc-row {
@@ -167,6 +307,8 @@
             font-size: 13px;
             color: var(--text-primary);
             text-align: right;
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
     }
 </style>

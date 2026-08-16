@@ -262,4 +262,15 @@ return [
     'opens_new_window' => 'नई विंडो में खुलता है',
     'go_to_slide' => 'स्लाइड :number पर जाएँ',
     'close' => 'बंद करें',
+    // Billing page
+    'billing_history' => 'बिलिंग इतिहास',
+    'my_bills' => 'मेरे बिल',
+    'no_bills_yet' => 'अभी तक आपको कोई बिल जारी नहीं किया गया है। आपके द्वारा किए गए भुगतान नीचे दिए गए हैं।',
+    'bill_no' => 'बिल क्र.',
+    'tax_type' => 'कर',
+    'outstanding' => 'बकाया',
+    'view_invoice' => 'इनवॉइस देखें',
+    'payments_received' => 'प्राप्त भुगतान',
+    'transaction_id' => 'लेनदेन आईडी',
+    'partial' => 'आंशिक भुगतान',
 ];

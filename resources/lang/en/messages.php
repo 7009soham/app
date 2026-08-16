@@ -262,4 +262,15 @@ return [
     'opens_new_window' => 'opens in a new window',
     'go_to_slide' => 'Go to slide :number',
     'close' => 'Close',
+    // Billing page
+    'billing_history' => 'Billing History',
+    'my_bills' => 'My Bills',
+    'no_bills_yet' => 'No bills have been issued to you yet. Any payments you have made are listed below.',
+    'bill_no' => 'Bill No',
+    'tax_type' => 'Tax',
+    'outstanding' => 'Outstanding',
+    'view_invoice' => 'View Invoice',
+    'payments_received' => 'Payments Received',
+    'transaction_id' => 'Transaction ID',
+    'partial' => 'Partly paid',
 ];

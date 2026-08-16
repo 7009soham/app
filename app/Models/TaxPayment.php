@@ -26,6 +26,10 @@ class TaxPayment extends Model
         'tax_type',
         'tax_type_id',
         'record_id',
+        // Which bill this payment settles. Without it the settlement code had
+        // to guess from today's date and silently missed any other period.
+        'bill_id',
+        'bill_type',
         'amount',
         'period_type',
         'period_start',

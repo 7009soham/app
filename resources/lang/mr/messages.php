@@ -262,4 +262,15 @@ return [
     'opens_new_window' => 'नवीन विंडोमध्ये उघडते',
     'go_to_slide' => 'स्लाइड :number वर जा',
     'close' => 'बंद करा',
+    // Billing page
+    'billing_history' => 'बिलिंग इतिहास',
+    'my_bills' => 'माझी बिले',
+    'no_bills_yet' => 'तुम्हाला अद्याप कोणतेही बिल जारी झालेले नाही. तुम्ही केलेली देयके खाली दिली आहेत.',
+    'bill_no' => 'बिल क्र.',
+    'tax_type' => 'कर',
+    'outstanding' => 'थकबाकी',
+    'view_invoice' => 'इनव्हॉइस पहा',
+    'payments_received' => 'मिळालेली देयके',
+    'transaction_id' => 'व्यवहार क्रमांक',
+    'partial' => 'अंशतः भरले',
 ];

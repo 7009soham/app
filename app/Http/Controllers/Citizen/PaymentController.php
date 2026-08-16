@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\PropertyTaxRecord;
 use App\Models\PropertyTaxAnnualBill;
 use App\Models\TaxType;
+use App\Services\BillResolver;
 use App\Services\PayuService;
 use App\Services\PhonePeService;
 use App\Services\RazorpayService;
@@ -188,6 +189,19 @@ class PaymentController extends Controller
 
         if ($this->hasTaxPaymentsColumn('failure_reason')) {
             $paymentCreateData['failure_reason'] = null;
+        }
+
+        // Pin the bill now, at the moment the citizen is looking at it, rather
+        // than letting settlement guess from the clock later. A null here is a
+        // legitimate state (the office may not have generated bills yet) and is
+        // handled at settlement by falling back to the master record.
+        if ($this->hasTaxPaymentsColumn('bill_id')) {
+            $targetBill = BillResolver::outstandingFor($validated['tax_type'], $validated['record_id']);
+
+            $paymentCreateData['bill_id'] = $targetBill?->getKey();
+            $paymentCreateData['bill_type'] = $targetBill
+                ? BillResolver::billTypeFor($validated['tax_type'])
+                : null;
         }
 
         // A citizen who taps Pay twice, or comes back after abandoning a
@@ -1048,60 +1062,76 @@ class PaymentController extends Controller
         $monthlyBill = null;
         $annualBill = null;
 
+        // The bill pinned when the citizen started the payment. Settlement used
+        // to re-derive this from the clock (this month for water, this FY for
+        // property), which silently missed every other period: the money was
+        // taken, the master record moved, and the bill stayed Pending. Falling
+        // back to the oldest open bill keeps payments made before this change
+        // working.
+        $bill = BillResolver::find($payment->bill_type, $payment->bill_id)
+            ?? BillResolver::outstandingFor($payment->tax_type, $payment->record_id);
+
         if ($payment->tax_type === 'water_tax') {
-            // Locked: amount_paid below is a read-modify-write.
+            // Locked: the balance below is a read-modify-write.
             $record = WaterTaxRecord::whereKey($payment->record_id)->lockForUpdate()->first();
 
             if ($record) {
-                // Update amount_paid. We keep the original balance for transparency in the invoice history
-                $record->amount_paid = ($record->amount_paid ?? 0) + $taxAmount;
-                $record->save();
+                // Both sides move. Previously only amount_paid was incremented
+                // and balance was left alone "for transparency", but
+                // hasPendingBalance() reads balance, so a fully paid water
+                // record kept reporting Pending for ever.
+                $record->forceFill([
+                    'amount_paid' => round(((float) $record->amount_paid) + $taxAmount, 2),
+                    'balance' => round(max(0, ((float) $record->balance) - $taxAmount), 2),
+                ])->save();
+            }
 
-                // Update monthly water tax bill
-                $monthlyBill = MonthlyTaxBill::where('record_id', $record->id)
-                    ->where('tax_type', 'water_tax')
-                    ->where('bill_year', date('Y'))
-                    ->where('bill_month', date('n'))
-                    ->first();
-
-                if ($monthlyBill) {
-                    $monthlyBill->update([
-                        'paid_amount'    => $monthlyBill->paid_amount + $taxAmount,
-                        'balance'        => max(0, $monthlyBill->balance - $taxAmount),
-                        'status'         => ($monthlyBill->balance - $taxAmount) <= 0 ? 'paid' : 'partial',
-                        'payment_method' => 'online',
-                        'paid_date'      => now(),
-                    ]);
-                }
+            if ($bill) {
+                BillResolver::applyPayment($bill, $taxAmount);
+                $monthlyBill = $bill;
             }
         } else {
-            // Property Tax – annual billing. Locked: balance below is a
-            // read-modify-write.
+            // Property tax, annual billing. Locked for the same reason.
             $record = PropertyTaxRecord::whereKey($payment->record_id)->lockForUpdate()->first();
 
             if ($record) {
-                // Only apply the tax portion to the balance
-                $record->update([
-                    'balance' => max(0, $record->balance - $taxAmount),
-                ]);
+                $record->forceFill([
+                    'balance' => round(max(0, ((float) $record->balance) - $taxAmount), 2),
+                ])->save();
+            }
 
-                // Update the annual bill for current FY
-                $fy = PropertyTaxAnnualBill::currentFinancialYear();
-                $annualBill = PropertyTaxAnnualBill::where('record_id', $record->id)
-                    ->where('financial_year', $fy)
-                    ->first();
-
-                if ($annualBill) {
-                    $annualBill->update([
-                        'paid_amount'    => $annualBill->paid_amount + $taxAmount,
-                        'status'         => ($annualBill->balance - ($annualBill->paid_amount + $taxAmount)) <= 0 ? 'paid' : 'partial',
-                        'payment_method' => 'online',
-                        'paid_date'      => now(),
-                        'transaction_id' => $payment->transaction_id,
-                    ]);
-                }
+            if ($bill) {
+                // applyPayment decrements balance as well as incrementing
+                // paid_amount. The old code only did the latter, so the annual
+                // bill's outstanding never moved off its original figure.
+                BillResolver::applyPayment($bill, $taxAmount);
+                $bill->forceFill(['transaction_id' => $payment->transaction_id])->save();
+                $annualBill = $bill;
             }
         }
+
+        // A payment that settles no bill is not an error - the office may not
+        // have generated bills yet - but it must never be invisible, because
+        // that is precisely the case that went unnoticed until a citizen
+        // complained.
+        if (!$bill) {
+            Log::warning('Payment settled against the master record with no matching bill.', [
+                'transaction_id' => $payment->transaction_id,
+                'tax_type' => $payment->tax_type,
+                'record_id' => $payment->record_id,
+                'tax_amount' => $taxAmount,
+            ]);
+        }
+
+        // The receipt named PhonePe whatever gateway was actually used, which on
+        // a government receipt is simply wrong: these went out saying PhonePe
+        // for payments taken through PayU.
+        $gatewayLabel = match ($payment->payment_method) {
+            'payu' => 'PayU',
+            'razorpay' => 'Razorpay',
+            'phonepe' => 'PhonePe',
+            default => $payment->payment_method ? ucfirst($payment->payment_method) : 'online payment',
+        };
 
         // Create a single unified payment record (full amount including convenience fee).
         Payment::firstOrCreate(
@@ -1109,14 +1139,16 @@ class PaymentController extends Controller
             [
                 'citizen_id'     => $payment->citizen_id,
                 'tax_type'       => $payment->tax_type,
-                'bill_id'        => $monthlyBill?->id,
+                // Was $monthlyBill?->id, so property tax receipts never linked
+                // to their annual bill.
+                'bill_id'        => $bill?->getKey(),
                 'amount'         => $payment->amount,
                 'payment_method' => 'online',
                 'status'         => 'completed',
                 'paid_at'        => now(),
                 'remarks'        => $convenienceFee > 0
-                    ? 'Online payment via PhonePe (Tax: ₹' . number_format($taxAmount, 2) . ', Convenience Fee: ₹' . number_format($convenienceFee, 2) . ')'
-                    : 'Online payment via PhonePe',
+                    ? 'Online payment via ' . $gatewayLabel . ' (Tax: ₹' . number_format($taxAmount, 2) . ', Convenience Fee: ₹' . number_format($convenienceFee, 2) . ')'
+                    : 'Online payment via ' . $gatewayLabel,
             ]
         );
 
