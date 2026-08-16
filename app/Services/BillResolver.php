@@ -83,6 +83,35 @@ class BillResolver
     }
 
     /**
+     * The status the numbers actually support.
+     *
+     * The stored column drifts: production has a water bill with
+     * bill_amount 12, paid_amount 12, balance 0 and status 'pending', so the
+     * citizen was shown "Pending" against a bill with nothing outstanding.
+     * Statuses are written by several paths (online settlement, admin cash
+     * entry, bill generation) and any of them can miss one, whereas the money
+     * columns are what the ledger is actually for.
+     *
+     * Overdue is preserved from the stored value because it depends on the due
+     * date rather than the amounts.
+     */
+    public static function effectiveStatus(Model $bill): string
+    {
+        $balance = (float) $bill->balance;
+        $paid = (float) $bill->paid_amount;
+
+        if ($balance <= 0.009 && $paid > 0) {
+            return 'paid';
+        }
+
+        if ($paid > 0) {
+            return 'partial';
+        }
+
+        return in_array($bill->status, ['overdue', 'pending'], true) ? $bill->status : 'pending';
+    }
+
+    /**
      * Apply a payment to a bill.
      *
      * Both bill tables carry paid_amount and balance, and before this the four

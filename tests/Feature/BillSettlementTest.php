@@ -432,6 +432,45 @@ class BillSettlementTest extends TestCase
         $response->assertSee(now()->translatedFormat('F Y'), false);
     }
 
+    /**
+     * Production had a water bill with bill_amount 12, paid_amount 12,
+     * balance 0 and status 'pending', so the citizen was shown Pending against
+     * a bill with nothing left to pay. Several paths write that column and any
+     * of them can miss it, so the amounts decide what is displayed.
+     */
+    public function test_a_stale_pending_status_is_not_shown_when_the_bill_is_settled(): void
+    {
+        $water = $this->waterRecord(500);
+        $bill = $this->monthlyBill($water, (int) date('Y'), (int) date('n'), 12);
+        $bill->forceFill(['paid_amount' => 12, 'balance' => 0, 'status' => 'pending'])->save();
+
+        $this->assertSame('paid', BillResolver::effectiveStatus($bill->fresh()));
+
+        $this->actingAs($this->citizen, 'citizen')
+            ->get(route('citizen.billing.index'))
+            ->assertOk()
+            ->assertSee(__('messages.paid'), false);
+    }
+
+    public function test_a_part_paid_bill_reads_as_partly_paid_whatever_the_column_says(): void
+    {
+        $water = $this->waterRecord(500);
+        $bill = $this->monthlyBill($water, (int) date('Y'), (int) date('n'), 100);
+        $bill->forceFill(['paid_amount' => 40, 'balance' => 60, 'status' => 'pending'])->save();
+
+        $this->assertSame('partial', BillResolver::effectiveStatus($bill->fresh()));
+    }
+
+    public function test_an_untouched_bill_keeps_its_overdue_flag(): void
+    {
+        $water = $this->waterRecord(500);
+        $bill = $this->monthlyBill($water, (int) date('Y'), (int) date('n'), 100);
+        $bill->forceFill(['status' => 'overdue'])->save();
+
+        // Overdue depends on the due date, not the amounts, so it survives.
+        $this->assertSame('overdue', BillResolver::effectiveStatus($bill->fresh()));
+    }
+
     public function test_a_citizen_with_payments_but_no_bills_still_sees_the_payment(): void
     {
         $record = $this->propertyRecord(1000);

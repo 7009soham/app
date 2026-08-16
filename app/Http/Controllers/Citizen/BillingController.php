@@ -8,6 +8,7 @@ use App\Models\WaterTaxRecord;
 use App\Models\PropertyTaxAnnualBill;
 use App\Models\PropertyTaxRecord;
 use App\Models\TaxPayment;
+use App\Services\BillResolver;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -45,7 +46,7 @@ class BillingController extends Controller
                 'amount' => (float) $b->bill_amount,
                 'paid' => (float) $b->paid_amount,
                 'balance' => (float) $b->balance,
-                'status' => $b->status,
+                'status' => BillResolver::effectiveStatus($b),
                 'due_date' => $b->due_date,
                 'paid_date' => $b->paid_date,
                 'invoice_url' => route('citizen.billing.invoice', $b->record_id),
@@ -69,7 +70,7 @@ class BillingController extends Controller
                 'amount' => (float) $b->bill_amount,
                 'paid' => (float) $b->paid_amount,
                 'balance' => (float) $b->balance,
-                'status' => $b->status,
+                'status' => BillResolver::effectiveStatus($b),
                 'due_date' => $b->due_date,
                 'paid_date' => $b->paid_date,
                 'invoice_url' => route('citizen.billing.property-invoice', $b->id),
