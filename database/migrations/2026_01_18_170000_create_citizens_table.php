@@ -13,7 +13,12 @@ return new class extends Migration
     {
         Schema::create('citizens', function (Blueprint $table) {
             $table->id();
-            $table->string('customer_no')->unique(); // Customer number from data
+            // Nullable because a citizen can register by OTP before the office
+            // has a customer number for them, and because 54 numbers in the
+            // property ledger are shared by two owners. See
+            // 2026_08_19_090000_make_citizens_customer_no_nullable, which applies
+            // the same relaxation to databases created before this change.
+            $table->string('customer_no')->nullable()->unique();
             $table->string('name');
             $table->string('phone')->nullable()->unique();
             $table->string('address')->nullable();

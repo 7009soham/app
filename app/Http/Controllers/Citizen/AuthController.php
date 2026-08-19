@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -171,30 +172,19 @@ class AuthController extends Controller
         }
 
         if (!$citizen) {
-            $citizen = Citizen::firstOrCreate(
-                ['phone' => $phone],
-                [
-                    'customer_no' => $waterRecord->customer_no ?? $propertyRecord->customer_no,
-                    'name' => $waterRecord->customer_name ?? $propertyRecord->customer_name,
-                ]
+            $citizen = $this->resolveCitizenForPhone(
+                $phone,
+                $waterRecord->customer_no ?? $propertyRecord->customer_no ?? null,
+                $waterRecord->customer_name ?? $propertyRecord->customer_name ?? null
             );
         }
 
-        // Keep citizen-linked records synchronized with the verified login phone.
-        if ($waterRecord) {
-            WaterTaxRecord::where('id', $waterRecord->id)->update([
-                'citizen_id' => $citizen->id,
-                'phone' => $phone,
-            ]);
-            WaterTaxRecord::where('citizen_id', $citizen->id)->update(['phone' => $phone]);
-        }
-        if ($propertyRecord) {
-            PropertyTaxRecord::where('id', $propertyRecord->id)->update([
-                'citizen_id' => $citizen->id,
-                'phone' => $phone,
-            ]);
-            PropertyTaxRecord::where('citizen_id', $citizen->id)->update(['phone' => $phone]);
-        }
+        // Link EVERY record this phone owns, not just the first one found. This
+        // used to update a single row by id, so a citizen with three properties
+        // had two left unlinked and permanently invisible to them, and any bill
+        // raised against those rows looked to the citizen like it had vanished.
+        $this->linkRecordsToCitizen(WaterTaxRecord::class, $phone, $citizen->id);
+        $this->linkRecordsToCitizen(PropertyTaxRecord::class, $phone, $citizen->id);
 
         // Store citizen_phone in session for OTP verification
         Session::put('citizen_phone_pending', $phone);
@@ -505,5 +495,75 @@ class AuthController extends Controller
         Session::forget('profile_email_change_request');
 
         return redirect()->route('citizen.login')->with('success', 'Logged out successfully.');
+    }
+    /**
+     * Every phone shape a tax record might carry for one mobile number.
+     *
+     * The office types these by hand, so the same number appears as
+     * "9425551234", "+919425551234" and with stray spaces. Matching only the
+     * bare form left records unlinked.
+     */
+    private function phoneVariants(string $phone): array
+    {
+        return [$phone, '+91' . $phone, '91' . $phone, '0' . $phone];
+    }
+
+    /**
+     * Attach every tax record belonging to this phone to the citizen.
+     *
+     * Deliberately scoped to the phone the citizen just proved they control via
+     * OTP. It does NOT match on customer_no: 54 customer numbers in the property
+     * ledger are shared by two different owners, so trusting that column would
+     * hand one citizen another citizen's property record.
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
+     */
+    private function linkRecordsToCitizen(string $model, string $phone, int $citizenId): void
+    {
+        $variants = $this->phoneVariants($phone);
+
+        $model::where(function ($q) use ($variants, $phone) {
+                $q->whereIn('phone', $variants)
+                  ->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, '+91', ''), ' ', ''), '-', '') = ?", [$phone]);
+            })
+            ->update(['citizen_id' => $citizenId, 'phone' => $phone]);
+
+        // Rows already linked keep their phone in step with the verified one.
+        $model::where('citizen_id', $citizenId)->update(['phone' => $phone]);
+    }
+
+    /**
+     * Find or create the citizen for a verified phone number.
+     *
+     * customer_no is unique on citizens, and the property ledger contains
+     * customer numbers shared by two different people. A plain firstOrCreate
+     * therefore threw a duplicate-key QueryException and the citizen saw a 500
+     * at login rather than their bills. When the number is already taken the
+     * citizen is created without one; the office can reconcile it later, and
+     * nothing in the portal keys off citizens.customer_no.
+     */
+    private function resolveCitizenForPhone(string $phone, ?string $customerNo, ?string $name): Citizen
+    {
+        $citizen = Citizen::where('phone', $phone)->first();
+
+        if ($citizen) {
+            return $citizen;
+        }
+
+        $taken = $customerNo !== null
+            && Citizen::where('customer_no', $customerNo)->exists();
+
+        if ($taken) {
+            Log::warning('Citizen customer_no collision at login; creating without it.', [
+                'phone' => substr($phone, 0, 4) . '******',
+                'customer_no' => $customerNo,
+            ]);
+        }
+
+        return Citizen::create([
+            'phone' => $phone,
+            'customer_no' => $taken ? null : $customerNo,
+            'name' => $name ?: 'Citizen',
+        ]);
     }
 }
