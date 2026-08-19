@@ -4,10 +4,18 @@ namespace App\Models;
 
 use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Soft deleted: these rows are tax liability. Deleting one used to be
+ * permanent and, for property records, cascaded into every annual bill raised
+ * against it. See 2026_08_19_110000_protect_revenue_records_from_deletion.
+ */
 class WaterTaxRecord extends Model
 {
+    use SoftDeletes;
+
     use Searchable;
 
     protected array $searchable = ['customer_no', 'a_no', 'bill_no', 'receipt_no', 'phone'];

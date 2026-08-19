@@ -5,9 +5,17 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Soft deleted: these rows are tax liability. Deleting one used to be
+ * permanent and, for property records, cascaded into every annual bill raised
+ * against it. See 2026_08_19_110000_protect_revenue_records_from_deletion.
+ */
 class PropertyTaxAnnualBill extends Model
 {
+    use SoftDeletes;
+
     use HasFactory;
 
     protected $table = 'property_tax_annual_bills';

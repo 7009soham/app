@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Helpers\RichText;
 use App\Http\Controllers\Controller;
+use App\Models\AdminAuditLog;
 use App\Services\SystemEmailSimulationService;
 use App\Models\SiteSetting;
 use Illuminate\Http\Request;
@@ -464,7 +465,48 @@ class SettingsController extends Controller
             'payu_env' => 'nullable|in:sandbox,production',
         ]);
 
-        return $this->updateSection($request, 'payment');
+        // Credentials that decide where citizens' tax money lands. Every write
+        // is recorded with the actor; secret values are hashed by the audit
+        // model so a salt rotation is visible without the salt being readable.
+        $keys = [
+            'active_payment_gateway', 'convenience_fee_percentage',
+            'phonepe_merchant_id', 'phonepe_salt_key', 'phonepe_salt_index', 'phonepe_env',
+            'razorpay_key_id', 'razorpay_env',
+            'payu_property_merchant_id', 'payu_property_merchant_key', 'payu_property_merchant_salt',
+            'payu_water_merchant_id', 'payu_water_merchant_key', 'payu_water_merchant_salt',
+            'payu_env',
+        ];
+
+        $before = [];
+        foreach ($keys as $key) {
+            $before[$key] = SiteSetting::get($key, null);
+        }
+
+        $response = $this->updateSection($request, 'payment');
+
+        $after = [];
+        foreach ($keys as $key) {
+            $after[$key] = SiteSetting::get($key, null);
+        }
+
+        // Only record what actually moved, so the trail stays readable.
+        $changed = array_keys(array_filter(
+            $after,
+            fn ($value, $key) => (string) $value !== (string) ($before[$key] ?? ''),
+            ARRAY_FILTER_USE_BOTH
+        ));
+
+        if ($changed !== []) {
+            AdminAuditLog::record(
+                'settings.payment.update',
+                null,
+                array_intersect_key($before, array_flip($changed)),
+                array_intersect_key($after, array_flip($changed)),
+                implode(', ', $changed)
+            );
+        }
+
+        return $response;
     }
 
     public function notifications()

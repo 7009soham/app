@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Helpers\Csv;
 use App\Http\Controllers\Controller;
+use App\Models\AdminAuditLog;
+use App\Models\TaxPayment;
 use App\Models\PropertyTaxRecord;
 use App\Models\Citizen;
 use Illuminate\Http\Request;
@@ -175,6 +177,26 @@ class PropertyTaxController extends Controller
      */
     public function destroy(PropertyTaxRecord $propertyTaxRecord)
     {
+        // Refuse while money is attached. A record carrying an unpaid balance or a
+        // successful payment is live liability and evidence of collection; it is
+        // not an admin's to remove on a whim.
+        if ((float) $propertyTaxRecord->balance > 0) {
+            return back()->with('error', 'This record has an outstanding balance and cannot be deleted. Clear or transfer the balance first.');
+        }
+
+        if (TaxPayment::where('record_id', $propertyTaxRecord->id)->where('tax_type', 'property_tax')->where('status', 'success')->exists()) {
+            return back()->with('error', 'This record has successful payments against it and cannot be deleted.');
+        }
+
+        AdminAuditLog::record(
+            'property_tax.delete',
+            $propertyTaxRecord,
+            $propertyTaxRecord->only(['customer_no', 'property_no', 'customer_name', 'balance', 'citizen_id']),
+            null,
+            (string) $propertyTaxRecord->customer_no
+        );
+
+        // Soft delete: recoverable, and the row survives for audit.
         $propertyTaxRecord->delete();
 
         return redirect()->route('admin.property-tax.index')

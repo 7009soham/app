@@ -92,131 +92,131 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function () {
     // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard')->middleware('admin.can:dashboard.view');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index')->middleware('admin.can:dashboard.view');
     
     // Demand Analytics
-    Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index')->middleware('admin.can:analytics.view');
 
     // Activity Logs
-    Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('admin.can:admins.view');
 
     // Penalty Settings
-    Route::resource('penalty-settings', \App\Http\Controllers\Admin\PenaltySettingController::class)->except(['show']);
+    Route::resource('penalty-settings', \App\Http\Controllers\Admin\PenaltySettingController::class)->except(['show'])->middleware('admin.can:penalty.manage');
 
     // Water Tax Management (Separate Dashboard)
-    Route::post('/water-tax/bulk', [WaterTaxController::class, 'bulk'])->name('water-tax.bulk');
-    Route::get('/water-tax', [WaterTaxController::class, 'index'])->name('water-tax.index');
-    Route::get('/water-tax/create', [WaterTaxController::class, 'create'])->name('water-tax.create');
-    Route::post('/water-tax', [WaterTaxController::class, 'store'])->name('water-tax.store');
-    Route::get('/water-tax/export', [WaterTaxController::class, 'export'])->name('water-tax.export');
-    Route::get('/water-tax/{waterTaxRecord}', [WaterTaxController::class, 'show'])->name('water-tax.show');
-    Route::get('/water-tax/{waterTaxRecord}/edit', [WaterTaxController::class, 'edit'])->name('water-tax.edit');
-    Route::put('/water-tax/{waterTaxRecord}', [WaterTaxController::class, 'update'])->name('water-tax.update');
-    Route::delete('/water-tax/{waterTaxRecord}', [WaterTaxController::class, 'destroy'])->name('water-tax.destroy');
+    Route::post('/water-tax/bulk', [WaterTaxController::class, 'bulk'])->name('water-tax.bulk')->middleware('admin.can:water_tax.manage');
+    Route::get('/water-tax', [WaterTaxController::class, 'index'])->name('water-tax.index')->middleware('admin.can:water_tax.view');
+    Route::get('/water-tax/create', [WaterTaxController::class, 'create'])->name('water-tax.create')->middleware('admin.can:water_tax.manage');
+    Route::post('/water-tax', [WaterTaxController::class, 'store'])->name('water-tax.store')->middleware('admin.can:water_tax.manage');
+    Route::get('/water-tax/export', [WaterTaxController::class, 'export'])->name('water-tax.export')->middleware('admin.can:water_tax.export');
+    Route::get('/water-tax/{waterTaxRecord}', [WaterTaxController::class, 'show'])->name('water-tax.show')->middleware('admin.can:water_tax.view');
+    Route::get('/water-tax/{waterTaxRecord}/edit', [WaterTaxController::class, 'edit'])->name('water-tax.edit')->middleware('admin.can:water_tax.view');
+    Route::put('/water-tax/{waterTaxRecord}', [WaterTaxController::class, 'update'])->name('water-tax.update')->middleware('admin.can:water_tax.manage');
+    Route::delete('/water-tax/{waterTaxRecord}', [WaterTaxController::class, 'destroy'])->name('water-tax.destroy')->middleware('admin.can:water_tax.delete');
 
     // Property Tax Management (Separate Dashboard)
-    Route::post('/property-tax/bulk', [PropertyTaxController::class, 'bulk'])->name('property-tax.bulk');
-    Route::get('/property-tax', [PropertyTaxController::class, 'index'])->name('property-tax.index');
-    Route::get('/property-tax/create', [PropertyTaxController::class, 'create'])->name('property-tax.create');
-    Route::post('/property-tax', [PropertyTaxController::class, 'store'])->name('property-tax.store');
-    Route::get('/property-tax/export', [PropertyTaxController::class, 'export'])->name('property-tax.export');
-    Route::get('/property-tax/{propertyTaxRecord}', [PropertyTaxController::class, 'show'])->name('property-tax.show');
-    Route::get('/property-tax/{propertyTaxRecord}/edit', [PropertyTaxController::class, 'edit'])->name('property-tax.edit');
-    Route::put('/property-tax/{propertyTaxRecord}', [PropertyTaxController::class, 'update'])->name('property-tax.update');
-    Route::delete('/property-tax/{propertyTaxRecord}', [PropertyTaxController::class, 'destroy'])->name('property-tax.destroy');
+    Route::post('/property-tax/bulk', [PropertyTaxController::class, 'bulk'])->name('property-tax.bulk')->middleware('admin.can:property_tax.manage');
+    Route::get('/property-tax', [PropertyTaxController::class, 'index'])->name('property-tax.index')->middleware('admin.can:property_tax.view');
+    Route::get('/property-tax/create', [PropertyTaxController::class, 'create'])->name('property-tax.create')->middleware('admin.can:property_tax.manage');
+    Route::post('/property-tax', [PropertyTaxController::class, 'store'])->name('property-tax.store')->middleware('admin.can:property_tax.manage');
+    Route::get('/property-tax/export', [PropertyTaxController::class, 'export'])->name('property-tax.export')->middleware('admin.can:property_tax.export');
+    Route::get('/property-tax/{propertyTaxRecord}', [PropertyTaxController::class, 'show'])->name('property-tax.show')->middleware('admin.can:property_tax.view');
+    Route::get('/property-tax/{propertyTaxRecord}/edit', [PropertyTaxController::class, 'edit'])->name('property-tax.edit')->middleware('admin.can:property_tax.view');
+    Route::put('/property-tax/{propertyTaxRecord}', [PropertyTaxController::class, 'update'])->name('property-tax.update')->middleware('admin.can:property_tax.manage');
+    Route::delete('/property-tax/{propertyTaxRecord}', [PropertyTaxController::class, 'destroy'])->name('property-tax.destroy')->middleware('admin.can:property_tax.delete');
 
     // Tax Payments (Legacy)
-    Route::post('/tax-payments/bulk', [TaxPaymentController::class, 'bulk'])->name('tax-payments.bulk');
-    Route::get('/tax-payments', [TaxPaymentController::class, 'index'])->name('tax-payments.index');
-    Route::get('/tax-payments/export', [TaxPaymentController::class, 'export'])->name('tax-payments.export');
-    Route::get('/tax-payments/{taxPayment}', [TaxPaymentController::class, 'show'])->name('tax-payments.show');
+    Route::post('/tax-payments/bulk', [TaxPaymentController::class, 'bulk'])->name('tax-payments.bulk')->middleware('admin.can:payments.view');
+    Route::get('/tax-payments', [TaxPaymentController::class, 'index'])->name('tax-payments.index')->middleware('admin.can:payments.view');
+    Route::get('/tax-payments/export', [TaxPaymentController::class, 'export'])->name('tax-payments.export')->middleware('admin.can:payments.export');
+    Route::get('/tax-payments/{taxPayment}', [TaxPaymentController::class, 'show'])->name('tax-payments.show')->middleware('admin.can:payments.view');
 
     // Monthly Tax Collection (New System)
-    Route::get('/tax-collection', [TaxCollectionController::class, 'index'])->name('tax-collection.index');
-    Route::post('/tax-collection/bulk-water', [TaxCollectionController::class, 'bulkWater'])->name('tax-collection.bulk-water');
-    Route::post('/tax-collection/bulk-property', [TaxCollectionController::class, 'bulkProperty'])->name('tax-collection.bulk-property');
-    Route::get('/tax-collection/generate', [TaxCollectionController::class, 'generateMonthlyBills'])->name('tax-collection.generate');
-    Route::post('/tax-collection/fast-forward', [TaxCollectionController::class, 'debugFastForward'])->name('tax-collection.fast-forward');
+    Route::get('/tax-collection', [TaxCollectionController::class, 'index'])->name('tax-collection.index')->middleware('admin.can:water_tax.view,property_tax.view');
+    Route::post('/tax-collection/bulk-water', [TaxCollectionController::class, 'bulkWater'])->name('tax-collection.bulk-water')->middleware('admin.can:water_tax.manage');
+    Route::post('/tax-collection/bulk-property', [TaxCollectionController::class, 'bulkProperty'])->name('tax-collection.bulk-property')->middleware('admin.can:property_tax.manage');
+    Route::get('/tax-collection/generate', [TaxCollectionController::class, 'generateMonthlyBills'])->name('tax-collection.generate')->middleware('admin.can:water_tax.view,property_tax.view');
+    Route::post('/tax-collection/fast-forward', [TaxCollectionController::class, 'debugFastForward'])->name('tax-collection.fast-forward')->middleware('admin.can:settings.edit');
     // Water Tax (monthly)
-    Route::post('/tax-collection/generate', [TaxCollectionController::class, 'storeMonthlyBills'])->name('tax-collection.store-bills');
-    Route::post('/tax-collection/{bill}/pay', [TaxCollectionController::class, 'markAsPaid'])->name('tax-collection.pay');
-    Route::put('/tax-collection/{bill}/status', [TaxCollectionController::class, 'updateStatus'])->name('tax-collection.update-status');
+    Route::post('/tax-collection/generate', [TaxCollectionController::class, 'storeMonthlyBills'])->name('tax-collection.store-bills')->middleware('admin.can:water_tax.manage');
+    Route::post('/tax-collection/{bill}/pay', [TaxCollectionController::class, 'markAsPaid'])->name('tax-collection.pay')->middleware('admin.can:water_tax.manage');
+    Route::put('/tax-collection/{bill}/status', [TaxCollectionController::class, 'updateStatus'])->name('tax-collection.update-status')->middleware('admin.can:water_tax.manage');
     // Property Tax (annual)
-    Route::post('/tax-collection/generate-annual-property', [TaxCollectionController::class, 'generateAnnualPropertyBills'])->name('tax-collection.generate-annual-property');
-    Route::post('/tax-collection/property-annual/{bill}/pay', [TaxCollectionController::class, 'markAnnualPropertyBillAsPaid'])->name('tax-collection.property-annual.pay');
+    Route::post('/tax-collection/generate-annual-property', [TaxCollectionController::class, 'generateAnnualPropertyBills'])->name('tax-collection.generate-annual-property')->middleware('admin.can:property_tax.manage');
+    Route::post('/tax-collection/property-annual/{bill}/pay', [TaxCollectionController::class, 'markAnnualPropertyBillAsPaid'])->name('tax-collection.property-annual.pay')->middleware('admin.can:property_tax.manage');
 
     // Property Assessments (Form No. 8)
-    Route::post('property-assessments/import', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'importExcel'])->name('property-assessments.import');
-    Route::get('property-assessments/download-template', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'downloadTemplate'])->name('property-assessments.download-template');
-    Route::get('property-assessments/{id}/print', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'print'])->name('property-assessments.print');
-    Route::resource('property-assessments', \App\Http\Controllers\Admin\PropertyAssessmentController::class);
+    Route::post('property-assessments/import', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'importExcel'])->name('property-assessments.import')->middleware('admin.can:property_tax.manage');
+    Route::get('property-assessments/download-template', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'downloadTemplate'])->name('property-assessments.download-template')->middleware('admin.can:property_tax.view');
+    Route::get('property-assessments/{id}/print', [\App\Http\Controllers\Admin\PropertyAssessmentController::class, 'print'])->name('property-assessments.print')->middleware('admin.can:property_tax.view');
+    Route::resource('property-assessments', \App\Http\Controllers\Admin\PropertyAssessmentController::class)->middleware('admin.can:property_tax.manage');
 
     // Demands
-    Route::resource('demands', \App\Http\Controllers\Admin\DemandController::class);
+    Route::resource('demands', \App\Http\Controllers\Admin\DemandController::class)->middleware('admin.can:property_tax.manage');
 
     // Payments Panel
-    Route::post('/payments/bulk', [PaymentManagementController::class, 'bulk'])->name('payments.bulk');
-    Route::get('/payments', [PaymentManagementController::class, 'index'])->name('payments.index');
-    Route::get('/payments/{payment}', [PaymentManagementController::class, 'show'])->name('payments.show');
+    Route::post('/payments/bulk', [PaymentManagementController::class, 'bulk'])->name('payments.bulk')->middleware('admin.can:payments.view');
+    Route::get('/payments', [PaymentManagementController::class, 'index'])->name('payments.index')->middleware('admin.can:payments.view');
+    Route::get('/payments/{payment}', [PaymentManagementController::class, 'show'])->name('payments.show')->middleware('admin.can:payments.view');
 
     // Grievances Management
-    Route::get('/grievances', [AdminGrievanceController::class, 'index'])->name('grievances.index');
-    Route::get('/grievances/{grievance}', [AdminGrievanceController::class, 'show'])->name('grievances.show');
-    Route::put('/grievances/{grievance}/status', [AdminGrievanceController::class, 'updateStatus'])->name('grievances.update-status');
-    Route::delete('/grievances/{grievance}', [AdminGrievanceController::class, 'destroy'])->name('grievances.destroy');
+    Route::get('/grievances', [AdminGrievanceController::class, 'index'])->name('grievances.index')->middleware('admin.can:grievances.view');
+    Route::get('/grievances/{grievance}', [AdminGrievanceController::class, 'show'])->name('grievances.show')->middleware('admin.can:grievances.view');
+    Route::put('/grievances/{grievance}/status', [AdminGrievanceController::class, 'updateStatus'])->name('grievances.update-status')->middleware('admin.can:grievances.manage');
+    Route::delete('/grievances/{grievance}', [AdminGrievanceController::class, 'destroy'])->name('grievances.destroy')->middleware('admin.can:grievances.manage');
 
     // Content Management
-    Route::resource('sliders', SliderController::class);
-    Route::resource('quick-links', QuickLinkController::class);
+    Route::resource('sliders', SliderController::class)->middleware('admin.can:sliders.view');
+    Route::resource('quick-links', QuickLinkController::class)->middleware('admin.can:quick_links.view');
 
     // Admin-authored public pages (schemes, notices, committee members)
-    Route::resource('custom-pages', \App\Http\Controllers\Admin\CustomPageController::class)->except(['show']);
+    Route::resource('custom-pages', \App\Http\Controllers\Admin\CustomPageController::class)->except(['show'])->middleware('admin.can:quick_links.view');
 
     // Role Management (Super Admin Only)
-    Route::resource('roles', RoleController::class);
+    Route::resource('roles', RoleController::class)->middleware('admin.can:roles.view');
 
     // Admin Management (Super Admin Only)
-    Route::get('/admins', [AdminController::class, 'index'])->name('admins.index');
-    Route::get('/admins/create', [AdminController::class, 'create'])->name('admins.create');
-    Route::post('/admins', [AdminController::class, 'store'])->name('admins.store');
-    Route::get('/admins/{admin}/edit', [AdminController::class, 'edit'])->name('admins.edit');
-    Route::put('/admins/{admin}', [AdminController::class, 'update'])->name('admins.update');
-    Route::delete('/admins/{admin}', [AdminController::class, 'destroy'])->name('admins.destroy');
-    Route::post('/citizens/bulk', [\App\Http\Controllers\Admin\CitizenController::class, 'bulk'])->name('citizens.bulk');
-    Route::get('/citizens', [\App\Http\Controllers\Admin\CitizenController::class, 'index'])->name('citizens.index');
-    Route::get('/citizens/create', [\App\Http\Controllers\Admin\CitizenController::class, 'create'])->name('citizens.create');
-    Route::post('/citizens', [\App\Http\Controllers\Admin\CitizenController::class, 'store'])->name('citizens.store');
-    Route::get('/citizens/{citizen}/edit', [\App\Http\Controllers\Admin\CitizenController::class, 'edit'])->name('citizens.edit');
-    Route::put('/citizens/{citizen}', [\App\Http\Controllers\Admin\CitizenController::class, 'update'])->name('citizens.update');
-    Route::post('/admins/{admin}/impersonate', [AdminController::class, 'impersonate'])->name('admins.impersonate');
-    Route::post('/admins/stop-impersonate', [AdminController::class, 'stopImpersonate'])->name('admins.stop-impersonate');
-    Route::post('/login-as-citizen', [AdminController::class, 'loginAsCitizen'])->name('login-as-citizen');
+    Route::get('/admins', [AdminController::class, 'index'])->name('admins.index')->middleware('admin.can:admins.view');
+    Route::get('/admins/create', [AdminController::class, 'create'])->name('admins.create')->middleware('admin.can:admins.create');
+    Route::post('/admins', [AdminController::class, 'store'])->name('admins.store')->middleware('admin.can:admins.create');
+    Route::get('/admins/{admin}/edit', [AdminController::class, 'edit'])->name('admins.edit')->middleware('admin.can:admins.edit');
+    Route::put('/admins/{admin}', [AdminController::class, 'update'])->name('admins.update')->middleware('admin.can:admins.edit');
+    Route::delete('/admins/{admin}', [AdminController::class, 'destroy'])->name('admins.destroy')->middleware('admin.can:admins.delete');
+    Route::post('/citizens/bulk', [\App\Http\Controllers\Admin\CitizenController::class, 'bulk'])->name('citizens.bulk')->middleware('admin.can:citizens.edit');
+    Route::get('/citizens', [\App\Http\Controllers\Admin\CitizenController::class, 'index'])->name('citizens.index')->middleware('admin.can:citizens.view');
+    Route::get('/citizens/create', [\App\Http\Controllers\Admin\CitizenController::class, 'create'])->name('citizens.create')->middleware('admin.can:citizens.create');
+    Route::post('/citizens', [\App\Http\Controllers\Admin\CitizenController::class, 'store'])->name('citizens.store')->middleware('admin.can:citizens.create');
+    Route::get('/citizens/{citizen}/edit', [\App\Http\Controllers\Admin\CitizenController::class, 'edit'])->name('citizens.edit')->middleware('admin.can:citizens.edit');
+    Route::put('/citizens/{citizen}', [\App\Http\Controllers\Admin\CitizenController::class, 'update'])->name('citizens.update')->middleware('admin.can:citizens.edit');
+    Route::post('/admins/{admin}/impersonate', [AdminController::class, 'impersonate'])->name('admins.impersonate')->middleware('admin.can:admins.impersonate');
+    Route::post('/admins/stop-impersonate', [AdminController::class, 'stopImpersonate'])->name('admins.stop-impersonate')->middleware('admin.can:admins.impersonate');
+    Route::post('/login-as-citizen', [AdminController::class, 'loginAsCitizen'])->name('login-as-citizen')->middleware('admin.can:citizens.impersonate');
 
     // Settings
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
-    Route::post('/settings/simulate-system-emails', [SettingsController::class, 'simulateSystemEmails'])->name('settings.simulate-emails');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index')->middleware('admin.can:settings.view');
+    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update')->middleware('admin.can:settings.edit');
+    Route::post('/settings/simulate-system-emails', [SettingsController::class, 'simulateSystemEmails'])->name('settings.simulate-emails')->middleware('admin.can:settings.edit');
 
     // Each settings section is its own page and posts only its own fields.
-    Route::get('/settings/general', [SettingsController::class, 'general'])->name('settings.general');
-    Route::put('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.general.update');
-    Route::get('/settings/social', [SettingsController::class, 'social'])->name('settings.social');
-    Route::put('/settings/social', [SettingsController::class, 'updateSocial'])->name('settings.social.update');
-    Route::get('/settings/firebase', [SettingsController::class, 'firebase'])->name('settings.firebase');
-    Route::put('/settings/firebase', [SettingsController::class, 'updateFirebase'])->name('settings.firebase.update');
-    Route::get('/settings/payment', [SettingsController::class, 'payment'])->name('settings.payment');
-    Route::put('/settings/payment', [SettingsController::class, 'updatePayment'])->name('settings.payment.update');
-    Route::get('/settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
-    Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
+    Route::get('/settings/general', [SettingsController::class, 'general'])->name('settings.general')->middleware('admin.can:settings.view');
+    Route::put('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.general.update')->middleware('admin.can:settings.edit');
+    Route::get('/settings/social', [SettingsController::class, 'social'])->name('settings.social')->middleware('admin.can:settings.view');
+    Route::put('/settings/social', [SettingsController::class, 'updateSocial'])->name('settings.social.update')->middleware('admin.can:settings.edit');
+    Route::get('/settings/firebase', [SettingsController::class, 'firebase'])->name('settings.firebase')->middleware('admin.can:settings.view');
+    Route::put('/settings/firebase', [SettingsController::class, 'updateFirebase'])->name('settings.firebase.update')->middleware('admin.can:settings.edit');
+    Route::get('/settings/payment', [SettingsController::class, 'payment'])->name('settings.payment')->middleware('admin.can:settings.payment');
+    Route::put('/settings/payment', [SettingsController::class, 'updatePayment'])->name('settings.payment.update')->middleware('admin.can:settings.payment');
+    Route::get('/settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications')->middleware('admin.can:settings.view');
+    Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update')->middleware('admin.can:settings.edit');
 
     // Tax Rate Adjustment (Super Admin Only)
-    Route::get('/tax-rate-adjustment', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'index'])->name('tax-rate-adjustment.index');
-    Route::post('/tax-rate-adjustment/apply', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'apply'])->name('tax-rate-adjustment.apply');
-    Route::post('/tax-rate-adjustment/preview', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'preview'])->name('tax-rate-adjustment.preview');
-    Route::get('/tax-rate-adjustment/citizens', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'getCitizensByDemand'])->name('tax-rate-adjustment.citizens');
-    Route::post('/tax-rate-adjustment/{adjustment}/undo', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'undo'])->name('tax-rate-adjustment.undo');
-    Route::post('/tax-rate-adjustment/check-customer', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'checkCustomer'])->name('tax-rate-adjustment.check-customer');
+    Route::get('/tax-rate-adjustment', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'index'])->name('tax-rate-adjustment.index')->middleware('admin.can:settings.edit');
+    Route::post('/tax-rate-adjustment/apply', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'apply'])->name('tax-rate-adjustment.apply')->middleware('admin.can:settings.edit');
+    Route::post('/tax-rate-adjustment/preview', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'preview'])->name('tax-rate-adjustment.preview')->middleware('admin.can:settings.edit');
+    Route::get('/tax-rate-adjustment/citizens', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'getCitizensByDemand'])->name('tax-rate-adjustment.citizens')->middleware('admin.can:settings.edit');
+    Route::post('/tax-rate-adjustment/{adjustment}/undo', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'undo'])->name('tax-rate-adjustment.undo')->middleware('admin.can:settings.edit');
+    Route::post('/tax-rate-adjustment/check-customer', [\App\Http\Controllers\Admin\TaxRateAdjustmentController::class, 'checkCustomer'])->name('tax-rate-adjustment.check-customer')->middleware('admin.can:settings.edit');
 });
 
 /*
@@ -243,8 +243,8 @@ Route::prefix('citizen')->name('citizen.')->group(function () {
 
 Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(function () {
     // Dashboard
-    Route::get('/', [CitizenDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [CitizenDashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('/', [CitizenDashboardController::class, 'index'])->name('dashboard')->middleware('admin.can:dashboard.view');
+    Route::get('/dashboard', [CitizenDashboardController::class, 'index'])->name('dashboard.index')->middleware('admin.can:dashboard.view');
 
     // Tax Details
     Route::get('/water-tax', [CitizenDashboardController::class, 'waterTax'])->name('water-tax');
@@ -271,10 +271,10 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
     Route::put('/profile', [CitizenDashboardController::class, 'updateProfile'])->name('profile.update');
 
     // Grievances
-    Route::get('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'index'])->name('grievances.index');
+    Route::get('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'index'])->name('grievances.index')->middleware('admin.can:grievances.view');
     Route::get('/grievances/create', [\App\Http\Controllers\Citizen\GrievanceController::class, 'create'])->name('grievances.create');
     Route::post('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'store'])->name('grievances.store');
-    Route::get('/grievances/{id}', [\App\Http\Controllers\Citizen\GrievanceController::class, 'show'])->name('grievances.show');
+    Route::get('/grievances/{id}', [\App\Http\Controllers\Citizen\GrievanceController::class, 'show'])->name('grievances.show')->middleware('admin.can:grievances.view');
 
     // Billing Routes
     Route::get('/billing', [\App\Http\Controllers\Citizen\BillingController::class, 'index'])->name('billing.index');

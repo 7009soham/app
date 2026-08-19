@@ -39,14 +39,19 @@ class Admin extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    /**
+     * Null-safe on purpose. role_id is nullable, and an admin whose role was
+     * deleted would otherwise fatal here, which in a permission check means the
+     * request dies rather than being refused. Absent role means no rights.
+     */
     public function isSuperAdmin(): bool
     {
-        return $this->role->type === 'superadmin';
+        return $this->role?->type === 'superadmin';
     }
 
     public function isAdmin(): bool
     {
-        return in_array($this->role->type, ['superadmin', 'admin']);
+        return in_array($this->role?->type, ['superadmin', 'admin'], true);
     }
 
     public function hasPermission(string $permission): bool
@@ -55,7 +60,13 @@ class Admin extends Authenticatable
             return true;
         }
 
+        // An inactive role grants nothing, even if the admin row is active.
+        if (!$this->role || !$this->role->is_active) {
+            return false;
+        }
+
         $permissions = $this->role->permissions ?? [];
-        return in_array($permission, $permissions);
+
+        return in_array($permission, (array) $permissions, true);
     }
 }

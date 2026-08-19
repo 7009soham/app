@@ -34,6 +34,11 @@ class DatabaseSeeder extends Seeder
                 'sliders.view', 'sliders.create', 'sliders.edit', 'sliders.delete',
                 'quick_links.view', 'quick_links.create', 'quick_links.edit', 'quick_links.delete',
                 'settings.view', 'settings.edit',
+                // Payment gateway credentials decide where citizens' money lands,
+                // so they are gated separately from ordinary settings.
+                'settings.payment',
+                // Deleting tax liability is separated from managing it.
+                'water_tax.delete', 'property_tax.delete',
                 'tax_types.view', 'tax_types.edit',
                 'payments.view', 'payments.export',
                 'analytics.view',

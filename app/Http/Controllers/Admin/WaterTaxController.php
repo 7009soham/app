@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Helpers\Csv;
 use App\Http\Controllers\Controller;
+use App\Models\AdminAuditLog;
+use App\Models\TaxPayment;
 use App\Models\WaterTaxRecord;
 use App\Models\Citizen;
 use Illuminate\Http\Request;
@@ -142,6 +144,22 @@ class WaterTaxController extends Controller
      */
     public function destroy(WaterTaxRecord $waterTaxRecord)
     {
+        if ((float) $waterTaxRecord->balance > 0) {
+            return back()->with('error', 'This record has an outstanding balance and cannot be deleted. Clear or transfer the balance first.');
+        }
+
+        if (TaxPayment::where('record_id', $waterTaxRecord->id)->where('tax_type', 'water_tax')->where('status', 'success')->exists()) {
+            return back()->with('error', 'This record has successful payments against it and cannot be deleted.');
+        }
+
+        AdminAuditLog::record(
+            'water_tax.delete',
+            $waterTaxRecord,
+            $waterTaxRecord->only(['customer_no', 'customer_name', 'balance', 'citizen_id']),
+            null,
+            (string) $waterTaxRecord->customer_no
+        );
+
         $waterTaxRecord->delete();
 
         return redirect()->route('admin.water-tax.index')
