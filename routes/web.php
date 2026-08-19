@@ -243,8 +243,8 @@ Route::prefix('citizen')->name('citizen.')->group(function () {
 
 Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(function () {
     // Dashboard
-    Route::get('/', [CitizenDashboardController::class, 'index'])->name('dashboard')->middleware('admin.can:dashboard.view');
-    Route::get('/dashboard', [CitizenDashboardController::class, 'index'])->name('dashboard.index')->middleware('admin.can:dashboard.view');
+    Route::get('/', [CitizenDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [CitizenDashboardController::class, 'index'])->name('dashboard.index');
 
     // Tax Details
     Route::get('/water-tax', [CitizenDashboardController::class, 'waterTax'])->name('water-tax');
@@ -271,10 +271,10 @@ Route::prefix('citizen')->name('citizen.')->middleware('citizen.auth')->group(fu
     Route::put('/profile', [CitizenDashboardController::class, 'updateProfile'])->name('profile.update');
 
     // Grievances
-    Route::get('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'index'])->name('grievances.index')->middleware('admin.can:grievances.view');
+    Route::get('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'index'])->name('grievances.index');
     Route::get('/grievances/create', [\App\Http\Controllers\Citizen\GrievanceController::class, 'create'])->name('grievances.create');
     Route::post('/grievances', [\App\Http\Controllers\Citizen\GrievanceController::class, 'store'])->name('grievances.store');
-    Route::get('/grievances/{id}', [\App\Http\Controllers\Citizen\GrievanceController::class, 'show'])->name('grievances.show')->middleware('admin.can:grievances.view');
+    Route::get('/grievances/{id}', [\App\Http\Controllers\Citizen\GrievanceController::class, 'show'])->name('grievances.show');
 
     // Billing Routes
     Route::get('/billing', [\App\Http\Controllers\Citizen\BillingController::class, 'index'])->name('billing.index');
